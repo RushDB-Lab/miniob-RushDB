@@ -127,6 +127,41 @@ RC Table::create(Db *db, int32_t table_id, const char *path, const char *name, c
   return rc;
 }
 
+RC Table::drop()
+{
+  auto rc = sync();  // 刷新所有脏页
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
+
+  auto       table_name = name();
+  error_code ec;
+  auto       path = table_meta_file(base_dir_.c_str(), table_name);
+  if (!filesystem::remove(path, ec)) {
+    LOG_ERROR("Drop table meta fail: %s. error=%s", path.c_str(), strerror(errno));
+    return RC::IOERR_WRITE;
+  }
+
+  path = table_data_file(base_dir_.c_str(), table_name);
+  if (!filesystem::remove(path, ec)) {
+    LOG_ERROR("Drop table data fail: %s. error=%s", path.c_str(), strerror(errno));
+    return RC::IOERR_WRITE;
+  }
+
+  auto index_num = table_meta_.index_num();
+  for (int i = 0; i < index_num; ++i) {
+    ((BplusTreeIndex *)indexes_[i])->close();
+    auto index_name = table_meta_.index(i)->name();
+    path            = table_index_file(base_dir_.c_str(), table_name, index_name);
+    if (!filesystem::remove(path, ec)) {
+      LOG_ERROR("Drop table index data fail: %s. error=%s", path.c_str(), strerror(errno));
+      return RC::IOERR_WRITE;
+    }
+  }
+
+  return RC::SUCCESS;
+}
+
 RC Table::open(Db *db, const char *meta_file, const char *base_dir)
 {
   // 加载元数据文件
@@ -272,7 +307,7 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
 
   for (int i = 0; i < value_num && OB_SUCC(rc); i++) {
     const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
-    const Value &    value = values[i];
+    const Value     &value = values[i];
     if (field->type() != value.attr_type()) {
       Value real_value;
       rc = Value::cast_to(value, field->type(), real_value);
