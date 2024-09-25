@@ -127,6 +127,41 @@ RC Table::create(Db *db, int32_t table_id, const char *path, const char *name, c
   return rc;
 }
 
+RC Table::drop()
+{
+  auto rc = sync();  // 刷新所有脏页
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
+
+  auto       table_name = name();
+  error_code ec;
+  auto       path = table_meta_file(base_dir_.c_str(), table_name);
+  if (!filesystem::remove(path, ec)) {
+    LOG_ERROR("Drop table meta fail: %s. error=%s", path.c_str(), strerror(errno));
+    return RC::IOERR_WRITE;
+  }
+
+  path = table_data_file(base_dir_.c_str(), table_name);
+  if (!filesystem::remove(path, ec)) {
+    LOG_ERROR("Drop table data fail: %s. error=%s", path.c_str(), strerror(errno));
+    return RC::IOERR_WRITE;
+  }
+
+  auto index_num = table_meta_.index_num();
+  for (int i = 0; i < index_num; ++i) {
+    ((BplusTreeIndex *)indexes_[i])->close();
+    auto index_name = table_meta_.index(i)->name();
+    path            = table_index_file(base_dir_.c_str(), table_name, index_name);
+    if (!filesystem::remove(path, ec)) {
+      LOG_ERROR("Drop table index data fail: %s. error=%s", path.c_str(), strerror(errno));
+      return RC::IOERR_WRITE;
+    }
+  }
+
+  return RC::SUCCESS;
+}
+
 RC Table::open(Db *db, const char *meta_file, const char *base_dir)
 {
   // 加载元数据文件
@@ -272,7 +307,7 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
 
   for (int i = 0; i < value_num && OB_SUCC(rc); i++) {
     const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
-    const Value &    value = values[i];
+    const Value     &value = values[i];
     if (field->type() != value.attr_type()) {
       Value real_value;
       rc = Value::cast_to(value, field->type(), real_value);
@@ -473,6 +508,33 @@ RC Table::delete_record(const Record &record)
            name(), index->index_meta().name(), record.rid().to_string().c_str(), strrc(rc));
   }
   rc = record_handler_->delete_record(&record.rid());
+  return rc;
+}
+
+RC Table::update_record(const Record &old_record, const Record &new_record)
+{
+  RC rc = RC::SUCCESS;
+  // 维护索引，先删除后插入
+  for (Index *index : indexes_) {
+    rc = index->delete_entry(old_record.data(), &old_record.rid());
+    ASSERT(RC::SUCCESS == rc,
+           "failed to delete entry from index. table name=%s, index name=%s, rid=%s, rc=%s",
+           name(), index->index_meta().name(), old_record.rid().to_string().c_str(), strrc(rc));
+  }
+
+  // 尝试插入
+  rc = insert_entry_of_indexes(new_record.data(), new_record.rid());
+  // 出现重复键
+  if (rc != RC::SUCCESS) {
+    // 因为有些索引还没有插入，删除失败不应该报错
+    rc = delete_entry_of_indexes(new_record.data(), new_record.rid(), false);
+    ASSERT(RC::SUCCESS == rc,
+      "failed to rollback index data when insert index entries failed. table name=%s, rc=%s",
+                name(), strrc(rc));
+  }
+
+  // 最后更新记录
+  rc = record_handler_->update_record(new_record.data(), &new_record.rid());
   return rc;
 }
 

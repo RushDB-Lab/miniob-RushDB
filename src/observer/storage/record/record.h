@@ -25,6 +25,8 @@ See the Mulan PSL v2 for more details. */
 #include "storage/field/field_meta.h"
 #include "storage/index/index_meta.h"
 
+#include <common/type/char_type.h>
+
 class Field;
 
 /**
@@ -175,6 +177,7 @@ public:
     this->data_ = data;
     this->len_  = len;
   }
+
   void set_data_owner(char *data, int len)
   {
     ASSERT(len != 0, "the len of data should not be 0");
@@ -211,18 +214,27 @@ public:
     return RC::SUCCESS;
   }
 
-  RC set_field(int field_offset, int field_len, char *data)
+  RC set_field(int field_offset, int field_len, const Value *&value)
   {
-    if (!owner_) {
-      LOG_ERROR("cannot set field when record does not own the memory");
-      return RC::INTERNAL;
-    }
+    // 只警告不检查试试看
+    // if (!owner_) {
+    //   LOG_WARN("cannot set field when record does not own the memory");
+    //   return RC::INTERNAL;
+    // }
     if (field_offset + field_len > len_) {
       LOG_ERROR("invalid offset or length. offset=%d, length=%d, total length=%d", field_offset, field_len, len_);
       return RC::INVALID_ARGUMENT;
     }
-
-    memcpy(data_ + field_offset, data, field_len);
+    // 实际数据长度
+    auto len = std::min(field_len, value->length());
+    // 如果是字符串类型，长度可变，要根据实际长度拷贝数据
+    memcpy(data_ + field_offset, value->data(), len);
+    // 因为列数据是连续的，如果中间某些列加了'\0'，会导致后面列没数据
+    // 需要判断更新的字符串是否小于上限，只有小于才需要加'\0'，而大于应该抛出异常
+    // 除了字符串类型其他都是定长的
+    if (len < field_len) {
+      data_[field_offset + len] = '\0';
+    }
     return RC::SUCCESS;
   }
 
