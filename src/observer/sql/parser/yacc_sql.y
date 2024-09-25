@@ -89,6 +89,9 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
         INT_T
         STRING_T
         FLOAT_T
+        NOT
+        NULL_T
+        NULLABLE
         HELP
         EXIT
         DOT //QUOTE
@@ -130,6 +133,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
   char *                                     string;
   int                                        number;
   float                                      floats;
+  bool                                       nullable_info;
 }
 
 %token <number> NUMBER
@@ -146,6 +150,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 %type <string>              relation
 %type <comp>                comp_op
 %type <rel_attr>            rel_attr
+%type <nullable_info>       nullable_constraint
 %type <attr_infos>          attr_def_list
 %type <attr_info>           attr_def
 %type <value_list>          value_list
@@ -336,23 +341,41 @@ attr_def_list:
     ;
     
 attr_def:
-    ID type LBRACE number RBRACE 
+    ID type LBRACE number RBRACE nullable_constraint
     {
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
       $$->name = $1;
       $$->length = $4;
+      $$->nullable = $6;
       free($1);
     }
-    | ID type
+    | ID type nullable_constraint
     {
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
       $$->name = $1;
       $$->length = 4;
+      $$->nullable = $3;  // 处理NULL/NOT NULL标记
       free($1);
     }
     ;
+
+nullable_constraint:
+    NOT NULL_T
+    {
+      $$ = false;  // NOT NULL 对应的可空性为 false
+    }
+    | NULLABLE
+    {
+      $$ = true;  // NULLABLE 对应的可空性为 true
+    }
+    | /* empty */
+    {
+      $$ = true;  // 默认情况为 NOT NULL
+    }
+    ;
+
 number:
     NUMBER {$$ = $1;}
     ;

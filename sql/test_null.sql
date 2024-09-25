@@ -1,0 +1,1 @@
+create table t1(a int not null, b char(4) nullable, c float);
