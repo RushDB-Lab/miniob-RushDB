@@ -105,7 +105,7 @@ public:
       return RC::SUCCESS;
     }
  // 更新最大值
-    if (value.get_float() > value_.get_float()) {  // 假设是 float 类型
+    if (value.compare(value_)>0) {
       value_ = value;
     }
     return RC::SUCCESS;
@@ -133,7 +133,7 @@ public:
     }
 
     // 更新最小值
-    if (value.get_float() < value_.get_float()) {  // 假设是 float 类型
+    if (value.compare(value_)<0) {
       value_ = value;
     }
     return RC::SUCCESS;
