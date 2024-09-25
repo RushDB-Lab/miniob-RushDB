@@ -352,7 +352,7 @@ RC RowRecordPageHandler::delete_record(const RID *rid)
 
 RC RowRecordPageHandler::update_record(const RID &rid, const char *data)
 {
-  ASSERT(rw_mode_ != ReadWriteMode::READ_ONLY, "cannot delete record from page while the page is readonly");
+  ASSERT(rw_mode_ != ReadWriteMode::READ_ONLY, "cannot update record from page while the page is readonly");
 
   if (rid.slot_num >= page_header_->record_capacity) {
     LOG_ERROR("Invalid slot_num %d, exceed page's record capacity, frame=%s, page_header=%s",
@@ -644,6 +644,31 @@ RC RecordFileHandler::delete_record(const RID *rid)
     free_pages_.insert(rid->page_num);
     LOG_TRACE("add free page %d to free page list", rid->page_num);
     lock_.unlock();
+  }
+  return rc;
+}
+
+RC RecordFileHandler::update_record(const char *data, const RID *rid)
+{
+  RC rc = RC::SUCCESS;
+
+  unique_ptr<RecordPageHandler> record_page_handler(RecordPageHandler::create(storage_format_));
+
+  rc = record_page_handler->init(*disk_buffer_pool_, *log_handler_, rid->page_num, ReadWriteMode::READ_WRITE);
+  if (OB_FAIL(rc)) {
+    LOG_ERROR("Failed to init record page handler.page number=%d. rc=%s", rid->page_num, strrc(rc));
+    return rc;
+  }
+
+  rc = record_page_handler->update_record(*rid, data);
+  // 📢 这里注意要清理掉资源，否则会与insert_record中的加锁顺序冲突而可能出现死锁
+  // delete record的加锁逻辑是拿到页面锁，删除指定记录，然后加上和释放record manager锁
+  // insert record是加上 record manager锁，然后拿到指定页面锁再释放record manager锁
+  record_page_handler->cleanup();
+  if (OB_SUCC(rc)) {
+    // 因为这里已经释放了页面锁，并发时，其它线程可能又把该页面填满了，那就不应该再放入 free_pages_
+    // 中。但是这里可以不关心，因为在查找空闲页面时，会自动过滤掉已经满的页面
+    LOG_TRACE("update record on rid{%d,%d} success", rid->page_num, rid->slot_num);
   }
   return rc;
 }
