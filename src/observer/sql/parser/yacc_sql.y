@@ -432,6 +432,9 @@ value:
       free(tmp);
       free($1);
     }
+    |NULL_T {
+      $$ = new Value(NullValue());
+    }
     ;
 storage_format:
     /* empty */

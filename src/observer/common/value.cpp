@@ -20,6 +20,8 @@ See the Mulan PSL v2 for more details. */
 #include "common/lang/string.h"
 #include "common/log/log.h"
 
+Value::Value(NullValue) : attr_type_(AttrType::NULLS) { set_null(); }
+
 Value::Value(int val) { set_int(val); }
 
 Value::Value(float val) { set_float(val); }
@@ -133,6 +135,14 @@ void Value::set_data(char *data, int length)
       LOG_WARN("unknown data type: %d", attr_type_);
     } break;
   }
+}
+
+void Value::set_null()
+{
+  reset();
+  attr_type_      = AttrType::INTS;
+  length_         = 0;
+  value_.is_null_ = true;
 }
 
 void Value::set_int(int val)

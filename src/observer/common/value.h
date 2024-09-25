@@ -20,6 +20,9 @@ See the Mulan PSL v2 for more details. */
 #include "common/type/data_type.h"
 #include "common/type/date_type.h"
 
+class NullValue
+{};
+
 /**
  * @brief 属性的值
  * @ingroup DataType
@@ -36,6 +39,7 @@ public:
   friend class BooleanType;
   friend class CharType;
   friend class DateType;
+  friend class NullType;
 
   Value() = default;
 
@@ -43,6 +47,7 @@ public:
 
   Value(AttrType attr_type, char *data, int length = 4) : attr_type_(attr_type) { this->set_data(data, length); }
 
+  explicit Value(NullValue);
   explicit Value(int val);
   explicit Value(float val);
   explicit Value(bool val);
@@ -112,6 +117,7 @@ public:
   bool   get_boolean() const;
 
 private:
+  void set_null();
   void set_int(int val);
   void set_float(float val);
   void set_date(int val);
@@ -124,6 +130,7 @@ private:
 
   union Val
   {
+    bool    is_null_ = false;
     int32_t int_value_;
     float   float_value_;
     bool    bool_value_;
