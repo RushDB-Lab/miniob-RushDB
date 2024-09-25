@@ -128,6 +128,8 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
   std::vector<ConditionSqlNode> *            condition_list;
   std::vector<RelAttrSqlNode> *              rel_attr_list;
   std::vector<std::string> *                 relation_list;
+  SetClauseSqlNode *                         set_clause;
+  std::vector<SetClauseSqlNode> *            set_clauses;
   char *                                     string;
   int                                        number;
   float                                      floats;
@@ -157,6 +159,8 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 %type <expression>          expression
 %type <expression_list>     expression_list
 %type <expression_list>     group_by
+%type <set_clause>          setClause;
+%type <set_clauses>         setClauses;
 %type <sql_node>            calc_stmt
 %type <sql_node>            select_stmt
 %type <sql_node>            insert_stmt
@@ -433,21 +437,46 @@ delete_stmt:    /*  delete 语句的语法解析树*/
       free($3);
     }
     ;
+
 update_stmt:      /*  update 语句的语法解析树*/
-    UPDATE ID SET ID EQ value where 
+    UPDATE ID SET setClauses where
     {
       $$ = new ParsedSqlNode(SCF_UPDATE);
       $$->update.relation_name = $2;
-      $$->update.attribute_name = $4;
-      $$->update.value = *$6;
-      if ($7 != nullptr) {
-        $$->update.conditions.swap(*$7);
-        delete $7;
+      $$->update.set_clauses.swap(*$4);
+      if ($5 != nullptr) {
+        $$->update.conditions.swap(*$5);
+        delete $5;
       }
       free($2);
-      free($4);
+      delete $4;
     }
     ;
+
+setClauses:
+      setClause
+    {
+      $$ = new std::vector<SetClauseSqlNode>;
+      $$->emplace_back(*$1);
+      delete $1;
+    }
+    | setClauses COMMA setClause
+    {
+      $$->emplace_back(*$3);
+      delete $3;
+    }
+    ;
+
+setClause:
+      ID EQ value
+    {
+      $$ = new SetClauseSqlNode;
+      $$->field_name = $1;
+      $$->value = std::move(*$3);
+      free($1);
+    }
+    ;
+
 select_stmt:        /*  select 语句的语法解析树*/
     SELECT expression_list FROM rel_list where group_by
     {

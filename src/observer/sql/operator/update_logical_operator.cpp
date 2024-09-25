@@ -12,6 +12,7 @@
 
 #include "update_logical_operator.h"
 
-UpdateLogicalOperator::UpdateLogicalOperator(Table *table, const char *attribute_name, const Value *value)
-    : table_(table), attribute_name_(attribute_name), value_(value)
+UpdateLogicalOperator::UpdateLogicalOperator(
+    Table *table, std::vector<FieldMeta> field_metas, std::vector<const Value *> values)
+    : table_(table), field_metas_(std::move(field_metas)), values_(std::move(values))
 {}
