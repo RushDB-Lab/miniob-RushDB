@@ -55,6 +55,11 @@ public:
       span<const AttrInfoSqlNode> attributes, StorageFormat storage_format);
 
   /**
+   * 删除一个表
+   */
+  RC drop();
+
+  /**
    * 打开一个表
    * @param meta_file 保存表元数据的文件完整路径
    * @param base_dir 表所在的文件夹，表记录数据文件、索引数据文件存放位置
@@ -78,6 +83,7 @@ public:
   RC insert_record(Record &record);
   RC delete_record(const Record &record);
   RC delete_record(const RID &rid);
+  RC update_record(const Record &old_record, const Record &new_record);
   RC get_record(const RID &rid, Record &record);
 
   RC recover_insert_record(Record &record);

@@ -18,6 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/lang/memory.h"
 #include "common/type/attr_type.h"
 #include "common/type/data_type.h"
+#include "common/type/date_type.h"
 
 /**
  * @brief 属性的值
@@ -34,6 +35,7 @@ public:
   friend class FloatType;
   friend class BooleanType;
   friend class CharType;
+  friend class DateType;
 
   Value() = default;
 
@@ -115,6 +117,7 @@ public:
 private:
   void set_int(int val);
   void set_float(float val);
+  void set_date(int val);
   void set_string(const char *s, int len = 0);
   void set_string_from_other(const Value &other);
 
