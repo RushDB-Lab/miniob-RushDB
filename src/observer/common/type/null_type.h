@@ -15,7 +15,7 @@ See the Mulan PSL v2 for more details. */
 class NullType : public DataType
 {
 public:
-  NullType() : DataType(AttrType::NULLS) {}
+  NullType() : DataType(AttrType::NO_TYPE_NULLS) {}
 
   ~NullType() override {}
 

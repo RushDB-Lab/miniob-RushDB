@@ -20,7 +20,9 @@ See the Mulan PSL v2 for more details. */
 #include "common/lang/string.h"
 #include "common/log/log.h"
 
-Value::Value(NullValue) : attr_type_(AttrType::NULLS) { set_null(); }
+Value::Value(NullValue) : attr_type_(AttrType::NO_TYPE_NULLS) {
+  set_null();
+}
 
 Value::Value(int val) { set_int(val); }
 
@@ -35,6 +37,7 @@ Value::Value(const Value &other)
   this->attr_type_ = other.attr_type_;
   this->length_    = other.length_;
   this->own_data_  = other.own_data_;
+  this->is_null_   = other.is_null_;
   switch (this->attr_type_) {
     case AttrType::CHARS: {
       set_string_from_other(other);
@@ -52,6 +55,7 @@ Value::Value(Value &&other)
   this->length_    = other.length_;
   this->own_data_  = other.own_data_;
   this->value_     = other.value_;
+  this->is_null_   = other.is_null_;
   other.own_data_  = false;
   other.length_    = 0;
 }
@@ -65,6 +69,7 @@ Value &Value::operator=(const Value &other)
   this->attr_type_ = other.attr_type_;
   this->length_    = other.length_;
   this->own_data_  = other.own_data_;
+  this->is_null_   = other.is_null_;
   switch (this->attr_type_) {
     case AttrType::CHARS: {
       set_string_from_other(other);
@@ -87,6 +92,7 @@ Value &Value::operator=(Value &&other)
   this->length_    = other.length_;
   this->own_data_  = other.own_data_;
   this->value_     = other.value_;
+  this->is_null_   = other.is_null_;
   other.own_data_  = false;
   other.length_    = 0;
   return *this;
@@ -107,6 +113,7 @@ void Value::reset()
   attr_type_ = AttrType::UNDEFINED;
   length_    = 0;
   own_data_  = false;
+  is_null_   = false;
 }
 
 void Value::set_data(char *data, int length)
@@ -137,8 +144,7 @@ void Value::set_data(char *data, int length)
   }
 }
 
-void Value::set_null()
-{
+void Value::set_null() {
   is_null_ = true;
 }
 
@@ -242,6 +248,9 @@ const char *Value::data() const
 
 string Value::to_string() const
 {
+  if (is_null_) {
+    return "NULL";
+  }
   string res;
   RC     rc = DataType::type_instance(this->attr_type_)->to_string(*this, res);
   if (OB_FAIL(rc)) {

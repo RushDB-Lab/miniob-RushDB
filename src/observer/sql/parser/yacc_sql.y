@@ -359,7 +359,15 @@ attr_def:
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
       $$->name = $1;
-      $$->length = 4;
+      if ($$->type == AttrType::INTS) {
+        $$->length = 4;
+      } else if ($$->type == AttrType::FLOATS) {
+        $$->length = 4;
+      } else if ($$->type == AttrType::DATES) {
+        $$->length = 10;
+      } else {
+        ASSERT(false, "$$->type is invalid.");
+      }
       $$->nullable = $3;  // 处理NULL/NOT NULL标记
       if ($$->nullable) {
         $$->length++;

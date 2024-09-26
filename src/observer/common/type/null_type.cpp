@@ -16,9 +16,9 @@ See the Mulan PSL v2 for more details. */
 
 int NullType::compare(const Value &left, const Value &right) const
 {
-  ASSERT(left.attr_type() == AttrType::NULLS, "left type is not a null");
-  ASSERT(right.attr_type() == AttrType::NULLS, "right type is not a null");
-  if (right.attr_type() == AttrType::NULLS) {
+  ASSERT(left.attr_type() == AttrType::NO_TYPE_NULLS, "left type is not a null");
+  ASSERT(right.attr_type() == AttrType::NO_TYPE_NULLS, "right type is not a null");
+  if (right.attr_type() == AttrType::NO_TYPE_NULLS) {
     return 0;
   }
   return INT32_MAX;
@@ -32,41 +32,8 @@ RC NullType::to_string(const Value &val, string &result) const
 
 RC NullType::cast_to(const Value &val, AttrType type, Value &result) const
 {
-  ASSERT(val.attr_type() == AttrType::NULLS, "val type is not a null");
-  switch (type) {
-    case AttrType::UNDEFINED: {
-      return RC::UNIMPLEMENTED;
-    }
-    case AttrType::CHARS: {
-      result.set_string("");
-      break;
-    }
-    case AttrType::INTS: {
-      result.set_int(0);
-      break;
-    }
-    case AttrType::FLOATS: {
-      result.set_float(0.f);
-      break;
-    }
-    case AttrType::BOOLEANS: {
-      result.set_boolean(false);
-      break;
-    }
-    case AttrType::DATES: {
-      result.set_date(0);
-      break;
-    }
-    case AttrType::NULLS: {
-      result.set_null();
-      break;
-    }
-    case AttrType::MAXTYPE: {
-      return RC::UNIMPLEMENTED;
-    }
-    default: {
-      return RC::UNIMPLEMENTED;
-    }
-  }
+  ASSERT(val.attr_type() == AttrType::NO_TYPE_NULLS, "val type is not a null");
+  result.set_type(type);
+  result.set_null();
   return RC::SUCCESS;
 }
