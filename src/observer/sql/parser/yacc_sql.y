@@ -387,7 +387,7 @@ nullable_constraint:
     }
     | /* empty */
     {
-      $$ = true;  // 默认情况为 NOT NULL
+      $$ = false;  // 默认情况为 NOT NULL
     }
     ;
 
