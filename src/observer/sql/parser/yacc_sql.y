@@ -547,6 +547,10 @@ aggr_func_expr:
             $$ = new UnboundAggregateExpr($1, std::move((*$3)[0]));
         }
     }
+    |ID LBRACE  RBRACE
+     {
+        $$ = new UnboundAggregateExpr("max",new StarExpr() );
+     }
     ;
 rel_attr:
     ID {
