@@ -8,6 +8,8 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
+#include <cmath>
+
 #include "common/lang/comparator.h"
 #include "common/log/log.h"
 #include "common/type/char_type.h"
@@ -38,31 +40,11 @@ static RC parse_date(const char *str, int &result)
   return RC::SUCCESS;
 }
 
-static RC parse_int_prefix(const char *str, int &result)
-{
-  char *end_ptr;
-  long  int_val = std::strtol(str, &end_ptr, 10);
-  if (end_ptr == str) {
-    // 输入不是有效的整数格式，则转换为0
-    int_val = 0;
-  }
-  // 注释以支持前缀解析
-  // if (*end_ptr != '\0' && !isspace(*end_ptr)) {
-  //   return RC::INVALID_ARGUMENT;  // 浮点数后应为结尾或空白字符
-  // }
-  // 默认认为 int_val 是否在 int 范围内
-  result = static_cast<int>(int_val);
-  return RC::SUCCESS;
-}
-
 static RC parse_float_prefix(const char *str, float &result)
 {
-  char  *end_ptr;
+  char *end_ptr;
+  // 输入不是有效的整数格式，会转换为 0.0
   double float_val = std::strtod(str, &end_ptr);
-  if (end_ptr == str) {
-    // 输入不是有效的整数格式，则转换为0
-    float_val = 0;
-  }
   // 注释以支持前缀解析
   // if (*end_ptr != '\0' && !isspace(*end_ptr)) {
   //   return RC::INVALID_ARGUMENT;  // 浮点数后应为结尾或空白字符
@@ -103,11 +85,15 @@ RC CharType::cast_to(const Value &val, AttrType type, Value &result) const
     //  如果转换数字溢出怎么处理?（不考虑）
     //  是否考虑十六进制/八进制?（不考虑）
     case AttrType::INTS: {
-      int int_val;
-      RC  rc = parse_int_prefix(val.value_.pointer_value_, int_val);
+      // WHERE id < '1.5a';
+      // 先当浮点数解析，浮点数可以兼容整型，再四舍五入转 int
+      float float_val;
+      RC    rc = parse_float_prefix(val.value_.pointer_value_, float_val);
       if (rc != RC::SUCCESS) {
         return rc;
       }
+      // 四舍五入
+      int int_val = static_cast<int>(std::round(float_val));
       result.set_int(int_val);
     } break;
     case AttrType::FLOATS: {
