@@ -130,7 +130,6 @@ private:
 
   union Val
   {
-    bool    is_null_ = false;
     int32_t int_value_;
     float   float_value_;
     bool    bool_value_;
@@ -139,4 +138,5 @@ private:
 
   /// 是否申请并占有内存, 目前对于 CHARS 类型 own_data_ 为true, 其余类型 own_data_ 为false
   bool own_data_ = false;
+  bool is_null_  = false;
 };

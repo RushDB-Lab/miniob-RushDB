@@ -139,10 +139,7 @@ void Value::set_data(char *data, int length)
 
 void Value::set_null()
 {
-  reset();
-  attr_type_      = AttrType::INTS;
-  length_         = 0;
-  value_.is_null_ = true;
+  is_null_ = true;
 }
 
 void Value::set_int(int val)
