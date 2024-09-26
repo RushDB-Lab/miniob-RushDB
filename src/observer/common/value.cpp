@@ -20,7 +20,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/lang/string.h"
 #include "common/log/log.h"
 
-Value::Value(NullValue) : attr_type_(AttrType::NO_TYPE_NULLS) {
+Value::Value(NullValue) : attr_type_(AttrType::NULLS) {
   set_null();
 }
 

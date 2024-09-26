@@ -16,9 +16,9 @@ See the Mulan PSL v2 for more details. */
 
 int NullType::compare(const Value &left, const Value &right) const
 {
-  ASSERT(left.attr_type() == AttrType::NO_TYPE_NULLS, "left type is not a null");
-  ASSERT(right.attr_type() == AttrType::NO_TYPE_NULLS, "right type is not a null");
-  if (right.attr_type() == AttrType::NO_TYPE_NULLS) {
+  ASSERT(left.attr_type() == AttrType::NULLS, "left type is not a null");
+  ASSERT(right.attr_type() == AttrType::NULLS, "right type is not a null");
+  if (right.attr_type() == AttrType::NULLS) {
     return 0;
   }
   return INT32_MAX;
@@ -32,7 +32,7 @@ RC NullType::to_string(const Value &val, string &result) const
 
 RC NullType::cast_to(const Value &val, AttrType type, Value &result) const
 {
-  ASSERT(val.attr_type() == AttrType::NO_TYPE_NULLS, "val type is not a null");
+  ASSERT(val.attr_type() == AttrType::NULLS, "val type is not a null");
   result.set_type(type);
   result.set_null();
   return RC::SUCCESS;
