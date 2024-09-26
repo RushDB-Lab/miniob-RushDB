@@ -19,9 +19,6 @@
 
 int DateType::compare(const Value &left, const Value &right) const
 {
-  if (right.attr_type() == AttrType::NULLS) {
-    return 1;
-  }
   return common::compare_int((void *)&left.value_.int_value_, (void *)&right.value_.int_value_);
 }
 
