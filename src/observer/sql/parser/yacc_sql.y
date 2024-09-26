@@ -365,7 +365,7 @@ attr_def:
       } else if ($$->type == AttrType::FLOATS) {
         $$->length = 4;
       } else if ($$->type == AttrType::DATES) {
-        $$->length = 10;
+        $$->length = 4;
       } else {
         ASSERT(false, "$$->type is invalid.");
       }

@@ -17,9 +17,6 @@ See the Mulan PSL v2 for more details. */
 int NullType::compare(const Value &left, const Value &right) const
 {
   ASSERT(left.attr_type() == AttrType::NULLS, "left type is not a null");
-  if (right.attr_type() == AttrType::NULLS) {
-    return 0;
-  }
   return -1;
 }
 

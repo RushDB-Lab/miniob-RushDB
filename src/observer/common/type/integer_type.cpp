@@ -16,6 +16,9 @@ See the Mulan PSL v2 for more details. */
 
 int IntegerType::compare(const Value &left, const Value &right) const
 {
+  if (right.attr_type() == AttrType::NULLS) {
+    return 1;
+  }
   ASSERT(left.attr_type() == AttrType::INTS, "left type is not integer");
   ASSERT(right.attr_type() == AttrType::INTS || right.attr_type() == AttrType::FLOATS, "right type is not numeric");
   if (right.attr_type() == AttrType::INTS) {
@@ -52,7 +55,7 @@ RC IntegerType::negative(const Value &val, Value &result) const
 
 RC IntegerType::set_value_from_str(Value &val, const string &data) const
 {
-  RC                rc = RC::SUCCESS;
+  RC           rc = RC::SUCCESS;
   stringstream deserialize_stream;
   deserialize_stream.clear();  // 清理stream的状态，防止多次解析出现异常
   deserialize_stream.str(data);
