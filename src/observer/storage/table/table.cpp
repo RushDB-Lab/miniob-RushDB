@@ -309,6 +309,9 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
     const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
     const Value     &value = values[i];
     if (value.is_null()) {
+      if (!field->nullable()) {
+        return RC::NOT_NULLABLE_VALUE;
+      }
       record_data[field->offset() + field->len() - 1] = 1;
     }
     if (field->type() != value.attr_type()) {
