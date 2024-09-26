@@ -21,7 +21,7 @@ See the Mulan PSL v2 for more details. */
 #include <utility>
 
 UpdateStmt::UpdateStmt(
-    Table *table, std::vector<FieldMeta> field_metas, std::vector<const Value *> values, FilterStmt *filter_stmt)
+    Table *table, std::vector<FieldMeta> field_metas, std::vector<Value> values, FilterStmt *filter_stmt)
     : table_(table), field_metas_(std::move(field_metas)), values_(std::move(values)), filter_stmt_(filter_stmt)
 {}
 
@@ -48,9 +48,9 @@ RC UpdateStmt::create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt)
     return RC::SCHEMA_TABLE_NOT_EXIST;
   }
 
-  auto                       table_meta = table->table_meta();
-  std::vector<FieldMeta>     field_metas;
-  std::vector<const Value *> values;
+  auto                   table_meta = table->table_meta();
+  std::vector<FieldMeta> field_metas;
+  std::vector<Value>     values;
 
   for (auto &clause : update_sql.set_clauses) {
     // check whether the field exists
@@ -61,21 +61,26 @@ RC UpdateStmt::create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt)
     }
 
     // check whether the value valid
-    auto value = &clause.value;
-    if (value->attr_type() == AttrType::INTS && field_meta->type() == AttrType::FLOATS) {
-      // do nothing，但是好像不用考虑类型转换
-    } else if (value->attr_type() != field_meta->type()) {
-      LOG_ERROR("Schema field type mismatch. Field: %s, Expected Type: %s, Provided Type: %s",
-                field_meta->name(),
-                attr_type_to_string(field_meta->type()),
-                attr_type_to_string(value->attr_type()));
-      return RC::SCHEMA_FIELD_TYPE_MISMATCH;
-    } else if (value->length() > field_meta->len()) {
+    auto value = clause.value;
+    if (value.attr_type() != field_meta->type()) {
+      // 尝试转换，发生转换时不考虑数值溢出
+      Value to_value;
+      RC    rc = Value::cast_to(value, field_meta->type(), to_value);
+      if (rc != RC::SUCCESS) {
+        LOG_ERROR("Schema field type mismatch and cast to failed. Field: %s, Expected Type: %s, Provided Type: %s",
+                  field_meta->name(),
+                  attr_type_to_string(field_meta->type()),
+                  attr_type_to_string(value.attr_type()));
+        return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+      }
+      // 转换成功
+      value = std::move(to_value);
+    } else if (value.length() > field_meta->len()) {
       LOG_ERROR("Value length exceeds maximum allowed length for field. Field: %s, Type: %s, Offset: %d, Length: %d, Max Length: %d",
                 field_meta->name(),
                 attr_type_to_string(field_meta->type()),
                 field_meta->offset(),
-                value->length(),
+                value.length(),
                 field_meta->len());
       return RC::VALUE_TOO_LONG;
     }

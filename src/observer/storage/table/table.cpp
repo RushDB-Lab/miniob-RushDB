@@ -312,7 +312,7 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
       Value real_value;
       rc = Value::cast_to(value, field->type(), real_value);
       if (OB_FAIL(rc)) {
-        LOG_WARN("failed to cast value. table name:%s,field name:%s,value:%s ",
+        LOG_WARN("failed to cast value. table name:%s, field name:%s, value:%s",
             table_meta_.name(), field->name(), value.to_string().c_str());
         break;
       }

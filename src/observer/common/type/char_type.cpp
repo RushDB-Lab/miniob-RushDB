@@ -13,6 +13,8 @@ See the Mulan PSL v2 for more details. */
 #include "common/type/char_type.h"
 #include "common/value.h"
 
+static int y, m, d;
+
 static bool check_date(int y, int m, int d)
 {
   // 定义每个月的天数
@@ -21,7 +23,53 @@ static bool check_date(int y, int m, int d)
   bool leap = (y % 400 == 0) || (y % 100 != 0 && y % 4 == 0);
   // 检查年份、月份和日期的合法性
   return (y > 0 && y <= 9999) && (m > 0 && m <= 12) &&
-         (d > 0 && d <= (mon[m] + (m == 2 && leap ? 1 : 0))); // 2月如果是闰年则加1天
+         (d > 0 && d <= (mon[m] + (m == 2 && leap ? 1 : 0)));  // 2月如果是闰年则加1天
+}
+
+static RC parse_date(const char *str, int &result)
+{
+  if (sscanf(str, "%d-%d-%d", &y, &m, &d) != 3) {
+    return RC::INVALID_ARGUMENT;
+  }
+  if (!check_date(y, m, d)) {
+    return RC::INVALID_ARGUMENT;
+  }
+  result = y * 10000 + m * 100 + d;
+  return RC::SUCCESS;
+}
+
+static RC parse_int_prefix(const char *str, int &result)
+{
+  char *end_ptr;
+  long  int_val = std::strtol(str, &end_ptr, 10);
+  if (end_ptr == str) {
+    // 输入不是有效的整数格式，则转换为0
+    int_val = 0;
+  }
+  // 注释以支持前缀解析
+  // if (*end_ptr != '\0' && !isspace(*end_ptr)) {
+  //   return RC::INVALID_ARGUMENT;  // 浮点数后应为结尾或空白字符
+  // }
+  // 默认认为 int_val 是否在 int 范围内
+  result = static_cast<int>(int_val);
+  return RC::SUCCESS;
+}
+
+static RC parse_float_prefix(const char *str, float &result)
+{
+  char  *end_ptr;
+  double float_val = std::strtod(str, &end_ptr);
+  if (end_ptr == str) {
+    // 输入不是有效的整数格式，则转换为0
+    float_val = 0;
+  }
+  // 注释以支持前缀解析
+  // if (*end_ptr != '\0' && !isspace(*end_ptr)) {
+  //   return RC::INVALID_ARGUMENT;  // 浮点数后应为结尾或空白字符
+  // }
+  // 默认认为 float_val 是否在 float 范围内
+  result = static_cast<float>(float_val);
+  return RC::SUCCESS;
 }
 
 int CharType::compare(const Value &left, const Value &right) const
@@ -41,17 +89,37 @@ RC CharType::cast_to(const Value &val, AttrType type, Value &result) const
 {
   switch (type) {
     case AttrType::DATES: {
-      static int y, m, d;
-      if (sscanf(val.value_.pointer_value_, "%d-%d-%d", &y, &m, &d) != 3) {
-        return RC::INVALID_ARGUMENT;
+      int date_val;
+      RC  rc = parse_date(val.value_.pointer_value_, date_val);
+      if (rc != RC::SUCCESS) {
+        return rc;
       }
-      if (!check_date(y, m, d)) {
-        return RC::INVALID_ARGUMENT;
-      }
-      result.attr_type_ = AttrType::DATES;
-      result.set_date(y * 10000 + m * 100 + d);
+      result.set_date(date_val);
     } break;
-    default: return RC::UNIMPLEMENTED;
+    // 字符串转数字
+    //  如果字符串刚好是一个数字，则转换为对应的数字（如'1'转换为1，'2.1'转换为2.1）
+    //  如果字符串的前缀是一个数字，则转换前缀数字部分为数字（如'1a1'转换为1，'2.1a'转换为2.1）
+    //  如果字符串前缀不是任何合法的数字，则转换为0（不需要考虑前导符号 '+' '-'）
+    //  如果转换数字溢出怎么处理?（不考虑）
+    //  是否考虑十六进制/八进制?（不考虑）
+    case AttrType::INTS: {
+      int int_val;
+      RC  rc = parse_int_prefix(val.value_.pointer_value_, int_val);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
+      result.set_int(int_val);
+    } break;
+    case AttrType::FLOATS: {
+      float float_val;
+      RC    rc = parse_float_prefix(val.value_.pointer_value_, float_val);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
+      result.set_float(float_val);
+    } break;
+    default:
+      return RC::UNIMPLEMENTED;
   }
   return RC::SUCCESS;
 }
@@ -62,6 +130,12 @@ int CharType::cast_cost(AttrType type)
     return 0;
   }
   if (type == AttrType::DATES) {
+    return 1;
+  }
+  if (type == AttrType::INTS) {
+    return 1;
+  }
+  if (type == AttrType::FLOATS) {
     return 1;
   }
   return INT32_MAX;

@@ -150,6 +150,7 @@ void Value::set_float(float val)
   value_.float_value_ = val;
   length_             = sizeof(val);
 }
+
 void Value::set_boolean(bool val)
 {
   reset();
