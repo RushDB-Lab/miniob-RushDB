@@ -322,10 +322,12 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
     }
 
     // 判断是否在 NOT NULL 字段设置 NULL 值
-    if (value.is_null() && !field->nullable()) {
-      return RC::NOT_NULLABLE_VALUE;
+    if (value.is_null()) {
+      if (!field->nullable()) {
+        return RC::NOT_NULLABLE_VALUE;
+      }
+      record_data[field->offset() + field->len() - 1] = 1;
     }
-    record_data[field->offset() + field->len() - 1] = value.is_null();
   }
   if (OB_FAIL(rc)) {
     LOG_WARN("failed to make record. table name:%s", table_meta_.name());
