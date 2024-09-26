@@ -20,8 +20,11 @@ int IntegerType::compare(const Value &left, const Value &right) const
   ASSERT(right.attr_type() == AttrType::INTS || right.attr_type() == AttrType::FLOATS, "right type is not numeric");
   if (right.attr_type() == AttrType::INTS) {
     return common::compare_int((void *)&left.value_.int_value_, (void *)&right.value_.int_value_);
-  } else if (right.attr_type() == AttrType::FLOATS) {
-    return common::compare_float((void *)&left.value_.int_value_, (void *)&right.value_.int_value_);
+  }
+  if (right.attr_type() == AttrType::FLOATS) {
+    float left_val  = left.get_float();
+    float right_val = right.get_float();
+    return common::compare_float((void *)&left_val, (void *)&right_val);
   }
   return INT32_MAX;
 }
@@ -83,7 +86,7 @@ int IntegerType::cast_cost(AttrType type)
   return INT32_MAX;  // 不支持转换
 }
 
-RC IntegerType::cast_to(const Value &val, AttrType type, Value &result) const
+RC IntegerType::cast_to(const Value &val, AttrType type, Value &result, bool allow_type_promotion) const
 {
   switch (type) {
     case AttrType::INTS: {

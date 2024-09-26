@@ -97,7 +97,7 @@ int FloatType::cast_cost(AttrType type)
   return INT32_MAX;  // 不支持转换
 }
 
-RC FloatType::cast_to(const Value &val, AttrType type, Value &result) const
+RC FloatType::cast_to(const Value &val, AttrType type, Value &result, bool allow_type_promotion) const
 {
   switch (type) {
     case AttrType::FLOATS: {

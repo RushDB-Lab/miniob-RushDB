@@ -67,7 +67,7 @@ RC CharType::set_value_from_str(Value &val, const string &data) const
   return RC::SUCCESS;
 }
 
-RC CharType::cast_to(const Value &val, AttrType type, Value &result) const
+RC CharType::cast_to(const Value &val, AttrType type, Value &result, bool allow_type_promotion) const
 {
   switch (type) {
     case AttrType::DATES: {
@@ -94,7 +94,7 @@ RC CharType::cast_to(const Value &val, AttrType type, Value &result) const
       }
       int int_val = static_cast<int>(float_val);
       // 是整数
-      if (int_val == float_val) {
+      if (int_val == float_val || !allow_type_promotion) {
         result.set_int(int_val);
       } else {
         // 为浮点数，类型提升

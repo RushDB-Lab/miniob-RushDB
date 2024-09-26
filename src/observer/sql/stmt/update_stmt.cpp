@@ -65,7 +65,8 @@ RC UpdateStmt::create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt)
     if (value.attr_type() != field_meta->type()) {
       // 尝试转换，发生转换时不考虑数值溢出
       Value to_value;
-      RC    rc = Value::cast_to(value, field_meta->type(), to_value);
+      // 更新不允许非目标类型的类型提升
+      RC rc = Value::cast_to(value, field_meta->type(), to_value, false);
       if (rc != RC::SUCCESS) {
         LOG_ERROR("Schema field type mismatch and cast to failed. Field: %s, Expected Type: %s, Provided Type: %s",
                   field_meta->name(),
