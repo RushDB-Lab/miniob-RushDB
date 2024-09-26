@@ -16,6 +16,7 @@ See the Mulan PSL v2 for more details. */
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "common/value.h"
 #include "storage/field/field.h"
@@ -109,7 +110,8 @@ public:
    * @brief 表达式的名字，比如是字段名称，或者用户在执行SQL语句时输入的内容
    */
   virtual const char *name() const { return name_.c_str(); }
-  virtual void        set_name(std::string name) { name_ = name; }
+  virtual void        set_name(std::string name) { name_ = std::move(name); }
+  virtual bool        name_empty() { return name_.empty(); }
 
   /**
    * @brief 表达式在下层算子返回的 chunk 中的位置

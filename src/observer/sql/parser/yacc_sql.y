@@ -65,6 +65,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 
 //标识tokens
 %token  SEMICOLON
+        AS
         BY
         CREATE
         DROP
@@ -147,6 +148,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 %type <value>               value
 %type <number>              number
 %type <string>              relation
+%type <string>              alias
 %type <comp>                comp_op
 %type <rel_attr>            rel_attr
 %type <attr_infos>          attr_def_list
@@ -486,19 +488,27 @@ calc_stmt:
     ;
 
 expression_list:
-    expression
+    expression alias 
     {
       $$ = new std::vector<std::unique_ptr<Expression>>;
+      if (nullptr != $2) {
+        $1->set_name($2);
+      }
       $$->emplace_back($1);
+      free($2);
     }
-    | expression COMMA expression_list
+    | expression alias COMMA expression_list
     {
-      if ($3 != nullptr) {
-        $$ = $3;
+      if ($4 != nullptr) {
+        $$ = $4;
       } else {
         $$ = new std::vector<std::unique_ptr<Expression>>;
       }
-      $$->emplace($$->begin(), $1);
+      if (nullptr != $2) {
+        $1->set_name($2);
+      }
+      $$->emplace_back($1);
+      free($2);
     }
     ;
 expression:
@@ -540,6 +550,18 @@ expression:
     }
     // your code here
     ;
+
+alias:
+    /* empty */ {
+      $$ = nullptr;
+    }
+    | ID {
+      $$ = $1;
+    }
+    | AS ID {
+      $$ = $2;
+    }
+
 aggr_func_expr:
     ID LBRACE expression_list RBRACE
     {
@@ -549,7 +571,7 @@ aggr_func_expr:
             $$ = new UnboundAggregateExpr($1, std::move((*$3)[0]));
         }
     }
-    |ID LBRACE  RBRACE
+    | ID LBRACE  RBRACE
      {
         $$ = new UnboundAggregateExpr("max",new StarExpr() );
      }

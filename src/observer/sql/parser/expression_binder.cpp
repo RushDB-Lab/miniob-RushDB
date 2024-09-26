@@ -443,16 +443,20 @@ RC ExpressionBinder::bind_aggregate_expression(
   auto aggregate_expr = make_unique<AggregateExpr>(aggregate_type, std::move(child_expr));
   // aggregate_expr->set_name(unbound_aggregate_expr->name());
   // set name 阶段
-  string name;
-  switch (aggregate_type) {
-    case AggregateExpr::Type::COUNT: name = "COUNT(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-    case AggregateExpr::Type::SUM: name = "SUM(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-    case AggregateExpr::Type::AVG: name = "AVG(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-    case AggregateExpr::Type::MAX: name = "MAX(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-    case AggregateExpr::Type::MIN: name = "MIN(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-    default: name = "UNKNOWN_AGGREGATE"; break;
+  if (unbound_aggregate_expr->name_empty()) {
+    string name;
+    switch (aggregate_type) {
+      case AggregateExpr::Type::COUNT: name = "COUNT(" + std::string(aggregate_expr->child()->name()) + ")"; break;
+      case AggregateExpr::Type::SUM: name = "SUM(" + std::string(aggregate_expr->child()->name()) + ")"; break;
+      case AggregateExpr::Type::AVG: name = "AVG(" + std::string(aggregate_expr->child()->name()) + ")"; break;
+      case AggregateExpr::Type::MAX: name = "MAX(" + std::string(aggregate_expr->child()->name()) + ")"; break;
+      case AggregateExpr::Type::MIN: name = "MIN(" + std::string(aggregate_expr->child()->name()) + ")"; break;
+      default: name = "UNKNOWN_AGGREGATE"; break;
+    }
+    aggregate_expr->set_name(name);
+  } else {
+    aggregate_expr->set_name(unbound_aggregate_expr->name());
   }
-  aggregate_expr->set_name(name);
   rc = check_aggregate_expression(*aggregate_expr);
   if (OB_FAIL(rc)) {
     return rc;
