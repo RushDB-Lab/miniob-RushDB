@@ -77,7 +77,7 @@ bool FieldMeta::nullable() const { return nullable_; }
 void FieldMeta::desc(std::ostream &os) const
 {
   os << "field name=" << name_ << ", type=" << attr_type_to_string(attr_type_) << ", len=" << attr_len_
-     << ", visible=" << (visible_ ? "yes" : "no");
+     << ", visible=" << (visible_ ? "yes" : "no") << ", nullable=" << (nullable_ ? "yes" : "no");
 }
 
 void FieldMeta::to_json(Json::Value &json_value) const
