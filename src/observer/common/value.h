@@ -91,13 +91,17 @@ public:
   void set_data(const char *data, int length) { this->set_data(const_cast<char *>(data), length); }
   void set_value(const Value &value);
   void set_boolean(bool val);
-  void set_null(){}
+  void set_null() {}
 
-  bool is_null(){return false;}
+  // 判断类型
+public:
+  bool        is_null() { return false; }
+  inline bool is_str() const{ return attr_type_ == AttrType::CHARS; }
 
   string to_string() const;
 
   int compare(const Value &other) const;
+  bool LIKE(const Value &other) const;
 
   const char *data() const;
 
