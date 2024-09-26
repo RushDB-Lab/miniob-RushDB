@@ -379,6 +379,7 @@ RC check_aggregate_expression(AggregateExpr &expression)
     } break;
 
     case AggregateExpr::Type::COUNT:
+
     case AggregateExpr::Type::MAX:
     case AggregateExpr::Type::MIN: {
       // 任何类型都支持

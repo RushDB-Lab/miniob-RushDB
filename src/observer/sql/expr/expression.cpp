@@ -515,6 +515,9 @@ RC ArithmeticExpr::try_get_value(Value &value) const
 UnboundAggregateExpr::UnboundAggregateExpr(const char *aggregate_name, Expression *child)
     : aggregate_name_(aggregate_name), child_(child)
 {}
+UnboundAggregateExpr::UnboundAggregateExpr(const char *aggregate_name, std::unique_ptr<Expression> child)
+    : aggregate_name_(aggregate_name), child_(std::move(child))
+{}
 
 ////////////////////////////////////////////////////////////////////////////////
 AggregateExpr::AggregateExpr(Type type, Expression *child) : aggregate_type_(type), child_(child) {}

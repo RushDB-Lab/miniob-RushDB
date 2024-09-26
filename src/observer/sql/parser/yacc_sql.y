@@ -539,9 +539,13 @@ expression:
     // your code here
     ;
 aggr_func_expr:
-    ID LBRACE expression RBRACE
+    ID LBRACE expression_list RBRACE
     {
-      $$ = new UnboundAggregateExpr($1, $3);
+        if((*$3).size() != 1) {
+           $$ = new UnboundAggregateExpr("max",new StarExpr() );
+        } else {
+            $$ = new UnboundAggregateExpr($1, std::move((*$3)[0]));
+        }
     }
     ;
 rel_attr:
