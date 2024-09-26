@@ -115,6 +115,7 @@ public:
   float  get_float() const;
   string get_string() const;
   bool   get_boolean() const;
+  bool   is_null() const { return is_null_; }
 
 private:
   void set_null();

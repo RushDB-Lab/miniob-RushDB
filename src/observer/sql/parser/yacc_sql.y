@@ -349,6 +349,9 @@ attr_def:
       $$->name = $1;
       $$->length = $4;
       $$->nullable = $6;
+      if ($$->nullable) {
+        $$->length++;
+      }
       free($1);
     }
     | ID type nullable_constraint
@@ -358,6 +361,9 @@ attr_def:
       $$->name = $1;
       $$->length = 4;
       $$->nullable = $3;  // 处理NULL/NOT NULL标记
+      if ($$->nullable) {
+        $$->length++;
+      }
       free($1);
     }
     ;
