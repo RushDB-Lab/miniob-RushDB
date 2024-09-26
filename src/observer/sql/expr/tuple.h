@@ -198,9 +198,7 @@ public:
     const FieldMeta *field_meta = field_expr->field().meta();
     cell.set_type(field_meta->type());
     if (field_meta->nullable()) {
-      auto null_flag = this->record_->data()[field_meta->offset() + field_meta->len() - 1];
-      ASSERT(null_flag == 0 || null_flag == 1, "error null flag value");
-      bool is_null = null_flag == 1;
+      bool is_null = this->record_->data()[field_meta->offset() + field_meta->len() - 1] == 1;
       cell.set_data(this->record_->data() + field_meta->offset(), field_meta->len() - 1);
       cell.set_null(is_null);
     } else {
