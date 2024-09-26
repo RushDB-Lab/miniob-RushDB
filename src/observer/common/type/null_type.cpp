@@ -17,11 +17,10 @@ See the Mulan PSL v2 for more details. */
 int NullType::compare(const Value &left, const Value &right) const
 {
   ASSERT(left.attr_type() == AttrType::NULLS, "left type is not a null");
-  ASSERT(right.attr_type() == AttrType::NULLS, "right type is not a null");
   if (right.attr_type() == AttrType::NULLS) {
     return 0;
   }
-  return INT32_MAX;
+  return -1;
 }
 
 RC NullType::to_string(const Value &val, string &result) const
