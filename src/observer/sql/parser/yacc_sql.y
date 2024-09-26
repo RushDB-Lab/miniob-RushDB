@@ -698,6 +698,7 @@ comp_op:
     | GE { $$ = GREAT_EQUAL; }
     | NE { $$ = NOT_EQUAL; }
     | IS { $$ = OP_IS; }
+    | IS NOT { $$ = OP_IS_NOT; }
     ;
 
 // your code here

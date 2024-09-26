@@ -127,6 +127,13 @@ RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &re
     result = left.is_null();
     return RC::SUCCESS;
   }
+  if (comp_ == OP_IS_NOT) {
+    if (right.attr_type() != AttrType::NULLS) {
+      return RC::NOT_NULL_AFTER_IS;
+    }
+    result = !left.is_null();
+    return RC::SUCCESS;
+  }
 
   RC  rc         = RC::SUCCESS;
   int cmp_result = left.compare(right);
