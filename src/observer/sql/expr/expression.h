@@ -65,7 +65,7 @@ enum class ExprType
 class Expression
 {
 public:
-  Expression()          = default;
+           Expression() = default;
   virtual ~Expression() = default;
 
   /**
@@ -138,8 +138,8 @@ private:
 class StarExpr : public Expression
 {
 public:
-  StarExpr() : table_name_() {}
-  StarExpr(const char *table_name) : table_name_(table_name) {}
+           StarExpr() : table_name_() {}
+           StarExpr(const char *table_name) : table_name_(table_name) {}
   virtual ~StarExpr() = default;
 
   ExprType type() const override { return ExprType::STAR; }
@@ -216,7 +216,7 @@ private:
 class ValueExpr : public Expression
 {
 public:
-  ValueExpr() = default;
+           ValueExpr() = default;
   explicit ValueExpr(const Value &value) : value_(value) {}
 
   virtual ~ValueExpr() = default;
@@ -249,7 +249,7 @@ private:
 class CastExpr : public Expression
 {
 public:
-  CastExpr(std::unique_ptr<Expression> child, AttrType cast_type);
+           CastExpr(std::unique_ptr<Expression> child, AttrType cast_type);
   virtual ~CastExpr();
 
   ExprType type() const override { return ExprType::CAST; }
@@ -277,7 +277,7 @@ private:
 class ComparisonExpr : public Expression
 {
 public:
-  ComparisonExpr(CompOp comp, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right);
+           ComparisonExpr(CompOp comp, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right);
   virtual ~ComparisonExpr();
 
   ExprType type() const override { return ExprType::COMPARISON; }
@@ -331,7 +331,7 @@ public:
   };
 
 public:
-  ConjunctionExpr(Type type, std::vector<std::unique_ptr<Expression>> &children);
+           ConjunctionExpr(Type type, std::vector<std::unique_ptr<Expression>> &children);
   virtual ~ConjunctionExpr() = default;
 
   ExprType type() const override { return ExprType::CONJUNCTION; }
@@ -364,8 +364,8 @@ public:
   };
 
 public:
-  ArithmeticExpr(Type type, Expression *left, Expression *right);
-  ArithmeticExpr(Type type, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right);
+           ArithmeticExpr(Type type, Expression *left, Expression *right);
+           ArithmeticExpr(Type type, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right);
   virtual ~ArithmeticExpr() = default;
 
   bool     equal(const Expression &other) const override;
@@ -408,7 +408,8 @@ private:
 class UnboundAggregateExpr : public Expression
 {
 public:
-  UnboundAggregateExpr(const char *aggregate_name, Expression *child);
+           UnboundAggregateExpr(const char *aggregate_name, Expression *child);
+           UnboundAggregateExpr(const char *aggregate_name, std::unique_ptr<Expression> child);
   virtual ~UnboundAggregateExpr() = default;
 
   ExprType type() const override { return ExprType::UNBOUND_AGGREGATION; }

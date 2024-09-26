@@ -157,6 +157,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 %type <string>              storage_format
 %type <relation_list>       rel_list
 %type <expression>          expression
+%type <expression>          aggr_func_expr
 %type <expression_list>     expression_list
 %type <expression_list>     group_by
 %type <set_clause>          setClause;
@@ -561,9 +562,25 @@ expression:
     | '*' {
       $$ = new StarExpr();
     }
+    | aggr_func_expr {
+      $$ = $1;      // AggrFuncExpr
+    }
     // your code here
     ;
-
+aggr_func_expr:
+    ID LBRACE expression_list RBRACE
+    {
+        if((*$3).size() != 1) {
+           $$ = new UnboundAggregateExpr("max",new StarExpr() );
+        } else {
+            $$ = new UnboundAggregateExpr($1, std::move((*$3)[0]));
+        }
+    }
+    |ID LBRACE  RBRACE
+     {
+        $$ = new UnboundAggregateExpr("max",new StarExpr() );
+     }
+    ;
 rel_attr:
     ID {
       $$ = new RelAttrSqlNode;
