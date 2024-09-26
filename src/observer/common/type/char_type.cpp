@@ -92,9 +92,14 @@ RC CharType::cast_to(const Value &val, AttrType type, Value &result) const
       if (rc != RC::SUCCESS) {
         return rc;
       }
-      // 四舍五入
-      int int_val = static_cast<int>(std::round(float_val));
-      result.set_int(int_val);
+      int int_val = static_cast<int>(float_val);
+      // 是整数
+      if (int_val == float_val) {
+        result.set_int(int_val);
+      } else {
+        // 为浮点数，类型提升
+        result.set_float(float_val);
+      }
     } break;
     case AttrType::FLOATS: {
       float float_val;
