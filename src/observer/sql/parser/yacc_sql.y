@@ -130,7 +130,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
   std::vector<Value> *                       value_list;
   std::vector<ConditionSqlNode> *            condition_list;
   std::vector<RelAttrSqlNode> *              rel_attr_list;
-  std::vector<std::string> *                 relation_list;
+  std::vector<RelationNode> *                relation_list;
   char *                                     string;
   int                                        number;
   float                                      floats;
@@ -507,7 +507,7 @@ expression_list:
       if (nullptr != $2) {
         $1->set_name($2);
       }
-      $$->emplace_back($1);
+      $$->emplace($$->begin(),std::move($1));
       free($2);
     }
     ;
@@ -597,19 +597,29 @@ relation:
     }
     ;
 rel_list:
-    relation {
-      $$ = new std::vector<std::string>();
-      $$->push_back($1);
+    relation alias{
+      $$ = new std::vector<RelationNode>();
+      if(nullptr!=$2){
+        $$->emplace_back($1,$2);
+        free($2);
+      }else{
+        $$->emplace_back($1);
+      }
       free($1);
     }
-    | relation COMMA rel_list {
-      if ($3 != nullptr) {
-        $$ = $3;
+    | relation alias COMMA rel_list {
+      if ($4 != nullptr) {
+        $$ = $4;
       } else {
-        $$ = new std::vector<std::string>;
+        $$ = new std::vector<RelationNode>;
+      }
+      if(nullptr!=$2){
+        $$->insert($$->begin(), RelationNode($1,$2));
+        free($2);
+      }else{
+        $$->insert($$->begin(), RelationNode($1));
       }
 
-      $$->insert($$->begin(), $1);
       free($1);
     }
     ;

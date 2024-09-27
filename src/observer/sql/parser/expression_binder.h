@@ -21,17 +21,23 @@ See the Mulan PSL v2 for more details. */
 class BinderContext
 {
 public:
-  BinderContext()          = default;
+           BinderContext() = default;
   virtual ~BinderContext() = default;
 
   void add_table(Table *table) { query_tables_.push_back(table); }
+
+  void add_table_alias_map(const std::unordered_map<std::string, std::string> &table_alias_map)
+  {
+    table_alias_map_ = table_alias_map;
+  }
 
   Table *find_table(const char *table_name) const;
 
   const std::vector<Table *> &query_tables() const { return query_tables_; }
 
 private:
-  std::vector<Table *> query_tables_;
+  std::vector<Table *>                         query_tables_;
+  std::unordered_map<std::string, std::string> table_alias_map_;  // 修改为普通成员变量
 };
 
 /**
@@ -41,7 +47,7 @@ private:
 class ExpressionBinder
 {
 public:
-  ExpressionBinder(BinderContext &context) : context_(context) {}
+           ExpressionBinder(BinderContext &context) : context_(context) {}
   virtual ~ExpressionBinder() = default;
 
   RC bind_expression(std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions);

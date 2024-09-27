@@ -132,7 +132,7 @@ union YYSTYPE
   std::vector<Value> *                       value_list;
   std::vector<ConditionSqlNode> *            condition_list;
   std::vector<RelAttrSqlNode> *              rel_attr_list;
-  std::vector<std::string> *                 relation_list;
+  std::vector<RelationNode> *                relation_list;
   char *                                     string;
   int                                        number;
   float                                      floats;
