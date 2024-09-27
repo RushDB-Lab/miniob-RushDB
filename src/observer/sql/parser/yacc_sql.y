@@ -106,6 +106,8 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
         EXPLAIN
         STORAGE
         FORMAT
+        INNER
+        JOIN
         EQ
         LT
         GT
@@ -130,6 +132,8 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
   std::vector<std::string> *                 relation_list;
   SetClauseSqlNode *                         set_clause;
   std::vector<SetClauseSqlNode> *            set_clauses;
+  JoinSqlNode *                              join_clause;
+  std::vector<JoinSqlNode> *                 join_clauses;
   char *                                     string;
   int                                        number;
   float                                      floats;
@@ -160,8 +164,10 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 %type <expression>          aggr_func_expr
 %type <expression_list>     expression_list
 %type <expression_list>     group_by
-%type <set_clause>          setClause;
-%type <set_clauses>         setClauses;
+%type <set_clause>          setClause
+%type <set_clauses>         setClauses
+%type <join_clause>         joinClause
+%type <join_clauses>        joinClauses
 %type <sql_node>            calc_stmt
 %type <sql_node>            select_stmt
 %type <sql_node>            insert_stmt
@@ -479,7 +485,7 @@ setClause:
     ;
 
 select_stmt:        /*  select 语句的语法解析树*/
-    SELECT expression_list FROM rel_list where group_by
+      SELECT expression_list FROM rel_list where group_by
     {
       $$ = new ParsedSqlNode(SCF_SELECT);
       if ($2 != nullptr) {
@@ -502,7 +508,39 @@ select_stmt:        /*  select 语句的语法解析树*/
         delete $6;
       }
     }
+    | SELECT expression_list FROM relation INNER JOIN joinClauses where group_by
+    {
+      $$ = new ParsedSqlNode(SCF_SELECT);
+      if ($2 != nullptr) {
+        $$->selection.expressions.swap(*$2);
+        delete $2;
+      }
+
+      if ($4 != nullptr) {
+        $$->selection.relations.emplace_back($4);
+        delete $4;
+      }
+
+      if ($8 != nullptr) {
+        $$->selection.conditions.swap(*$8);
+        delete $8;
+      }
+
+      if ($7 != nullptr) {
+        for (auto &join : *$7) {
+          $$->selection.relations.emplace_back(join.relation);
+          $$->selection.conditions.emplace_back(join.condition);
+        }
+        delete $7;
+      }
+
+      if ($9 != nullptr) {
+        $$->selection.group_by.swap(*$9);
+        delete $9;
+      }
+    }
     ;
+
 calc_stmt:
     CALC expression_list
     {
@@ -601,21 +639,44 @@ relation:
       $$ = $1;
     }
     ;
+
 rel_list:
-    relation {
+      relation
+    {
       $$ = new std::vector<std::string>();
-      $$->push_back($1);
+      $$->emplace_back($1);
       free($1);
     }
-    | relation COMMA rel_list {
-      if ($3 != nullptr) {
-        $$ = $3;
-      } else {
-        $$ = new std::vector<std::string>;
-      }
+    | rel_list COMMA relation
+    {
+      $$->emplace_back($3);
+      delete $3;
+    }
+    ;
 
-      $$->insert($$->begin(), $1);
+joinClause:
+      relation ON condition
+    {
+      $$ = new JoinSqlNode;
+      $$->relation = $1;
+      $$->condition = *$3;
       free($1);
+      delete $3;
+    }
+    ;
+
+joinClauses:
+      joinClause
+    {
+      $$ = new std::vector<JoinSqlNode>;
+      $$->emplace_back(*$1);
+      delete $1;
+    }
+    | joinClause INNER JOIN joinClauses
+    {
+      $$ = $4;
+      $$->emplace_back(*$1);
+      delete $1;
     }
     ;
 

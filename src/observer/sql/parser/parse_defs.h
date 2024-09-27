@@ -85,13 +85,23 @@ struct ConditionSqlNode
  * where 条件 conditions，这里表示使用AND串联起来多个条件。正常的SQL语句会有OR，NOT等，
  * 甚至可以包含复杂的表达式。
  */
-
 struct SelectSqlNode
 {
   std::vector<std::unique_ptr<Expression>> expressions;  ///< 查询的表达式
   std::vector<std::string>                 relations;    ///< 查询的表
   std::vector<ConditionSqlNode>            conditions;   ///< 查询条件，使用AND串联起来多个条件
   std::vector<std::unique_ptr<Expression>> group_by;     ///< group by clause
+};
+
+/**
+ * @brief 描述一个join语句
+ * @ingroup SQLParser
+ * @details 目前只支持 inner join，解析表和条件后直接放到 SelectSqlNode 里。
+ */
+struct JoinSqlNode
+{
+  std::string      relation;   ///< 查询的表
+  ConditionSqlNode condition;  ///< 查询条件
 };
 
 /**
