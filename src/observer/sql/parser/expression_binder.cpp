@@ -89,7 +89,7 @@ RC ExpressionBinder::bind_expression(unique_ptr<Expression> &expr, vector<unique
     } break;
 
     case ExprType::AGGREGATION: {
-      ASSERT(false, "shouldn't be here");
+      return bind_aggregate_expression(expr, bound_expressions);
     } break;
 
     default: {
@@ -379,6 +379,7 @@ RC check_aggregate_expression(AggregateExpr &expression)
     } break;
 
     case AggregateExpr::Type::COUNT:
+
     case AggregateExpr::Type::MAX:
     case AggregateExpr::Type::MIN: {
       // 任何类型都支持
@@ -386,7 +387,7 @@ RC check_aggregate_expression(AggregateExpr &expression)
   }
 
   // 子表达式中不能再包含聚合表达式
-  function<RC(std::unique_ptr<Expression>&)> check_aggregate_expr = [&](unique_ptr<Expression> &expr) -> RC {
+  function<RC(std::unique_ptr<Expression> &)> check_aggregate_expr = [&](unique_ptr<Expression> &expr) -> RC {
     RC rc = RC::SUCCESS;
     if (expr->type() == ExprType::AGGREGATION) {
       LOG_WARN("aggregate expression cannot be nested");
@@ -408,10 +409,10 @@ RC ExpressionBinder::bind_aggregate_expression(
     return RC::SUCCESS;
   }
 
-  auto unbound_aggregate_expr = static_cast<UnboundAggregateExpr *>(expr.get());
-  const char *aggregate_name = unbound_aggregate_expr->aggregate_name();
+  auto                unbound_aggregate_expr = static_cast<UnboundAggregateExpr *>(expr.get());
+  const char         *aggregate_name         = unbound_aggregate_expr->aggregate_name();
   AggregateExpr::Type aggregate_type;
-  RC rc = AggregateExpr::type_from_string(aggregate_name, aggregate_type);
+  RC                  rc = AggregateExpr::type_from_string(aggregate_name, aggregate_type);
   if (OB_FAIL(rc)) {
     LOG_WARN("invalid aggregate name: %s", aggregate_name);
     return rc;
@@ -440,7 +441,22 @@ RC ExpressionBinder::bind_aggregate_expression(
   }
 
   auto aggregate_expr = make_unique<AggregateExpr>(aggregate_type, std::move(child_expr));
-  aggregate_expr->set_name(unbound_aggregate_expr->name());
+  // aggregate_expr->set_name(unbound_aggregate_expr->name());
+  // set name 阶段
+  if (unbound_aggregate_expr->name_empty()) {
+    string name;
+    switch (aggregate_type) {
+      case AggregateExpr::Type::COUNT: name = "COUNT(" + std::string(aggregate_expr->child()->name()) + ")"; break;
+      case AggregateExpr::Type::SUM: name = "SUM(" + std::string(aggregate_expr->child()->name()) + ")"; break;
+      case AggregateExpr::Type::AVG: name = "AVG(" + std::string(aggregate_expr->child()->name()) + ")"; break;
+      case AggregateExpr::Type::MAX: name = "MAX(" + std::string(aggregate_expr->child()->name()) + ")"; break;
+      case AggregateExpr::Type::MIN: name = "MIN(" + std::string(aggregate_expr->child()->name()) + ")"; break;
+      default: name = "UNKNOWN_AGGREGATE"; break;
+    }
+    aggregate_expr->set_name(name);
+  } else {
+    aggregate_expr->set_name(unbound_aggregate_expr->name());
+  }
   rc = check_aggregate_expression(*aggregate_expr);
   if (OB_FAIL(rc)) {
     return rc;

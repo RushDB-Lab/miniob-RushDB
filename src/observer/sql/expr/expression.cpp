@@ -91,7 +91,7 @@ RC CastExpr::cast(const Value &value, Value &cast_value) const
 RC CastExpr::get_value(const Tuple &tuple, Value &result) const
 {
   Value value;
-  RC    rc = child_->get_value(tuple, value);
+  RC rc = child_->get_value(tuple, value);
   if (rc != RC::SUCCESS) {
     return rc;
   }
@@ -102,7 +102,7 @@ RC CastExpr::get_value(const Tuple &tuple, Value &result) const
 RC CastExpr::try_get_value(Value &result) const
 {
   Value value;
-  RC    rc = child_->try_get_value(value);
+  RC rc = child_->try_get_value(value);
   if (rc != RC::SUCCESS) {
     return rc;
   }
@@ -139,7 +139,14 @@ RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &re
     return RC::SUCCESS;
   }
 
-  RC  rc         = RC::SUCCESS;
+  RC rc = RC::SUCCESS;
+
+  if (comp_ == LIKE_OP || comp_ == NOT_LIKE_OP) {
+    ASSERT(left.is_str() && right.is_str(), "LIKE ONLY SUPPORT STRING TYPE!");
+    result = comp_ == LIKE_OP ? left.LIKE(right) : !left.LIKE(right);
+    return rc;
+  }
+
   int cmp_result = left.compare(right);
   result         = false;
   switch (comp_) {
@@ -173,8 +180,8 @@ RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &re
 RC ComparisonExpr::try_get_value(Value &cell) const
 {
   if (left_->type() == ExprType::VALUE && right_->type() == ExprType::VALUE) {
-    ValueExpr   *left_value_expr  = static_cast<ValueExpr *>(left_.get());
-    ValueExpr   *right_value_expr = static_cast<ValueExpr *>(right_.get());
+    ValueExpr *  left_value_expr  = static_cast<ValueExpr *>(left_.get());
+    ValueExpr *  right_value_expr = static_cast<ValueExpr *>(right_.get());
     const Value &left_cell        = left_value_expr->get_value();
     const Value &right_cell       = right_value_expr->get_value();
 

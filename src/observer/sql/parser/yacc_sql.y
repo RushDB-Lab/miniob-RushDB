@@ -65,6 +65,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 
 //标识tokens
 %token  SEMICOLON
+        AS
         BY
         CREATE
         DROP
@@ -115,6 +116,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
         LE
         GE
         NE
+        LIKE
         IS
 
 /** union 中定义各种数据类型，真实生成的代码也是union类型，所以不能有非POD类型的数据 **/
@@ -150,6 +152,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 %type <value>               value
 %type <number>              number
 %type <string>              relation
+%type <string>              alias
 %type <comp>                comp_op
 %type <rel_attr>            rel_attr
 %type <nullable_info>       nullable_constraint
@@ -161,6 +164,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 %type <string>              storage_format
 %type <relation_list>       rel_list
 %type <expression>          expression
+%type <expression>          aggr_func_expr
 %type <expression_list>     expression_list
 %type <expression_list>     group_by
 %type <sql_node>            calc_stmt
@@ -524,19 +528,27 @@ calc_stmt:
     ;
 
 expression_list:
-    expression
+    expression alias
     {
       $$ = new std::vector<std::unique_ptr<Expression>>;
+      if (nullptr != $2) {
+        $1->set_name($2);
+      }
       $$->emplace_back($1);
+      free($2);
     }
-    | expression COMMA expression_list
+    | expression alias COMMA expression_list
     {
-      if ($3 != nullptr) {
-        $$ = $3;
+      if ($4 != nullptr) {
+        $$ = $4;
       } else {
         $$ = new std::vector<std::unique_ptr<Expression>>;
       }
-      $$->emplace($$->begin(), $1);
+      if (nullptr != $2) {
+        $1->set_name($2);
+      }
+      $$->emplace_back($1);
+      free($2);
     }
     ;
 expression:
@@ -573,9 +585,37 @@ expression:
     | '*' {
       $$ = new StarExpr();
     }
+    | aggr_func_expr {
+      $$ = $1;      // AggrFuncExpr
+    }
     // your code here
     ;
 
+alias:
+    /* empty */ {
+      $$ = nullptr;
+    }
+    | ID {
+      $$ = $1;
+    }
+    | AS ID {
+      $$ = $2;
+    }
+
+aggr_func_expr:
+    ID LBRACE expression_list RBRACE
+    {
+        if((*$3).size() != 1) {
+           $$ = new UnboundAggregateExpr("max",new StarExpr() );
+        } else {
+            $$ = new UnboundAggregateExpr($1, std::move((*$3)[0]));
+        }
+    }
+    | ID LBRACE  RBRACE
+     {
+        $$ = new UnboundAggregateExpr("max",new StarExpr() );
+     }
+    ;
 rel_attr:
     ID {
       $$ = new RelAttrSqlNode;
@@ -699,6 +739,8 @@ comp_op:
     | NE { $$ = NOT_EQUAL; }
     | IS { $$ = OP_IS; }
     | IS NOT { $$ = OP_IS_NOT; }
+    | LIKE { $$ = LIKE_OP;}
+    | NOT LIKE {$$ = NOT_LIKE_OP;}
     ;
 
 // your code here

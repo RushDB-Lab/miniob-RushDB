@@ -12,6 +12,8 @@ See the Mulan PSL v2 for more details. */
 // Created by WangYunlai on 2023/06/28.
 //
 
+#include <regex>
+
 #include "common/value.h"
 
 #include "common/lang/comparator.h"
@@ -260,7 +262,23 @@ string Value::to_string() const
   return res;
 }
 
-int Value::compare(const Value &other) const { return DataType::type_instance(this->attr_type_)->compare(*this, other); }
+int Value::compare(const Value &other) const
+{
+  return DataType::type_instance(this->attr_type_)->compare(*this, other);
+}
+
+bool Value::LIKE(const Value &other) const
+{
+  const std::string left_str = this->get_string();
+  const std::string &right_str = other.get_string();
+
+  // 将 SQL 通配符转换为正则表达式
+  std::string regex_str = std::regex_replace(right_str, std::regex("%"), ".*");
+  regex_str = std::regex_replace(regex_str, std::regex("_"), ".");
+
+  std::regex regex_pattern(regex_str);
+  return std::regex_match(left_str, regex_pattern);
+}
 
 int Value::get_int() const
 {
