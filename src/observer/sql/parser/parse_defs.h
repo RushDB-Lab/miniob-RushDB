@@ -52,6 +52,8 @@ enum CompOp
   LESS_THAN,    ///< "<"
   GREAT_EQUAL,  ///< ">="
   GREAT_THAN,   ///< ">"
+  OP_IS,        ///< "IS"
+  OP_IS_NOT,    ///< "IS NOT"
   LIKE_OP,      ///< "like"
   NOT_LIKE_OP,  ///< "not like"
   NO_OP
@@ -157,9 +159,10 @@ struct UpdateSqlNode
  */
 struct AttrInfoSqlNode
 {
-  AttrType    type;    ///< Type of attribute
-  std::string name;    ///< Attribute name
-  size_t      length;  ///< Length of attribute
+  AttrType    type;      ///< Type of attribute
+  std::string name;      ///< Attribute name
+  size_t      length;    ///< Length of attribute
+  bool        nullable;  ///< 字段是否可以为空
 };
 
 /**

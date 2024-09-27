@@ -20,6 +20,9 @@ See the Mulan PSL v2 for more details. */
 #include "common/type/data_type.h"
 #include "common/type/date_type.h"
 
+class NullValue
+{};
+
 /**
  * @brief 属性的值
  * @ingroup DataType
@@ -36,6 +39,7 @@ public:
   friend class BooleanType;
   friend class CharType;
   friend class DateType;
+  friend class NullType;
 
   Value() = default;
 
@@ -43,6 +47,7 @@ public:
 
   Value(AttrType attr_type, char *data, int length = 4) : attr_type_(attr_type) { this->set_data(data, length); }
 
+  explicit Value(NullValue);
   explicit Value(int val);
   explicit Value(float val);
   explicit Value(bool val);
@@ -91,12 +96,7 @@ public:
   void set_data(const char *data, int length) { this->set_data(const_cast<char *>(data), length); }
   void set_value(const Value &value);
   void set_boolean(bool val);
-  void set_null() {}
-
-  // 判断类型
-public:
-  bool        is_null() { return false; }
-  inline bool is_str() const{ return attr_type_ == AttrType::CHARS; }
+  void set_null(bool is_null) { is_null_ = is_null; }
 
   string to_string() const;
 
@@ -117,8 +117,11 @@ public:
   float  get_float() const;
   string get_string() const;
   bool   get_boolean() const;
+  bool   is_null() const { return is_null_; }
+  inline bool is_str() const{ return attr_type_ == AttrType::CHARS; }
 
 private:
+  void set_null();
   void set_int(int val);
   void set_float(float val);
   void set_date(int val);
@@ -139,4 +142,5 @@ private:
 
   /// 是否申请并占有内存, 目前对于 CHARS 类型 own_data_ 为true, 其余类型 own_data_ 为false
   bool own_data_ = false;
+  bool is_null_  = false;
 };

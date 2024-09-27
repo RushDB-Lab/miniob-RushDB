@@ -111,6 +111,8 @@ INT                                     RETURN_TOKEN(INT_T);
 CHAR                                    RETURN_TOKEN(STRING_T);
 FLOAT                                   RETURN_TOKEN(FLOAT_T);
 DATE                                    RETURN_TOKEN(DATE_T); // 增加 DATE 的 token
+NULL                                    RETURN_TOKEN(NULL_T);
+NULLABLE                                RETURN_TOKEN(NULLABLE);
 LOAD                                    RETURN_TOKEN(LOAD);
 DATA                                    RETURN_TOKEN(DATA);
 INFILE                                  RETURN_TOKEN(INFILE);
@@ -120,9 +122,6 @@ BY                                      RETURN_TOKEN(BY);
 AS                                      RETURN_TOKEN(AS);
 STORAGE                                 RETURN_TOKEN(STORAGE);
 FORMAT                                  RETURN_TOKEN(FORMAT);
-LIKE                                    RETURN_TOKEN(LIKE);
-NOT                                     RETURN_TOKEN(NOT);
-{ID}                                    yylval->string=strdup(yytext); RETURN_TOKEN(ID);
 "("                                     RETURN_TOKEN(LBRACE);
 ")"                                     RETURN_TOKEN(RBRACE);
 
@@ -134,6 +133,11 @@ NOT                                     RETURN_TOKEN(NOT);
 "<"                                     RETURN_TOKEN(LT);
 ">="                                    RETURN_TOKEN(GE);
 ">"                                     RETURN_TOKEN(GT);
+NOT                                     RETURN_TOKEN(NOT);
+IS                                      RETURN_TOKEN(IS);
+LIKE                                    RETURN_TOKEN(LIKE);
+
+{ID}                                    yylval->string=strdup(yytext); RETURN_TOKEN(ID);
 
 "+" |
 "-" |

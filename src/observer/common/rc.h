@@ -77,7 +77,9 @@ See the Mulan PSL v2 for more details. */
   DEFINE_RC(LOG_FILE_FULL)               \
   DEFINE_RC(LOG_ENTRY_INVALID)           \
   DEFINE_RC(UNSUPPORTED)                 \
-  DEFINE_RC(VALUE_TOO_LONG)
+  DEFINE_RC(VALUE_TOO_LONG)              \
+  DEFINE_RC(NOT_NULLABLE_VALUE)          \
+  DEFINE_RC(NOT_NULL_AFTER_IS)
 
 enum class RC
 {

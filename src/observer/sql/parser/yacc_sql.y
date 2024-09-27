@@ -91,6 +91,9 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
         STRING_T
         FLOAT_T
         DATE_T
+        NOT
+        NULL_T
+        NULLABLE
         HELP
         EXIT
         DOT //QUOTE
@@ -114,7 +117,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
         GE
         NE
         LIKE
-        NOT
+        IS
 
 /** union 中定义各种数据类型，真实生成的代码也是union类型，所以不能有非POD类型的数据 **/
 %union {
@@ -134,6 +137,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
   char *                                     string;
   int                                        number;
   float                                      floats;
+  bool                                       nullable_info;
 }
 
 %token <number> NUMBER
@@ -151,6 +155,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 %type <string>              alias
 %type <comp>                comp_op
 %type <rel_attr>            rel_attr
+%type <nullable_info>       nullable_constraint
 %type <attr_infos>          attr_def_list
 %type <attr_info>           attr_def
 %type <value_list>          value_list
@@ -342,23 +347,55 @@ attr_def_list:
     ;
     
 attr_def:
-    ID type LBRACE number RBRACE 
+    ID type LBRACE number RBRACE nullable_constraint
     {
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
       $$->name = $1;
       $$->length = $4;
+      $$->nullable = $6;
+      if ($$->nullable) {
+        $$->length++;
+      }
       free($1);
     }
-    | ID type
+    | ID type nullable_constraint
     {
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
       $$->name = $1;
-      $$->length = 4;
+      if ($$->type == AttrType::INTS) {
+        $$->length = 4;
+      } else if ($$->type == AttrType::FLOATS) {
+        $$->length = 4;
+      } else if ($$->type == AttrType::DATES) {
+        $$->length = 4;
+      } else {
+        ASSERT(false, "$$->type is invalid.");
+      }
+      $$->nullable = $3;  // 处理NULL/NOT NULL标记
+      if ($$->nullable) {
+        $$->length++;
+      }
       free($1);
     }
     ;
+
+nullable_constraint:
+    NOT NULL_T
+    {
+      $$ = false;  // NOT NULL 对应的可空性为 false
+    }
+    | NULLABLE
+    {
+      $$ = true;  // NULLABLE 对应的可空性为 true
+    }
+    | /* empty */
+    {
+      $$ = false;  // 默认情况为 NOT NULL
+    }
+    ;
+
 number:
     NUMBER {$$ = $1;}
     ;
@@ -413,6 +450,9 @@ value:
       $$ = new Value(tmp);
       free(tmp);
       free($1);
+    }
+    |NULL_T {
+      $$ = new Value(NullValue());
     }
     ;
 storage_format:
@@ -488,7 +528,7 @@ calc_stmt:
     ;
 
 expression_list:
-    expression alias 
+    expression alias
     {
       $$ = new std::vector<std::unique_ptr<Expression>>;
       if (nullptr != $2) {
@@ -707,6 +747,8 @@ comp_op:
     | LE { $$ = LESS_EQUAL; }
     | GE { $$ = GREAT_EQUAL; }
     | NE { $$ = NOT_EQUAL; }
+    | IS { $$ = OP_IS; }
+    | IS NOT { $$ = OP_IS_NOT; }
     | LIKE { $$ = LIKE_OP;}
     | NOT LIKE {$$ = NOT_LIKE_OP;}
     ;
