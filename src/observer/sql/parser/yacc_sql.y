@@ -527,9 +527,11 @@ select_stmt:        /*  select 语句的语法解析树*/
       }
 
       if ($7 != nullptr) {
-        for (auto &join : *$7) {
-          $$->selection.relations.emplace_back(join.relation);
-          $$->selection.conditions.emplace_back(join.condition);
+        for (auto it = $7->rbegin(); it != $7->rend(); ++it) {
+          $$->selection.relations.emplace_back(it->relation);
+          for (auto &condition : it->conditions) {
+            $$->selection.conditions.emplace_back(condition);
+          }
         }
         delete $7;
       }
@@ -655,11 +657,11 @@ rel_list:
     ;
 
 joinClause:
-      relation ON condition
+      relation ON condition_list
     {
       $$ = new JoinSqlNode;
       $$->relation = $1;
-      $$->condition = *$3;
+      $$->conditions.swap(*$3);
       free($1);
       delete $3;
     }

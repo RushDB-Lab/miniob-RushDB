@@ -33,14 +33,27 @@ Table *BinderContext::find_table(const char *table_name) const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-static void wildcard_fields(Table *table, vector<unique_ptr<Expression>> &expressions)
+static void wildcard_fields(Table *table, vector<unique_ptr<Expression>> &expressions, bool multi_tables = false)
 {
   const TableMeta &table_meta = table->table_meta();
   const int        field_num  = table_meta.field_num();
   for (int i = table_meta.sys_field_num(); i < field_num; i++) {
     Field      field(table, table_meta.field(i));
     FieldExpr *field_expr = new FieldExpr(field);
-    field_expr->set_name(field.field_name());
+    // 这里设置了基类的 name 属性
+    if (multi_tables) {
+      // 多表查询带表名
+      auto table_name = field_expr->table_name();
+      auto field_name = field_expr->field_name();
+      // 创建一个字符数组来存储合并后的字符串
+      char result[256];
+      // 使用 snprintf 合并字符串
+      snprintf(result, sizeof(result), "%s.%s", table_name, field_name);
+      field_expr->set_name(result);
+    } else {
+      // 单表查询不带表名
+      field_expr->set_name(field.field_name());
+    }
     expressions.emplace_back(field_expr);
   }
 }
@@ -126,7 +139,7 @@ RC ExpressionBinder::bind_star_expression(
   }
 
   for (Table *table : tables_to_wildcard) {
-    wildcard_fields(table, bound_expressions);
+    wildcard_fields(table, bound_expressions, multi_tables_);
   }
 
   return RC::SUCCESS;
@@ -161,7 +174,7 @@ RC ExpressionBinder::bind_unbound_field_expression(
   }
 
   if (0 == strcmp(field_name, "*")) {
-    wildcard_fields(table, bound_expressions);
+    wildcard_fields(table, bound_expressions, multi_tables_);
   } else {
     const FieldMeta *field_meta = table->table_meta().field(field_name);
     if (nullptr == field_meta) {
@@ -171,7 +184,17 @@ RC ExpressionBinder::bind_unbound_field_expression(
 
     Field      field(table, field_meta);
     FieldExpr *field_expr = new FieldExpr(field);
-    field_expr->set_name(field_name);
+    // 这里设置了基类的 name 属性
+    if (multi_tables_) {
+      // 创建一个字符数组来存储合并后的字符串
+      char result[256];
+      // 使用 snprintf 合并字符串
+      snprintf(result, sizeof(result), "%s.%s", table_name, field_name);
+      field_expr->set_name(result);
+    } else {
+      // 单表查询不带表名
+      field_expr->set_name(field_name);
+    }
     bound_expressions.emplace_back(field_expr);
   }
 
@@ -181,6 +204,18 @@ RC ExpressionBinder::bind_unbound_field_expression(
 RC ExpressionBinder::bind_field_expression(
     unique_ptr<Expression> &field_expr, vector<unique_ptr<Expression>> &bound_expressions)
 {
+  auto field = static_cast<FieldExpr *>(field_expr.get());
+  // 这里设置了基类的 name 属性
+  if (multi_tables_) {
+    // 多表查询带表名
+    auto table_name = field->table_name();
+    auto field_name = field->field_name();
+    // 创建一个字符数组来存储合并后的字符串
+    char result[256];
+    // 使用 snprintf 合并字符串
+    snprintf(result, sizeof(result), "%s.%s", table_name, field_name);
+    field_expr->set_name(result);
+  }
   bound_expressions.emplace_back(std::move(field_expr));
   return RC::SUCCESS;
 }

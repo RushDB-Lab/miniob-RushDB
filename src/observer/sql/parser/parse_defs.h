@@ -100,8 +100,8 @@ struct SelectSqlNode
  */
 struct JoinSqlNode
 {
-  std::string      relation;   ///< 查询的表
-  ConditionSqlNode condition;  ///< 查询条件
+  std::string                   relation;    ///< 查询的表
+  std::vector<ConditionSqlNode> conditions;  ///< 查询条件，可能有多个
 };
 
 /**

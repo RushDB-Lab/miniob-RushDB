@@ -21,7 +21,7 @@ See the Mulan PSL v2 for more details. */
 class BinderContext
 {
 public:
-  BinderContext()          = default;
+           BinderContext() = default;
   virtual ~BinderContext() = default;
 
   void add_table(Table *table) { query_tables_.push_back(table); }
@@ -41,7 +41,8 @@ private:
 class ExpressionBinder
 {
 public:
-  ExpressionBinder(BinderContext &context) : context_(context) {}
+  ExpressionBinder(BinderContext &context) : context_(context) { multi_tables_ = context_.query_tables().size() > 1; }
+
   virtual ~ExpressionBinder() = default;
 
   RC bind_expression(std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions);
@@ -67,5 +68,6 @@ private:
       std::unique_ptr<Expression> &aggregate_expr, std::vector<std::unique_ptr<Expression>> &bound_expressions);
 
 private:
+    bool multi_tables_;
   BinderContext &context_;
 };
