@@ -15,6 +15,7 @@ See the Mulan PSL v2 for more details. */
 #pragma once
 
 #include <string>
+// #include <utility>
 #include <vector>
 #include <memory>
 
@@ -80,6 +81,17 @@ struct ConditionSqlNode
 };
 
 /**
+ * @brief 描述一个relation的节点
+ */
+struct RelationNode
+{
+  RelationNode(std::string relation_, std::string alias_) : relation(std::move(relation_)), alias(std::move(alias_)) {}
+  explicit RelationNode(std::string relation_) : relation(std::move(relation_)) {}
+  std::string relation;  ///< 查询的表
+  std::string alias;     ///< 该表的别名 (may be NULL)
+};
+
+/**
  * @brief 描述一个select语句
  * @ingroup SQLParser
  * @details 一个正常的select语句描述起来比这个要复杂很多，这里做了简化。
@@ -93,7 +105,7 @@ struct ConditionSqlNode
 struct SelectSqlNode
 {
   std::vector<std::unique_ptr<Expression>> expressions;  ///< 查询的表达式
-  std::vector<std::string>                 relations;    ///< 查询的表
+  std::vector<RelationNode>                relations;    ///< 查询的表
   std::vector<ConditionSqlNode>            conditions;   ///< 查询条件，使用AND串联起来多个条件
   std::vector<std::unique_ptr<Expression>> group_by;     ///< group by clause
 };
