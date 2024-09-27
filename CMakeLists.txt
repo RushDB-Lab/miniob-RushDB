@@ -6,8 +6,6 @@ project(minidb)
 MESSAGE(STATUS "This is Project source dir " ${PROJECT_SOURCE_DIR})
 MESSAGE(STATUS "This is PROJECT_BINARY_DIR dir " ${PROJECT_BINARY_DIR})
 
-SET(DEBUG ON CACHE BOOL "Enable debug mode" FORCE)
-
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 #SET(DEBUG ON CACHE BOOL "Enable debug mode" FORCE)
 
