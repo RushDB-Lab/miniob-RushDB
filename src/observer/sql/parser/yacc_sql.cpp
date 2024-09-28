@@ -2142,7 +2142,7 @@ yyreduce:
 
       if ((yyvsp[-5].string) != nullptr) {
         (yyval.sql_node)->selection.relations.emplace_back((yyvsp[-5].string));
-        delete (yyvsp[-5].string);
+        free((yyvsp[-5].string));
       }
 
       if ((yyvsp[-1].condition_list) != nullptr) {
@@ -2350,7 +2350,7 @@ yyreduce:
 #line 653 "yacc_sql.y"
     {
       (yyval.relation_list)->emplace_back((yyvsp[0].string));
-      delete (yyvsp[0].string);
+      free((yyvsp[0].string));
     }
 #line 2356 "yacc_sql.cpp"
     break;

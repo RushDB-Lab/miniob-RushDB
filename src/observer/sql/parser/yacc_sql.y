@@ -518,7 +518,7 @@ select_stmt:        /*  select 语句的语法解析树*/
 
       if ($4 != nullptr) {
         $$->selection.relations.emplace_back($4);
-        delete $4;
+        free($4);
       }
 
       if ($8 != nullptr) {
@@ -652,7 +652,7 @@ rel_list:
     | rel_list COMMA relation
     {
       $$->emplace_back($3);
-      delete $3;
+      free($3);
     }
     ;
 
