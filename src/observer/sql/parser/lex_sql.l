@@ -122,6 +122,8 @@ ORDER                                   RETURN_TOKEN(ORDER);
 BY                                      RETURN_TOKEN(BY);
 AS                                      RETURN_TOKEN(AS);
 ASC                                     RETURN_TOKEN(ASC);
+IN                                      RETURN_TOKEN(IN);
+EXISTS                                  RETURN_TOKEN(EXISTS);
 STORAGE                                 RETURN_TOKEN(STORAGE);
 FORMAT                                  RETURN_TOKEN(FORMAT);
 "("                                     RETURN_TOKEN(LBRACE);

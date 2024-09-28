@@ -46,16 +46,20 @@ struct RelAttrSqlNode
  */
 enum CompOp
 {
-  EQUAL_TO,     ///< "="
-  LESS_EQUAL,   ///< "<="
-  NOT_EQUAL,    ///< "<>"
-  LESS_THAN,    ///< "<"
-  GREAT_EQUAL,  ///< ">="
-  GREAT_THAN,   ///< ">"
-  OP_IS,        ///< "IS"
-  OP_IS_NOT,    ///< "IS NOT"
-  LIKE_OP,      ///< "like"
-  NOT_LIKE_OP,  ///< "not like"
+  EQUAL_TO,       ///< "="
+  LESS_EQUAL,     ///< "<="
+  NOT_EQUAL,      ///< "<>"
+  LESS_THAN,      ///< "<"
+  GREAT_EQUAL,    ///< ">="
+  GREAT_THAN,     ///< ">"
+  OP_IS,          ///< "IS"
+  OP_IS_NOT,      ///< "IS NOT"
+  LIKE_OP,        ///< "like"
+  NOT_LIKE_OP,    ///< "not like"
+  IN_OP,          ///< "in (sub query)"
+  NOT_IN_OP,      ///< "not in (sub query)"
+  EXISTS_OP,      ///< "exists (sub query)"
+  NOT_EXISTS_OP,  ///< "not exists (sub query)"
   NO_OP
 };
 
@@ -96,8 +100,8 @@ struct RelationNode
  */
 struct OrderBySqlNode
 {
-  std::unique_ptr<Expression> expr   ;
-  bool                        is_asc ;  ///< 默认true 为升序
+  std::unique_ptr<Expression> expr;
+  bool                        is_asc;  ///< 默认true 为升序
 };
 
 /**

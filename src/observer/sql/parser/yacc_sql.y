@@ -70,6 +70,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
         BY
         CREATE
         DROP
+        EXISTS
         GROUP
         ORDER
         TABLE
@@ -90,6 +91,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
         TRX_COMMIT
         TRX_ROLLBACK
         INT_T
+        IN
         STRING_T
         FLOAT_T
         DATE_T
