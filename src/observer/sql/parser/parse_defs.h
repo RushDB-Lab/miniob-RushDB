@@ -86,9 +86,18 @@ struct ConditionSqlNode
 struct RelationNode
 {
   RelationNode(std::string relation_, std::string alias_) : relation(std::move(relation_)), alias(std::move(alias_)) {}
-  explicit RelationNode(std::string relation_) : relation(std::move(relation_)) {}
+  explicit    RelationNode(std::string relation_) : relation(std::move(relation_)) {}
   std::string relation;  ///< 查询的表
   std::string alias;     ///< 该表的别名 (may be NULL)
+};
+
+/**
+ * @brief 描述一个orderby的节点
+ */
+struct OrderBySqlNode
+{
+  std::unique_ptr<Expression> expr   ;
+  bool                        is_asc ;  ///< 默认true 为升序
 };
 
 /**
@@ -108,6 +117,7 @@ struct SelectSqlNode
   std::vector<RelationNode>                relations;    ///< 查询的表
   std::vector<ConditionSqlNode>            conditions;   ///< 查询条件，使用AND串联起来多个条件
   std::vector<std::unique_ptr<Expression>> group_by;     ///< group by clause
+  std::vector<OrderBySqlNode>              order_by;     ///< attributes in order clause
 };
 
 /**

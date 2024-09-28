@@ -32,6 +32,26 @@ Table *BinderContext::find_table(const char *table_name) const
   return *iter;
 }
 
+Table *BinderContext::from_alias_find_table(const char *alias_name) const
+{
+  // 1、空字段肯定做不到
+  if (is_blank(alias_name)) {
+    return nullptr;
+  }
+
+  // 2、通过别名查找表名
+  auto alias_table = table_alias_map_.find(alias_name);  // 查找别名
+
+  // 3、如果没有找到对应的别名，则返回 nullptr
+  if (alias_table == table_alias_map_.end()) {
+    return nullptr;
+  }
+
+  // 4、通过别名找到的表名，调用 find_table() 查找实际的 Table 对象
+  const std::string &table_name = alias_table->second;  // 获取别名对应的表名
+  return find_table(table_name.c_str());
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 static void wildcard_fields(Table *table, vector<unique_ptr<Expression>> &expressions)
 {
@@ -155,8 +175,11 @@ RC ExpressionBinder::bind_unbound_field_expression(
   } else {
     table = context_.find_table(table_name);
     if (nullptr == table) {
-      LOG_INFO("no such table in from list: %s", table_name);
-      return RC::SCHEMA_TABLE_NOT_EXIST;
+      table = context_.from_alias_find_table(table_name);
+      if (nullptr == table) {
+        LOG_INFO("no such table in from list: %s", table_name);
+        return RC::SCHEMA_TABLE_NOT_EXIST;
+      }
     }
   }
 

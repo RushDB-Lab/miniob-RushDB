@@ -33,6 +33,8 @@ public:
 
   Table *find_table(const char *table_name) const;
 
+  Table *from_alias_find_table(const char *alias_name) const;
+
   const std::vector<Table *> &query_tables() const { return query_tables_; }
 
 private:
