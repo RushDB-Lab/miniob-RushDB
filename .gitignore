@@ -29,3 +29,8 @@ docs/book
 ./test.sql
 ./CMakeLists.txt
 #*#
+
+# commitizen
+node_modules
+package.json
+package-lock.json
