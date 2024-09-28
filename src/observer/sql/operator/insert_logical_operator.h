@@ -26,16 +26,15 @@ See the Mulan PSL v2 for more details. */
 class InsertLogicalOperator : public LogicalOperator
 {
 public:
-  InsertLogicalOperator(Table *table, std::vector<Value> values);
-  virtual ~InsertLogicalOperator() = default;
+   InsertLogicalOperator(Table *table, const std::vector<std::vector<Value>> &);
+  ~InsertLogicalOperator() override = default;
 
   LogicalOperatorType type() const override { return LogicalOperatorType::INSERT; }
 
-  Table                    *table() const { return table_; }
-  const std::vector<Value> &values() const { return values_; }
-  std::vector<Value>       &values() { return values_; }
+  Table                                 *table() const { return table_; }
+  const std::vector<std::vector<Value>> &values_list() const { return values_list_; };
 
 private:
-  Table             *table_ = nullptr;
-  std::vector<Value> values_;
+  Table                                 *table_ = nullptr;
+  const std::vector<std::vector<Value>> &values_list_;
 };

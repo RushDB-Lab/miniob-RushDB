@@ -127,6 +127,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
   Expression *                               expression;
   std::vector<std::unique_ptr<Expression>> * expression_list;
   std::vector<Value> *                       value_list;
+  std::vector<std::vector<Value>> *          values_list;
   std::vector<ConditionSqlNode> *            condition_list;
   std::vector<RelAttrSqlNode> *              rel_attr_list;
   std::vector<std::string> *                 relation_list;
@@ -156,6 +157,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 %type <attr_infos>          attr_def_list
 %type <attr_info>           attr_def
 %type <value_list>          value_list
+%type <values_list>         values_list
 %type <condition_list>      where
 %type <condition_list>      condition_list
 %type <string>              storage_format
@@ -374,37 +376,47 @@ type:
     | FLOAT_T  { $$ = static_cast<int>(AttrType::FLOATS); }
     | DATE_T   { $$ = static_cast<int>(AttrType::DATES);  }
     ;
+
 insert_stmt:        /*insert   语句的语法解析树*/
-    INSERT INTO ID VALUES LBRACE value value_list RBRACE 
+      INSERT INTO ID VALUES values_list
     {
       $$ = new ParsedSqlNode(SCF_INSERT);
       $$->insertion.relation_name = $3;
-      if ($7 != nullptr) {
-        $$->insertion.values.swap(*$7);
-        delete $7;
+      if ($5 != nullptr) {
+        $$->insertion.values_list.swap(*$5);
+        delete $5;
       }
-      $$->insertion.values.emplace_back(*$6);
-      std::reverse($$->insertion.values.begin(), $$->insertion.values.end());
-      delete $6;
       free($3);
     }
     ;
 
-value_list:
-    /* empty */
+values_list:
+      LBRACE value_list RBRACE
     {
-      $$ = nullptr;
-    }
-    | COMMA value value_list  { 
-      if ($3 != nullptr) {
-        $$ = $3;
-      } else {
-        $$ = new std::vector<Value>;
-      }
+      $$ = new std::vector<std::vector<Value>>;
       $$->emplace_back(*$2);
       delete $2;
     }
+    | values_list COMMA LBRACE value_list RBRACE
+    {
+      $$->emplace_back(*$4);
+      delete $4;
+    }
+
+value_list:
+      value
+    {
+      $$ = new std::vector<Value>;
+      $$->emplace_back(*$1);
+      delete $1;
+    }
+    | value_list COMMA value
+    {
+      $$->emplace_back(*$3);
+      delete $3;
+    }
     ;
+
 value:
     NUMBER {
       $$ = new Value((int)$1);
@@ -421,6 +433,7 @@ value:
       free($1);
     }
     ;
+
 storage_format:
     /* empty */
     {
