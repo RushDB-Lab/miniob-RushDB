@@ -370,6 +370,8 @@ attr_def:
         $$->length = 4;
       } else if ($$->type == AttrType::DATES) {
         $$->length = 4;
+      } else if ($$->type == AttrType::CHARS) {
+        $$->length = 4;
       } else {
         ASSERT(false, "$$->type is invalid.");
       }
