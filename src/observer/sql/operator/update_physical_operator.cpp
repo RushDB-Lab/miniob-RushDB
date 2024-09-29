@@ -53,6 +53,14 @@ RC UpdatePhysicalOperator::open(Trx *trx)
     new_record.copy_data(old_record.data(), old_record.len());
     for (int i = 0; i < field_metas_.size(); ++i) {
       new_record.set_field(field_metas_[i].offset(), field_metas_[i].len(), values_[i]);
+      if (field_metas_[i].nullable()) {
+        auto null_offset = field_metas_[i].offset() + field_metas_[i].len() - 1;
+        if (values_[i].is_null()) {
+          new_record.data()[null_offset] = '1';
+        } else {
+          new_record.data()[null_offset] = '0';
+        }
+      }
     }
     rc = trx_->update_record(table_, old_record, new_record);
     if (rc != RC::SUCCESS) {
