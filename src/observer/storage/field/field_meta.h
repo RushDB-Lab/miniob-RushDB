@@ -32,12 +32,12 @@ public:
   FieldMeta();
 
   FieldMeta(
-      const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id, bool nullable);
+      const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id, bool nullable = false);
 
   ~FieldMeta() = default;
 
   RC init(
-      const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id, bool nullable);
+      const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id, bool nullable = false);
 
 public:
   const char *name() const;
