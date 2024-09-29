@@ -190,6 +190,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 %type <sql_node>            desc_table_stmt
 %type <sql_node>            create_index_stmt
 %type <sql_node>            drop_index_stmt
+%type <sql_node>            show_index_stmt
 %type <sql_node>            sync_stmt
 %type <sql_node>            begin_stmt
 %type <sql_node>            commit_stmt
@@ -227,6 +228,7 @@ command_wrapper:
   | desc_table_stmt
   | create_index_stmt
   | drop_index_stmt
+  | show_index_stmt
   | sync_stmt
   | begin_stmt
   | commit_stmt
@@ -291,6 +293,16 @@ desc_table_stmt:
       $$ = new ParsedSqlNode(SCF_DESC_TABLE);
       $$->desc_table.relation_name = $2;
       free($2);
+    }
+    ;
+
+show_index_stmt:
+      SHOW INDEX FROM relation
+    {
+      $$ = new ParsedSqlNode(SCF_SHOW_INDEX);
+      ShowIndexSqlNode &show_index = $$->show_index;
+      show_index.relation_name = $4;
+      free($4);
     }
     ;
 

@@ -13,6 +13,7 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include "sql/executor/command_executor.h"
+#include "sql/executor/show_index_executor.h"
 #include "common/log/log.h"
 #include "event/sql_event.h"
 #include "sql/executor/create_index_executor.h"
@@ -60,6 +61,11 @@ RC CommandExecutor::execute(SQLStageEvent *sql_event)
 
     case StmtType::SHOW_TABLES: {
       ShowTablesExecutor executor;
+      rc = executor.execute(sql_event);
+    } break;
+
+    case StmtType::SHOW_INDEX: {
+      ShowIndexExecutor executor;
       rc = executor.execute(sql_event);
     } break;
 

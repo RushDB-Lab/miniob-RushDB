@@ -39,6 +39,7 @@ class Db;
   DEFINE_ENUM_ITEM(DROP_TABLE)   \
   DEFINE_ENUM_ITEM(CREATE_INDEX) \
   DEFINE_ENUM_ITEM(DROP_INDEX)   \
+  DEFINE_ENUM_ITEM(SHOW_INDEX)   \
   DEFINE_ENUM_ITEM(SYNC)         \
   DEFINE_ENUM_ITEM(SHOW_TABLES)  \
   DEFINE_ENUM_ITEM(DESC_TABLE)   \
@@ -86,8 +87,5 @@ public:
 
   virtual StmtType type() const = 0;
 
-public:
   static RC create_stmt(Db *db, ParsedSqlNode &sql_node, Stmt *&stmt);
-
-private:
 };
