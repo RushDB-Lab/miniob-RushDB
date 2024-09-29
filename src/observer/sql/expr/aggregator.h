@@ -26,34 +26,6 @@ public:
   virtual RC evaluate(Value &result)        = 0;
 };
 
-class SumAggregator : public Aggregator
-{
-public:
-  RC accumulate(const Value &value) override
-  {
-    if (value_.attr_type() == AttrType::UNDEFINED) {
-      if (!inited_) {
-        inited_ = true;
-        value_  = value;
-      } else {
-        Value::add(value, value_, value_);
-      }
-    }
-
-    return RC::SUCCESS;
-  }
-
-  RC evaluate(Value &result) override
-  {
-    result = value_;
-    return RC::SUCCESS;
-  }
-
-private:
-  Value value_;  // 累加的和
-  bool  inited_ = false;
-};
-
 class CountAggregator : public Aggregator
 {
 public:
@@ -74,6 +46,34 @@ public:
 
 private:
   int count_ = 0;  // 计数器
+};
+
+class SumAggregator : public Aggregator
+{
+public:
+  RC accumulate(const Value &value) override
+  {
+    if (value.attr_type() != AttrType::UNDEFINED && !value.is_null()) {
+      if (!inited_) {
+        inited_ = true;
+        value_  = value;
+      } else {
+        Value::add(value, value_, value_);
+      }
+    }
+
+    return RC::SUCCESS;
+  }
+
+  RC evaluate(Value &result) override
+  {
+    result = value_;
+    return RC::SUCCESS;
+  }
+
+private:
+  Value value_;  // 累加的和
+  bool  inited_ = false;
 };
 
 class AvgAggregator : public Aggregator
