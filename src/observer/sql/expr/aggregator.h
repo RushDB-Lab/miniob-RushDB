@@ -24,16 +24,34 @@ public:
 
   virtual RC accumulate(const Value &value) = 0;
   virtual RC evaluate(Value &result)        = 0;
-
-protected:
-  Value value_;
 };
 
 class SumAggregator : public Aggregator
 {
 public:
-  RC accumulate(const Value &value) override;
-  RC evaluate(Value &result) override;
+  RC accumulate(const Value &value) override
+  {
+    if (value_.attr_type() == AttrType::UNDEFINED) {
+      if (!inited_) {
+        inited_ = true;
+        value_  = value;
+      } else {
+        Value::add(value, value_, value_);
+      }
+    }
+
+    return RC::SUCCESS;
+  }
+
+  RC evaluate(Value &result) override
+  {
+    result = value_;
+    return RC::SUCCESS;
+  }
+
+private:
+  Value value_;  // 累加的和
+  bool  inited_ = false;
 };
 
 class CountAggregator : public Aggregator
@@ -64,15 +82,17 @@ public:
   RC accumulate(const Value &value) override
   {
     // 类型匹配检查
-    if (value_.attr_type() == AttrType::UNDEFINED && !value.is_null()) {
-      value_ = value;  // 首次赋值
-      count_ = 1;
-      return RC::SUCCESS;
+    if (value.attr_type() != AttrType::UNDEFINED && !value.is_null()) {
+      if (!inited_) {
+        inited_ = true;
+        value_  = value;  // 首次赋值
+      } else {
+        // 累加和计数
+        Value::add(value_, value, value_);
+      }
+      count_++;
     }
 
-    // 累加和计数
-    Value::add(value_, value, value_);
-    count_++;
     return RC::SUCCESS;
   }
 
@@ -83,15 +103,16 @@ public:
     } else {
       // 计算平均值
       Value avg = value_;
-      avg       = Value(avg.get_float() / count_);  // 这里假设 value_ 是 float 类型
+      avg       = Value(avg.get_float() / static_cast<float>(count_));  // 这里假设 value_ 是 float 类型
       result    = avg;
     }
     return RC::SUCCESS;
   }
 
 private:
-  Value value_;      // 累加的和
-  int   count_ = 0;  // 计数器
+  Value value_;       // 累加的和
+  int   count_  = 0;  // 计数器
+  bool  inited_ = false;
 };
 
 class MaxAggregator : public Aggregator
@@ -100,14 +121,18 @@ public:
   RC accumulate(const Value &value) override
   {
     // 首次赋值
-    if (value_.attr_type() == AttrType::UNDEFINED && !value.is_null()) {
-      value_ = value;
-      return RC::SUCCESS;
+    if (value.attr_type() != AttrType::UNDEFINED && !value.is_null()) {
+      if (!inited_) {
+        inited_ = true;
+        value_  = value;
+      } else {
+        // 更新最大值
+        if (value.compare(value_) > 0) {
+          value_ = value;
+        }
+      }
     }
-    // 更新最大值
-    if (value.compare(value_) > 0) {
-      value_ = value;
-    }
+
     return RC::SUCCESS;
   }
 
@@ -119,6 +144,7 @@ public:
 
 private:
   Value value_;  // 最大值
+  bool  inited_ = false;
 };
 
 class MinAggregator : public Aggregator
@@ -127,15 +153,18 @@ public:
   RC accumulate(const Value &value) override
   {
     // 首次赋值
-    if (value_.attr_type() == AttrType::UNDEFINED && !value.is_null()) {
-      value_ = value;
-      return RC::SUCCESS;
+    if (value.attr_type() != AttrType::UNDEFINED && !value.is_null()) {
+      if (!inited_) {
+        inited_ = true;
+        value_  = value;
+      } else {
+        // 更新最大值
+        if (value.compare(value_) < 0) {
+          value_ = value;
+        }
+      }
     }
 
-    // 更新最小值
-    if (value.compare(value_) < 0) {
-      value_ = value;
-    }
     return RC::SUCCESS;
   }
 
@@ -147,4 +176,5 @@ public:
 
 private:
   Value value_;  // 最小值
+  bool  inited_ = false;
 };
