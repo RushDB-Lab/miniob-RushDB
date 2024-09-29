@@ -60,6 +60,10 @@ RC UpdatePhysicalOperator::open(Trx *trx)
         } else {
           new_record.data()[null_offset] = '0';
         }
+      } else {
+        if (values_[i].is_null()) {
+          return RC::NOT_NULLABLE_VALUE;
+        }
       }
     }
     rc = trx_->update_record(table_, old_record, new_record);
