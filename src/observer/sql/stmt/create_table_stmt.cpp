@@ -33,7 +33,8 @@ RC CreateTableStmt::create(Db *db, const CreateTableSqlNode &create_table, Stmt 
   return RC::SUCCESS;
 }
 
-StorageFormat CreateTableStmt::get_storage_format(const char *format_str) {
+StorageFormat CreateTableStmt::get_storage_format(const char *format_str)
+{
   StorageFormat format = StorageFormat::UNKNOWN_FORMAT;
   if (0 == strcasecmp(format_str, "ROW")) {
     format = StorageFormat::ROW_FORMAT;

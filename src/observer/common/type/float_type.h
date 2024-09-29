@@ -20,7 +20,7 @@ See the Mulan PSL v2 for more details. */
 class FloatType : public DataType
 {
 public:
-           FloatType() : DataType(AttrType::FLOATS) {}
+  FloatType() : DataType(AttrType::FLOATS) {}
   virtual ~FloatType() = default;
 
   int compare(const Value &left, const Value &right) const override;

@@ -27,15 +27,18 @@ const static Json::StaticString FIELD_VISIBLE("visible");
 const static Json::StaticString FIELD_FIELD_ID("FIELD_id");
 const static Json::StaticString FIELD_NULLABLE("nullable");
 
-FieldMeta::FieldMeta() : attr_type_(AttrType::UNDEFINED), attr_offset_(-1), attr_len_(0), visible_(false), field_id_(0) {}
+FieldMeta::FieldMeta() : attr_type_(AttrType::UNDEFINED), attr_offset_(-1), attr_len_(0), visible_(false), field_id_(0)
+{}
 
-FieldMeta::FieldMeta(const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id, bool nullable)
+FieldMeta::FieldMeta(
+    const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id, bool nullable)
 {
   [[maybe_unused]] RC rc = this->init(name, attr_type, attr_offset, attr_len, visible, field_id, nullable);
   ASSERT(rc == RC::SUCCESS, "failed to init field meta. rc=%s", strrc(rc));
 }
 
-RC FieldMeta::init(const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id, bool nullable)
+RC FieldMeta::init(
+    const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id, bool nullable)
 {
   if (common::is_blank(name)) {
     LOG_WARN("Name cannot be empty");

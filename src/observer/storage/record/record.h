@@ -102,7 +102,7 @@ struct RIDHash
 class Record
 {
 public:
-   Record() = default;
+  Record() = default;
   ~Record()
   {
     if (owner_ && data_ != nullptr) {

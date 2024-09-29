@@ -22,9 +22,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/lang/string.h"
 #include "common/log/log.h"
 
-Value::Value(NullValue) : attr_type_(AttrType::NULLS) {
-  set_null();
-}
+Value::Value(NullValue) : attr_type_(AttrType::NULLS) { set_null(); }
 
 Value::Value(int val) { set_int(val); }
 
@@ -146,9 +144,7 @@ void Value::set_data(char *data, int length)
   }
 }
 
-void Value::set_null() {
-  is_null_ = true;
-}
+void Value::set_null() { is_null_ = true; }
 
 void Value::set_int(int val)
 {
@@ -270,12 +266,12 @@ int Value::compare(const Value &other) const
 
 bool Value::LIKE(const Value &other) const
 {
-  const std::string left_str = this->get_string();
+  const std::string  left_str  = this->get_string();
   const std::string &right_str = other.get_string();
 
   // 将 SQL 通配符转换为正则表达式
   std::string regex_str = std::regex_replace(right_str, std::regex("%"), ".*");
-  regex_str = std::regex_replace(regex_str, std::regex("_"), ".");
+  regex_str             = std::regex_replace(regex_str, std::regex("_"), ".");
 
   std::regex regex_pattern(regex_str);
   return std::regex_match(left_str, regex_pattern);

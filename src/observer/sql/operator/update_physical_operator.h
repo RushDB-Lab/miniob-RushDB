@@ -45,5 +45,5 @@ private:
   Table                 *table_ = nullptr;
   std::vector<FieldMeta> field_metas_;
   std::vector<Value>     values_;
-  std::vector<Record> records_;
+  std::vector<Record>    records_;
 };

@@ -25,13 +25,13 @@ RC ExpressionIterator::iterate_child_expr(Expression &expr, function<RC(unique_p
   switch (expr.type()) {
     case ExprType::CAST: {
       auto &cast_expr = static_cast<CastExpr &>(expr);
-      rc = callback(cast_expr.child());
+      rc              = callback(cast_expr.child());
     } break;
 
     case ExprType::COMPARISON: {
 
       auto &comparison_expr = static_cast<ComparisonExpr &>(expr);
-      rc = callback(comparison_expr.left());
+      rc                    = callback(comparison_expr.left());
 
       if (OB_SUCC(rc)) {
         rc = callback(comparison_expr.right());
@@ -52,7 +52,7 @@ RC ExpressionIterator::iterate_child_expr(Expression &expr, function<RC(unique_p
     case ExprType::ARITHMETIC: {
 
       auto &arithmetic_expr = static_cast<ArithmeticExpr &>(expr);
-      rc = callback(arithmetic_expr.left());
+      rc                    = callback(arithmetic_expr.left());
       if (OB_SUCC(rc)) {
         rc = callback(arithmetic_expr.right());
       }
@@ -60,7 +60,7 @@ RC ExpressionIterator::iterate_child_expr(Expression &expr, function<RC(unique_p
 
     case ExprType::AGGREGATION: {
       auto &aggregate_expr = static_cast<AggregateExpr &>(expr);
-      rc = callback(aggregate_expr.child());
+      rc                   = callback(aggregate_expr.child());
     } break;
 
     case ExprType::NONE:

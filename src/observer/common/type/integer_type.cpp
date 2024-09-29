@@ -104,11 +104,10 @@ RC IntegerType::cast_to(const Value &val, AttrType type, Value &result, bool all
       // 数字转字符串，不带符号，不考虑长度溢出
       int         int_val = val.get_int();
       std::string str     = int_val < 0 ? std::to_string(-int_val) : std::to_string(int_val);
-      result.set_string(str.c_str()); // 设置字符串结果
+      result.set_string(str.c_str());  // 设置字符串结果
       break;
     } break;
-    default:
-      return RC::UNSUPPORTED;  // 不支持的转换
+    default: return RC::UNSUPPORTED;  // 不支持的转换
   }
   return RC::SUCCESS;
 }

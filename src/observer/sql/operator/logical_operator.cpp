@@ -19,19 +19,13 @@ LogicalOperator::~LogicalOperator() {}
 void LogicalOperator::add_child(std::unique_ptr<LogicalOperator> oper) { children_.emplace_back(std::move(oper)); }
 bool LogicalOperator::can_generate_vectorized_operator(const LogicalOperatorType &type)
 {
-    bool bool_ret = false;
-    switch (type)
-    {
+  bool bool_ret = false;
+  switch (type) {
     case LogicalOperatorType::CALC:
     case LogicalOperatorType::DELETE:
-    case LogicalOperatorType::INSERT:
-        bool_ret = false;
-        break;
-    
-    default:
-        bool_ret = true;
-        break;
-    }
-    return bool_ret;
-}
+    case LogicalOperatorType::INSERT: bool_ret = false; break;
 
+    default: bool_ret = true; break;
+  }
+  return bool_ret;
+}

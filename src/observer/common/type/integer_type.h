@@ -21,7 +21,7 @@ See the Mulan PSL v2 for more details. */
 class IntegerType : public DataType
 {
 public:
-           IntegerType() : DataType(AttrType::INTS) {}
+  IntegerType() : DataType(AttrType::INTS) {}
   virtual ~IntegerType() {}
 
   int compare(const Value &left, const Value &right) const override;

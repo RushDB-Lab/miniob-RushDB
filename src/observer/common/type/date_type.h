@@ -21,7 +21,7 @@
 class DateType : public DataType
 {
 public:
-   DateType() : DataType(AttrType::DATES) {}
+  DateType() : DataType(AttrType::DATES) {}
   ~DateType() override = default;
 
   // 是否需要考虑日期与其它类型的转换？（不需要）

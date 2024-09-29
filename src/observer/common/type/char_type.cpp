@@ -109,8 +109,7 @@ RC CharType::cast_to(const Value &val, AttrType type, Value &result, bool allow_
       }
       result.set_float(float_val);
     } break;
-    default:
-      return RC::UNIMPLEMENTED;
+    default: return RC::UNIMPLEMENTED;
   }
   return RC::SUCCESS;
 }

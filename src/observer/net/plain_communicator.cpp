@@ -237,8 +237,7 @@ RC PlainCommunicator::write_result_internal(SessionEvent *event, bool &need_disc
   }
 
   rc = RC::SUCCESS;
-  if (event->session()->get_execution_mode() == ExecutionMode::CHUNK_ITERATOR
-      && event->session()->used_chunk_mode()) {
+  if (event->session()->get_execution_mode() == ExecutionMode::CHUNK_ITERATOR && event->session()->used_chunk_mode()) {
     rc = write_chunk_result(sql_result);
   } else {
     rc = write_tuple_result(sql_result);
@@ -272,7 +271,7 @@ RC PlainCommunicator::write_result_internal(SessionEvent *event, bool &need_disc
 
 RC PlainCommunicator::write_tuple_result(SqlResult *sql_result)
 {
-  RC rc = RC::SUCCESS;
+  RC     rc    = RC::SUCCESS;
   Tuple *tuple = nullptr;
   while (RC::SUCCESS == (rc = sql_result->next_tuple(tuple))) {
     assert(tuple != nullptr);
@@ -326,7 +325,7 @@ RC PlainCommunicator::write_tuple_result(SqlResult *sql_result)
 
 RC PlainCommunicator::write_chunk_result(SqlResult *sql_result)
 {
-  RC rc = RC::SUCCESS;
+  RC    rc = RC::SUCCESS;
   Chunk chunk;
   while (RC::SUCCESS == (rc = sql_result->next_chunk(chunk))) {
     int col_num = chunk.column_num();

@@ -39,7 +39,8 @@ time_t       last_history_write_time = 0;
 sigjmp_buf   ctrlc_buf;
 bool         ctrlc_flag = false;
 
-void handle_signals(int signo) {
+void handle_signals(int signo)
+{
   if (signo == SIGINT) {
     ctrlc_flag = true;
     siglongjmp(ctrlc_buf, 1);
@@ -61,7 +62,8 @@ char *my_readline(const char *prompt)
     }
   }
 
-  while ( sigsetjmp( ctrlc_buf, 1 ) != 0 );
+  while (sigsetjmp(ctrlc_buf, 1) != 0)
+    ;
 
   if (ctrlc_flag) {
     char *line = (char *)malloc(strlen("exit") + 1);
@@ -114,10 +116,8 @@ char *my_readline(const char *prompt)
 */
 bool is_exit_command(const char *cmd)
 {
-  return 0 == strncasecmp("exit", cmd, 4) 
-      || 0 == strncasecmp("bye", cmd, 3) 
-      || 0 == strncasecmp("\\q", cmd, 2)
-      || 0 == strncasecmp("interrupted", cmd, 11);
+  return 0 == strncasecmp("exit", cmd, 4) || 0 == strncasecmp("bye", cmd, 3) || 0 == strncasecmp("\\q", cmd, 2) ||
+         0 == strncasecmp("interrupted", cmd, 11);
 }
 
 char *read_command()

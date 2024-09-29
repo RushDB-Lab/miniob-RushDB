@@ -100,7 +100,7 @@ public:
 
   string to_string() const;
 
-  int compare(const Value &other) const;
+  int  compare(const Value &other) const;
   bool LIKE(const Value &other) const;
 
   const char *data() const;
@@ -113,12 +113,12 @@ public:
    * 获取对应的值
    * 如果当前的类型与期望获取的类型不符，就会执行转换操作
    */
-  int    get_int() const;
-  float  get_float() const;
-  string get_string() const;
-  bool   get_boolean() const;
-  bool   is_null() const { return is_null_; }
-  inline bool is_str() const{ return attr_type_ == AttrType::CHARS; }
+  int         get_int() const;
+  float       get_float() const;
+  string      get_string() const;
+  bool        get_boolean() const;
+  bool        is_null() const { return is_null_; }
+  inline bool is_str() const { return attr_type_ == AttrType::CHARS; }
 
 private:
   void set_null();

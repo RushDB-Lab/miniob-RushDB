@@ -40,6 +40,6 @@ public:
   Tuple *current_tuple() override { return nullptr; }
 
 private:
-  Table                                *table_ = nullptr;
+  Table                                 *table_ = nullptr;
   const std::vector<std::vector<Value>> &values_list_;
 };

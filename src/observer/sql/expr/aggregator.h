@@ -104,8 +104,8 @@ public:
       value_ = value;
       return RC::SUCCESS;
     }
- // 更新最大值
-    if (value.compare(value_)>0) {
+    // 更新最大值
+    if (value.compare(value_) > 0) {
       value_ = value;
     }
     return RC::SUCCESS;
@@ -133,7 +133,7 @@ public:
     }
 
     // 更新最小值
-    if (value.compare(value_)<0) {
+    if (value.compare(value_) < 0) {
       value_ = value;
     }
     return RC::SUCCESS;
@@ -141,11 +141,10 @@ public:
 
   RC evaluate(Value &result) override
   {
-    result = value_; // 返回最小值
+    result = value_;  // 返回最小值
     return RC::SUCCESS;
   }
 
 private:
-  Value value_; // 最小值
+  Value value_;  // 最小值
 };
-

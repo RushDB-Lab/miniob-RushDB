@@ -78,12 +78,12 @@ void Column::reset()
   if (data_ != nullptr && own_) {
     delete[] data_;
   }
-  data_ = nullptr;
-  count_       = 0;
-  capacity_    = 0;
-  own_         = false;
-  attr_type_   = AttrType::UNDEFINED;
-  attr_len_    = -1;
+  data_      = nullptr;
+  count_     = 0;
+  capacity_  = 0;
+  own_       = false;
+  attr_type_ = AttrType::UNDEFINED;
+  attr_len_  = -1;
 }
 
 RC Column::append_one(char *data) { return append(data, 1); }

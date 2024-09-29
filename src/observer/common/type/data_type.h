@@ -75,7 +75,10 @@ public:
   /**
    * @brief 将 val 转换为 type 类型，并将结果保存到 result 中
    */
-  virtual RC cast_to(const Value &val, AttrType type, Value &result, bool allow_type_promotion = true) const { return RC::UNSUPPORTED; }
+  virtual RC cast_to(const Value &val, AttrType type, Value &result, bool allow_type_promotion = true) const
+  {
+    return RC::UNSUPPORTED;
+  }
 
   /**
    * @brief 将 val 转换为 string，并将结果保存到 result 中

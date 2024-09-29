@@ -119,13 +119,12 @@ RC FloatType::cast_to(const Value &val, AttrType type, Value &result, bool allow
       if (str.back() == '.') {
         str.pop_back();
       }
-      result.set_string(str.c_str()); // 设置字符串结果
+      result.set_string(str.c_str());  // 设置字符串结果
     } break;
     case AttrType::BOOLEANS: {
       result.set_boolean(val.get_float() != 0.0f);  // 非零为 true，零为 false
     } break;
-    default:
-      return RC::UNSUPPORTED; // 不支持的转换
+    default: return RC::UNSUPPORTED;  // 不支持的转换
   }
   return RC::SUCCESS;
 }

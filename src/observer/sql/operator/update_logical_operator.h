@@ -22,7 +22,7 @@ class UpdateLogicalOperator : public LogicalOperator
 {
 public:
   explicit UpdateLogicalOperator(Table *table, std::vector<FieldMeta> field_metas, std::vector<Value> values);
-  ~        UpdateLogicalOperator() override = default;
+  ~UpdateLogicalOperator() override = default;
 
   LogicalOperatorType           type() const override { return LogicalOperatorType::UPDATE; }
   Table                        *table() const { return table_; }
