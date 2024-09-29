@@ -42,7 +42,7 @@ public:
   RC accumulate(const Value &value) override
   {
     // 只要传入的值类型不为未定义，就增加计数
-    if (value.attr_type() != AttrType::UNDEFINED) {
+    if (value.attr_type() != AttrType::UNDEFINED && !value.is_null()) {
       count_++;
     }
     return RC::SUCCESS;
@@ -64,7 +64,7 @@ public:
   RC accumulate(const Value &value) override
   {
     // 类型匹配检查
-    if (value_.attr_type() == AttrType::UNDEFINED) {
+    if (value_.attr_type() == AttrType::UNDEFINED && !value.is_null()) {
       value_ = value;  // 首次赋值
       count_ = 1;
       return RC::SUCCESS;
@@ -100,7 +100,7 @@ public:
   RC accumulate(const Value &value) override
   {
     // 首次赋值
-    if (value_.attr_type() == AttrType::UNDEFINED) {
+    if (value_.attr_type() == AttrType::UNDEFINED && !value.is_null()) {
       value_ = value;
       return RC::SUCCESS;
     }
@@ -127,7 +127,7 @@ public:
   RC accumulate(const Value &value) override
   {
     // 首次赋值
-    if (value_.attr_type() == AttrType::UNDEFINED) {
+    if (value_.attr_type() == AttrType::UNDEFINED && !value.is_null()) {
       value_ = value;
       return RC::SUCCESS;
     }
