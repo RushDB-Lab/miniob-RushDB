@@ -26,7 +26,7 @@ RC NullType::to_string(const Value &val, string &result) const
   return RC::SUCCESS;
 }
 
-RC NullType::cast_to(const Value &val, AttrType type, Value &result) const
+RC NullType::cast_to(const Value &val, AttrType type, Value &result, bool allow_type_promotion) const
 {
   ASSERT(val.attr_type() == AttrType::NULLS, "val type is not a null");
   result.set_type(type);

@@ -137,7 +137,6 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
   std::vector<ConditionSqlNode> *            condition_list;
   std::vector<RelAttrSqlNode> *              rel_attr_list;
   std::vector<RelationNode> *                relation_list;
-  std::vector<std::string> *                 relation_list;
   SetClauseSqlNode *                         set_clause;
   std::vector<SetClauseSqlNode> *            set_clauses;
   JoinSqlNode *                              join_clause;
@@ -723,7 +722,7 @@ relation:
     ;
 
 rel_list:
-    relation alias{
+    relation alias {
       $$ = new std::vector<RelationNode>();
       if(nullptr!=$2){
         $$->emplace_back($1,$2);
@@ -731,18 +730,8 @@ rel_list:
       }else{
         $$->emplace_back($1);
       }
-      relation
-    {
-      $$ = new std::vector<std::string>();
-      $$->emplace_back($1);
       free($1);
     }
-    | rel_list COMMA relation
-    {
-      $$->emplace_back($3);
-      free($3);
-    }
-    ;
     | relation alias COMMA rel_list {
       if ($4 != nullptr) {
         $$ = $4;
@@ -755,6 +744,10 @@ rel_list:
       }else{
         $$->insert($$->begin(), RelationNode($1));
       }
+
+      free($1);
+    }
+    ;
 
 joinClause:
       relation ON condition_list
