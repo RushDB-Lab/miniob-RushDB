@@ -459,6 +459,8 @@ RC ExpressionBinder::bind_aggregate_expression(
   if (child_expr->type() == ExprType::STAR && aggregate_type == AggregateExpr::Type::COUNT) {
     ValueExpr *value_expr = new ValueExpr(Value(1));
     child_expr.reset(value_expr);
+    // count(*) 输出星号
+    child_expr->set_name("*");
   } else {
     rc = bind_expression(child_expr, child_bound_expressions);
     if (OB_FAIL(rc)) {
