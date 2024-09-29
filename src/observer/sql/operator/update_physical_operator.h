@@ -24,15 +24,15 @@ class UpdateStmt;
 class UpdatePhysicalOperator : public PhysicalOperator
 {
 public:
-  UpdatePhysicalOperator(Table *table, const char *attribute_name, const Value *value)
-      : table_(table), attribute_name_(attribute_name), value_(value)
+  UpdatePhysicalOperator(Table *table, std::vector<FieldMeta> field_metas, std::vector<Value> values)
+      : table_(table), field_metas_(std::move(field_metas)), values_(std::move(values))
   {}
 
-  virtual ~UpdatePhysicalOperator() = default;
+  ~UpdatePhysicalOperator() override = default;
 
-  PhysicalOperatorType type() const override { return PhysicalOperatorType::UPDATE; }
-  const char          *attribute_name() const { return attribute_name_; }
-  const Value         *value() const { return value_; }
+  PhysicalOperatorType          type() const override { return PhysicalOperatorType::UPDATE; }
+  const std::vector<FieldMeta> &field_metas() const { return field_metas_; }
+  const std::vector<Value>     &values() const { return values_; }
 
   RC open(Trx *trx) override;
   RC next() override;
@@ -41,9 +41,9 @@ public:
   Tuple *current_tuple() override { return nullptr; }
 
 private:
-  Table              *table_          = nullptr;
-  const char         *attribute_name_ = nullptr;
-  Trx                *trx_            = nullptr;
-  const Value        *value_          = nullptr;
+  Trx                   *trx_   = nullptr;
+  Table                 *table_ = nullptr;
+  std::vector<FieldMeta> field_metas_;
+  std::vector<Value>     values_;
   std::vector<Record> records_;
 };

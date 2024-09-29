@@ -1,0 +1,32 @@
+-- echo initialization
+create table student (id int, name char(9), major char(32));
+insert into student values (0, 'KangKanga', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+insert into student values (1, 'TomTomTom', 'Computer ScienceComputer Science');
+insert into student values (2, 'JerryJerr', 'Computer ScienceComputer Science');
+insert into student values (3, 'JackJackJ', 'Electrical Engineeringer Science');
+insert into student values (3, 'JerryJerr', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+
+-- echo 1. update a row
+update student set major = 'Electrical Engineering' where id = 2;
+-- sort select * from student where id >= 1;
+-- sort select * from student where id = 0;
+
+-- echo 2. update non-existent row
+update student set id = 100 where name = 'JerryJerry';
+-- sort select * from student where id > 2;
+-- sort select * from student where id < 101;
+
+-- echo 3. update rows
+update student set name = '12345678' where id < 3;
+-- sort select * from student where id = 2;
+-- sort select * from student where name = '12345678';
+
+-- echo 4. update rows again
+update student set name = '9876543210' where id < 3;
+-- sort select * from student where id = 2;
+-- sort select * from student where name = '9876543210';
+
+-- echo 5. update multiple columns
+update student set name = 'MulName', id = 666, major = 'MulMajor' where id = 1;
+-- sort select * from student where id = 1;
+-- sort select * from student where name = 'MulName' and major = 'MulMajor';

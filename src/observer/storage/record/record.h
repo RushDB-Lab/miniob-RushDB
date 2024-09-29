@@ -102,7 +102,7 @@ struct RIDHash
 class Record
 {
 public:
-  Record() = default;
+   Record() = default;
   ~Record()
   {
     if (owner_ && data_ != nullptr) {
@@ -214,7 +214,7 @@ public:
     return RC::SUCCESS;
   }
 
-  RC set_field(int field_offset, int field_len, const Value *&value)
+  RC set_field(int field_offset, int field_len, const Value &value)
   {
     // 只警告不检查试试看
     // if (!owner_) {
@@ -226,9 +226,9 @@ public:
       return RC::INVALID_ARGUMENT;
     }
     // 实际数据长度
-    auto len = std::min(field_len, value->length());
+    auto len = std::min(field_len, value.length());
     // 如果是字符串类型，长度可变，要根据实际长度拷贝数据
-    memcpy(data_ + field_offset, value->data(), len);
+    memcpy(data_ + field_offset, value.data(), len);
     // 因为列数据是连续的，如果中间某些列加了'\0'，会导致后面列没数据
     // 需要判断更新的字符串是否小于上限，只有小于才需要加'\0'，而大于应该抛出异常
     // 除了字符串类型其他都是定长的

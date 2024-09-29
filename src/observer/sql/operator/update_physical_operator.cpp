@@ -44,15 +44,16 @@ RC UpdatePhysicalOperator::open(Trx *trx)
 
   child->close();
 
-  const FieldMeta *field_meta = table_->table_meta().field(attribute_name_);
   // 先收集记录再更新
   // 记录的有效性由事务来保证，如果事务不保证删除的有效性，那说明此事务类型不支持并发控制，比如VacuousTrx
+  Record new_record;
   for (Record &old_record : records_) {
-    Record new_record;
     // rid 得手动拷贝
     new_record.set_rid(old_record.rid());
     new_record.copy_data(old_record.data(), old_record.len());
-    new_record.set_field(field_meta->offset(), field_meta->len(), value_);
+    for (int i = 0; i < field_metas_.size(); ++i) {
+      new_record.set_field(field_metas_[i].offset(), field_metas_[i].len(), values_[i]);
+    }
     rc = trx_->update_record(table_, old_record, new_record);
     if (rc != RC::SUCCESS) {
       LOG_WARN("failed to update record: %s", strrc(rc));

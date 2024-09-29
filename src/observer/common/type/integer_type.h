@@ -35,28 +35,6 @@ public:
 
   RC to_string(const Value &val, string &result) const override;
 
-  int cast_cost(AttrType type) override
-  {
-    if (type == AttrType::INTS)
-      return 0;  // INT -> INT
-    if (type == AttrType::FLOATS)
-      return 1;  // INT -> FLOAT
-    if (type == AttrType::BOOLEANS)
-      return 1;        // INT -> BOOL (非严格转换)
-    return INT32_MAX;  // 不支持转换
-  }
-  RC cast_to(const Value &val, AttrType type, Value &result) const override
-  {
-    if (type == AttrType::INTS) {
-      result.set_int(val.get_int());
-      return RC::SUCCESS;
-    } else if (type == AttrType::FLOATS) {
-      result.set_float(static_cast<float>(val.get_int()));  // 转换为浮点数
-      return RC::SUCCESS;
-    } else if (type == AttrType::BOOLEANS) {
-      result.set_boolean(val.get_int() != 0);  // 0 为 false，其他为 true
-      return RC::SUCCESS;
-    }
-    return RC::UNSUPPORTED;  // 不支持的转换
-  }
+  int cast_cost(AttrType type) override;
+  RC  cast_to(const Value &val, AttrType type, Value &result, bool allow_type_promotion = true) const override;
 };

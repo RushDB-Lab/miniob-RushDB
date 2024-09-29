@@ -101,13 +101,23 @@ struct RelationNode
  * where 条件 conditions，这里表示使用AND串联起来多个条件。正常的SQL语句会有OR，NOT等，
  * 甚至可以包含复杂的表达式。
  */
-
 struct SelectSqlNode
 {
   std::vector<std::unique_ptr<Expression>> expressions;  ///< 查询的表达式
   std::vector<RelationNode>                relations;    ///< 查询的表
   std::vector<ConditionSqlNode>            conditions;   ///< 查询条件，使用AND串联起来多个条件
   std::vector<std::unique_ptr<Expression>> group_by;     ///< group by clause
+};
+
+/**
+ * @brief 描述一个join语句
+ * @ingroup SQLParser
+ * @details 目前只支持 inner join，解析表和条件后直接放到 SelectSqlNode 里。
+ */
+struct JoinSqlNode
+{
+  std::string                   relation;    ///< 查询的表
+  std::vector<ConditionSqlNode> conditions;  ///< 查询条件，可能有多个
 };
 
 /**
@@ -126,8 +136,8 @@ struct CalcSqlNode
  */
 struct InsertSqlNode
 {
-  std::string        relation_name;  ///< Relation to insert into
-  std::vector<Value> values;         ///< 要插入的值
+  std::string                     relation_name;  ///< Relation to insert into
+  std::vector<std::vector<Value>> values_list;    ///< 要插入的值列表
 };
 
 /**
@@ -141,14 +151,23 @@ struct DeleteSqlNode
 };
 
 /**
+ * @brief 描述一个set语句
+ * @ingroup SQLParser
+ */
+struct SetClauseSqlNode
+{
+  std::string field_name;  ///< 更新的字段
+  Value       value;       ///< 更新的值
+};
+
+/**
  * @brief 描述一个update语句
  * @ingroup SQLParser
  */
 struct UpdateSqlNode
 {
-  std::string                   relation_name;   ///< Relation to update
-  std::string                   attribute_name;  ///< 更新的字段，仅支持一个字段
-  Value                         value;           ///< 更新的值，仅支持一个字段
+  std::string                   relation_name;  ///< Relation to update
+  std::vector<SetClauseSqlNode> set_clauses;    ///< 更新的set语句，支持多个字段和值
   std::vector<ConditionSqlNode> conditions;
 };
 

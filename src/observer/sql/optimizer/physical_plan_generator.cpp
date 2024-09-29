@@ -249,9 +249,7 @@ RC PhysicalPlanGenerator::create_plan(ProjectLogicalOperator &project_oper, uniq
 
 RC PhysicalPlanGenerator::create_plan(InsertLogicalOperator &insert_oper, unique_ptr<PhysicalOperator> &oper)
 {
-  Table                  *table           = insert_oper.table();
-  vector<Value>          &values          = insert_oper.values();
-  InsertPhysicalOperator *insert_phy_oper = new InsertPhysicalOperator(table, std::move(values));
+  auto insert_phy_oper = new InsertPhysicalOperator(insert_oper.table(), insert_oper.values_list());
   oper.reset(insert_phy_oper);
   return RC::SUCCESS;
 }
@@ -298,8 +296,7 @@ RC PhysicalPlanGenerator::create_plan(UpdateLogicalOperator &update_oper, std::u
     }
   }
 
-  oper = unique_ptr<PhysicalOperator>(
-      new UpdatePhysicalOperator(update_oper.table(), update_oper.attribute_name(), update_oper.values()));
+  oper = std::make_unique<UpdatePhysicalOperator>(update_oper.table(), update_oper.field_metas(), update_oper.values());
 
   if (child_physical_oper) {
     oper->add_child(std::move(child_physical_oper));

@@ -86,9 +86,9 @@ public:
     return DataType::type_instance(result.attr_type())->negative(value, result);
   }
 
-  static RC cast_to(const Value &value, AttrType to_type, Value &result)
+  static RC cast_to(const Value &value, AttrType to_type, Value &result, bool allow_type_promotion = true)
   {
-    return DataType::type_instance(value.attr_type())->cast_to(value, to_type, result);
+    return DataType::type_instance(value.attr_type())->cast_to(value, to_type, result, allow_type_promotion);
   }
 
   void set_type(AttrType type) { this->attr_type_ = type; }

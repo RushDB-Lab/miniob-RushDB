@@ -28,3 +28,8 @@ GTAGS
 docs/book
 test_sql
 #*#
+
+# commitizen
+node_modules
+package.json
+package-lock.json

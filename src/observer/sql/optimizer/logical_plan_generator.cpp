@@ -237,10 +237,7 @@ int LogicalPlanGenerator::implicit_cast_cost(AttrType from, AttrType to)
 
 RC LogicalPlanGenerator::create_plan(InsertStmt *insert_stmt, unique_ptr<LogicalOperator> &logical_operator)
 {
-  Table        *table = insert_stmt->table();
-  vector<Value> values(insert_stmt->values(), insert_stmt->values() + insert_stmt->value_amount());
-
-  InsertLogicalOperator *insert_operator = new InsertLogicalOperator(table, values);
+  auto insert_operator = new InsertLogicalOperator(insert_stmt->table(), insert_stmt->values_list());
   logical_operator.reset(insert_operator);
   return RC::SUCCESS;
 }
@@ -273,11 +270,12 @@ RC LogicalPlanGenerator::create_plan(DeleteStmt *delete_stmt, unique_ptr<Logical
 
 RC LogicalPlanGenerator::create_plan(UpdateStmt *update_stmt, unique_ptr<LogicalOperator> &logical_operator)
 {
-  Table                      *table          = update_stmt->table();
-  const char                 *attribute_name = update_stmt->attribute_name();
-  const Value                *value          = update_stmt->values();  // 目前只用支持一个值
-  FilterStmt                 *filter_stmt    = update_stmt->filter_stmt();
-  unique_ptr<LogicalOperator> table_get_oper(new TableGetLogicalOperator(table, ReadWriteMode::READ_WRITE));
+  auto  table       = update_stmt->table();
+  auto &field_metas = update_stmt->field_metas();
+  auto &values      = update_stmt->values();  // 支持了多个值
+  auto  filter_stmt = update_stmt->filter_stmt();
+
+  auto table_get_oper = std::make_unique<TableGetLogicalOperator>(table, ReadWriteMode::READ_WRITE);
 
   unique_ptr<LogicalOperator> predicate_oper;
 
@@ -286,7 +284,7 @@ RC LogicalPlanGenerator::create_plan(UpdateStmt *update_stmt, unique_ptr<Logical
     return rc;
   }
 
-  unique_ptr<LogicalOperator> update_oper(new UpdateLogicalOperator(table, attribute_name, value));
+  auto update_oper = std::make_unique<UpdateLogicalOperator>(table, field_metas, values);
 
   if (predicate_oper) {
     predicate_oper->add_child(std::move(table_get_oper));

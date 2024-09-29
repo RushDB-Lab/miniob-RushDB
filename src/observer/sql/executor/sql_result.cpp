@@ -79,5 +79,6 @@ void SqlResult::set_operator(std::unique_ptr<PhysicalOperator> oper)
 {
   ASSERT(operator_ == nullptr, "current operator is not null. Result is not closed?");
   operator_ = std::move(oper);
+  // 这里调用了投影算子的方法，补充表头
   operator_->tuple_schema(tuple_schema_);
 }

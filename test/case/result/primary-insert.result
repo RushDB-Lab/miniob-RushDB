@@ -11,7 +11,7 @@ SUCCESS
 2. ERROR
 INSERT INTO insert_table VALUES (4,'N4',1,1),(1,1,1);
 FAILURE
-INSERT INTO insert_table VALUES (4,'N4',1,1),(1,1,1,1);
+INSERT INTO insert_table VALUES (4,'N4',1,1),(1,1,1,1,1);
 FAILURE
 
 3. SELECT

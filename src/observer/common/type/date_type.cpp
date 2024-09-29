@@ -38,3 +38,12 @@ RC DateType::to_string(const Value &val, string &result) const
   result = oss.str();
   return RC::SUCCESS;
 }
+
+int DateType::cast_cost(AttrType type)
+{
+  if (type == AttrType::DATES)
+    return 0;  // DATE -> DATE
+  if (type == AttrType::INTS)
+    return 0;        // DATE -> INT (需转换)
+  return INT32_MAX;  // 不支持转换
+}

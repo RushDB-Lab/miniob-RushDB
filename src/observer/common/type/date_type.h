@@ -24,14 +24,9 @@ public:
    DateType() : DataType(AttrType::DATES) {}
   ~DateType() override = default;
 
+  // 是否需要考虑日期与其它类型的转换？（不需要）
+  // 不用实现 cast to，也不需要考虑其他类型转 date
+  int cast_cost(AttrType type) override;
   int compare(const Value &left, const Value &right) const override;
-  int cast_cost(AttrType type) override
-  {
-    if (type == AttrType::DATES)
-      return 0;  // DATE -> DATE
-    if (type == AttrType::INTS)
-      return 2;        // DATE -> INT (需转换)
-    return INT32_MAX;  // 不支持转换
-  }
-  RC to_string(const Value &val, string &result) const override;
+  RC  to_string(const Value &val, string &result) const override;
 };
