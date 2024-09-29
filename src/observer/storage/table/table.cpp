@@ -327,7 +327,7 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
       if (!field->nullable()) {
         return RC::NOT_NULLABLE_VALUE;
       }
-      record_data[field->offset() + field->len() - 1] = 1;
+      record_data[field->offset() + field->len() - 1] = '1';
     }
   }
   if (OB_FAIL(rc)) {

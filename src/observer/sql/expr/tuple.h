@@ -69,7 +69,7 @@ private:
 class Tuple
 {
 public:
-  Tuple()          = default;
+           Tuple() = default;
   virtual ~Tuple() = default;
 
   /**
@@ -162,7 +162,7 @@ public:
 class RowTuple : public Tuple
 {
 public:
-  RowTuple() = default;
+           RowTuple() = default;
   virtual ~RowTuple()
   {
     for (FieldExpr *spec : speces_) {
@@ -198,7 +198,7 @@ public:
     const FieldMeta *field_meta = field_expr->field().meta();
     cell.set_type(field_meta->type());
     if (field_meta->nullable()) {
-      bool is_null = this->record_->data()[field_meta->offset() + field_meta->len() - 1] == 1;
+      bool is_null = this->record_->data()[field_meta->offset() + field_meta->len() - 1] == '1';
       cell.set_data(this->record_->data() + field_meta->offset(), field_meta->len() - 1);
       cell.set_null(is_null);
     } else {
@@ -264,7 +264,7 @@ private:
 class ProjectTuple : public Tuple
 {
 public:
-  ProjectTuple()          = default;
+           ProjectTuple() = default;
   virtual ~ProjectTuple() = default;
 
   void set_expressions(std::vector<std::unique_ptr<Expression>> &&expressions)
@@ -322,7 +322,7 @@ private:
 class ValueListTuple : public Tuple
 {
 public:
-  ValueListTuple()          = default;
+           ValueListTuple() = default;
   virtual ~ValueListTuple() = default;
 
   void set_names(const std::vector<TupleCellSpec> &specs) { specs_ = specs; }
@@ -400,7 +400,7 @@ private:
 class JoinedTuple : public Tuple
 {
 public:
-  JoinedTuple()          = default;
+           JoinedTuple() = default;
   virtual ~JoinedTuple() = default;
 
   void set_left(Tuple *left) { left_ = left; }
