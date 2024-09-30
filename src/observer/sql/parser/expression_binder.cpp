@@ -24,32 +24,33 @@ using namespace common;
 
 Table *BinderContext::find_table(const char *table_name) const
 {
-  auto pred = [table_name](Table *table) { return 0 == strcasecmp(table_name, table->name()); };
-  auto iter = ranges::find_if(query_tables_, pred);
-  if (iter == query_tables_.end()) {
+  auto iter = this->tables_->find(table_name);
+  if (iter == tables_->end()) {
     return nullptr;
   }
-  return *iter;
+  return iter->second;
 }
-
-Table *BinderContext::from_alias_find_table(const char *alias_name) const
+bool BinderContext::only_one_table()
 {
-  // 1、空字段肯定做不到
-  if (is_blank(alias_name)) {
-    return nullptr;
+  {
+    if (query_tables_.empty()) {
+      return false;  // 如果列表为空，返回false
+    } else if (query_tables_.size() == 1) {
+      return true;
+    }
+
+    // 获取第一个表指针作为基准
+    Table *first_table = query_tables_[0];
+
+    // 遍历整个向量，检查所有的表是否与第一个表相同
+    for (size_t i = 1; i < query_tables_.size(); ++i) {
+      if (query_tables_[i] != first_table) {
+        return false;  // 如果有不同的表，返回false
+      }
+    }
+
+    return true;  // 如果所有的表都是一样的，返回true
   }
-
-  // 2、通过别名查找表名
-  auto alias_table = table_alias_map_.find(alias_name);  // 查找别名
-
-  // 3、如果没有找到对应的别名，则返回 nullptr
-  if (alias_table == table_alias_map_.end()) {
-    return nullptr;
-  }
-
-  // 4、通过别名找到的表名，调用 find_table() 查找实际的 Table 对象
-  const std::string &table_name = alias_table->second;  // 获取别名对应的表名
-  return find_table(table_name.c_str());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -112,6 +113,9 @@ RC ExpressionBinder::bind_expression(unique_ptr<Expression> &expr, vector<unique
       return bind_aggregate_expression(expr, bound_expressions);
     } break;
 
+    case ExprType::SUBQUERY: {
+      return bind_subquery_expression(expr, bound_expressions);
+    } break;
     default: {
       LOG_WARN("unknown expression type: %d", static_cast<int>(expr->type()));
       return RC::INTERNAL;
@@ -166,7 +170,7 @@ RC ExpressionBinder::bind_unbound_field_expression(
 
   Table *table = nullptr;
   if (is_blank(table_name)) {
-    if (context_.query_tables().size() != 1) {
+    if (!context_.only_one_table()) {
       LOG_INFO("cannot determine table for field: %s", field_name);
       return RC::SCHEMA_TABLE_NOT_EXIST;
     }
@@ -175,11 +179,8 @@ RC ExpressionBinder::bind_unbound_field_expression(
   } else {
     table = context_.find_table(table_name);
     if (nullptr == table) {
-      table = context_.from_alias_find_table(table_name);
-      if (nullptr == table) {
-        LOG_INFO("no such table in from list: %s", table_name);
-        return RC::SCHEMA_TABLE_NOT_EXIST;
-      }
+      LOG_INFO("no such table in from list: %s", table_name);
+      return RC::SCHEMA_TABLE_NOT_EXIST;
     }
   }
 
@@ -486,5 +487,14 @@ RC ExpressionBinder::bind_aggregate_expression(
   }
 
   bound_expressions.emplace_back(std::move(aggregate_expr));
+  return RC::SUCCESS;
+}
+RC ExpressionBinder::bind_subquery_expression(
+    std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions)
+{
+  auto subquery_expr = dynamic_cast<SubQueryExpr *>(expr.get());
+
+  subquery_expr->generate_select_stmt(context_.get_db(),context_.table_map());
+  bound_expressions.emplace_back(std::move(expr));
   return RC::SUCCESS;
 }

@@ -39,7 +39,7 @@ public:
   int          value_amount() const { return value_amount_; }
 
 public:
-  static RC create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt);
+  static RC create(Db *db, UpdateSqlNode &update_sql, Stmt *&stmt);
 
 private:
   Table       *table_          = nullptr;

@@ -58,8 +58,8 @@ typedef enum
 class Log
 {
 public:
-  Log(const string &log_name, const LOG_LEVEL log_level = LOG_LEVEL_INFO,
-      const LOG_LEVEL console_level = LOG_LEVEL_WARN);
+   Log(const string &log_name, const LOG_LEVEL log_level = LOG_LEVEL_INFO,
+       const LOG_LEVEL console_level = LOG_LEVEL_WARN);
   ~Log(void);
 
   static int init(const string &log_file);
@@ -162,7 +162,7 @@ private:
 class LoggerFactory
 {
 public:
-  LoggerFactory();
+           LoggerFactory();
   virtual ~LoggerFactory();
 
   static int init(const string &log_file, Log **logger, LOG_LEVEL log_level = LOG_LEVEL_INFO,
@@ -228,7 +228,12 @@ extern Log *g_log;
 #define LOG_DEFAULT(fmt, ...) LOG_OUTPUT(common::g_log->get_log_level(), fmt, ##__VA_ARGS__)
 #define LOG_PANIC(fmt, ...) LOG_OUTPUT(common::LOG_LEVEL_PANIC, fmt, ##__VA_ARGS__)
 #define LOG_ERROR(fmt, ...) LOG_OUTPUT(common::LOG_LEVEL_ERR, fmt, ##__VA_ARGS__)
-#define LOG_WARN(fmt, ...) LOG_OUTPUT(common::LOG_LEVEL_WARN, fmt, ##__VA_ARGS__)
+#define LOG_WARN(fmt, ...)                                                  \
+  do {                                                                      \
+    assert((fmt != nullptr) && "LOG_WARN: format string must not be null"); \
+    LOG_OUTPUT(common::LOG_LEVEL_WARN, fmt, ##__VA_ARGS__);                 \
+  } while (0)
+
 #define LOG_INFO(fmt, ...) LOG_OUTPUT(common::LOG_LEVEL_INFO, fmt, ##__VA_ARGS__)
 #define LOG_DEBUG(fmt, ...) LOG_OUTPUT(common::LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__)
 #define LOG_TRACE(fmt, ...) LOG_OUTPUT(common::LOG_LEVEL_TRACE, fmt, ##__VA_ARGS__)
@@ -315,12 +320,12 @@ int Log::out(const LOG_LEVEL console_level, const LOG_LEVEL log_level, T &msg)
 
 #ifndef ASSERT
 #ifdef DEBUG
-#define ASSERT(expression, description, ...) \
-  do {                                       \
-    if (!(expression)) {                     \
-      LOG_PANIC(description, ##__VA_ARGS__); \
-      assert(expression);                    \
-    }                                        \
+#define ASSERT(expression, description, ...)  \
+  do {                                        \
+    if (!(expression)) {                      \
+      LOG_PANIC(description, ## __VA_ARGS__); \
+      assert(expression);                     \
+    }                                         \
   } while (0)
 
 #else  // DEBUG
@@ -334,7 +339,7 @@ int Log::out(const LOG_LEVEL console_level, const LOG_LEVEL log_level, T &msg)
 
 #ifndef TRACE
 #ifdef DEBUG
-#define TRACE(format, ...) LOG_TRACE(format, ##__VA_ARGS__)
+#define TRACE(format, ...) LOG_TRACE(format, ## __VA_ARGS__)
 #else  // DEBUG
 #define TRACE(...)
 #endif  // DEBUG

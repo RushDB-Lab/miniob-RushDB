@@ -131,9 +131,22 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
   // 看看是否有可以用于索引查找的表达式
   Table *table = table_get_oper.table();
 
+  auto process_subquery = [](Expression* expr) {
+    if (expr->type() == ExprType::SUBQUERY) {
+      SubQueryExpr* sub_query_expr = static_cast<SubQueryExpr*>(expr);
+      sub_query_expr->generate_physical_oper();
+    }
+    return RC::SUCCESS;
+  };
+
   Index     *index      = nullptr;
   ValueExpr *value_expr = nullptr;
   for (auto &expr : predicates) {
+    //先执行子查询
+    if (RC rc = expr->traverse_check(process_subquery); RC::SUCCESS != rc) {
+      return rc;
+    }
+
     if (expr->type() == ExprType::COMPARISON) {
       auto comparison_expr = static_cast<ComparisonExpr *>(expr.get());
       // 简单处理，就找等值查询

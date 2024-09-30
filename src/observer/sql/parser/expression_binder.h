@@ -25,21 +25,23 @@ public:
   virtual ~BinderContext() = default;
 
   void add_table(Table *table) { query_tables_.push_back(table); }
+  void add_db(Db *db) { db_ = db; }
 
-  void add_table_alias_map(const std::unordered_map<std::string, std::string> &table_alias_map)
-  {
-    table_alias_map_ = table_alias_map;
-  }
+  void set_tables(std::unordered_map<std::string, Table *> *tables) { tables_ = tables; }
+
+  Db *get_db() const { return db_; }
 
   Table *find_table(const char *table_name) const;
 
-  Table *from_alias_find_table(const char *alias_name) const;
+  const std::vector<Table *>               &query_tables() const { return query_tables_; }
+  std::unordered_map<std::string, Table *> &table_map() { return *tables_; }
 
-  const std::vector<Table *> &query_tables() const { return query_tables_; }
+  bool only_one_table ();
 
 private:
-  std::vector<Table *>                         query_tables_;
-  std::unordered_map<std::string, std::string> table_alias_map_;  // 修改为普通成员变量
+  Db                                       *db_;
+  std::vector<Table *>                      query_tables_;
+  std::unordered_map<std::string, Table *> *tables_;
 };
 
 /**
@@ -73,7 +75,8 @@ private:
       std::unique_ptr<Expression> &arithmetic_expr, std::vector<std::unique_ptr<Expression>> &bound_expressions);
   RC bind_aggregate_expression(
       std::unique_ptr<Expression> &aggregate_expr, std::vector<std::unique_ptr<Expression>> &bound_expressions);
-
+  RC bind_subquery_expression(
+      std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions);
 private:
   BinderContext &context_;
 };

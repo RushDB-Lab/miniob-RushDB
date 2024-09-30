@@ -43,7 +43,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
   // collect tables in `from` statement
   vector<Table *>                tables;
   unordered_map<string, Table *> table_map;
-  unordered_map<string, string>  table_alias_map;
+  // unordered_map<string, string>  table_alias_map;
   for (size_t i = 0; i < select_sql.relations.size(); i++) {
     const char *table_name = select_sql.relations[i].relation.c_str();
     if (nullptr == table_name) {
@@ -59,14 +59,14 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
     // 建立别名
     const string &table_alias = select_sql.relations[i].alias;
     if (!table_alias.empty()) {
-      table_alias_map[table_alias] = table_name;
+      table_map.insert({table_alias, table});
     }
 
     binder_context.add_table(table);
     tables.push_back(table);
     table_map.insert({table_name, table});
   }
-  binder_context.add_table_alias_map(table_alias_map);
+  binder_context.set_tables(&table_map);
 
   // collect query fields in `select` statement
   vector<unique_ptr<Expression>> bound_expressions;
@@ -96,12 +96,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
 
   // create filter statement in `where` statement
   FilterStmt *filter_stmt = nullptr;
-  RC          rc          = FilterStmt::create(db,
-      default_table,
-      &table_map,
-      select_sql.conditions.data(),
-      static_cast<int>(select_sql.conditions.size()),
-      filter_stmt);
+  RC rc = FilterStmt::create(db, default_table, &table_map, select_sql.condition, filter_stmt);
   if (rc != RC::SUCCESS) {
     LOG_WARN("cannot construct filter stmt");
     return rc;
