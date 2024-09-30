@@ -165,7 +165,6 @@ RC LogicalPlanGenerator::create_plan(FilterStmt *filter_stmt, unique_ptr<Logical
   }
   std::unique_ptr<Expression> &condition = filter_stmt->condition();
 
-
   std::function<RC(Expression *)> generate_subquery_logical_oper = [&](Expression *expr) -> RC {
     if (expr == nullptr) {
       return RC::INVALID_ARGUMENT;
@@ -191,7 +190,8 @@ RC LogicalPlanGenerator::create_plan(FilterStmt *filter_stmt, unique_ptr<Logical
 
           if (left_type == ExprType::VALUE) {
             Value left_val;
-            if (OB_FAIL(cast_expr->try_get_value(left_val))) {
+            rc=cast_expr->try_get_value(left_val);
+            if (OB_FAIL(rc)) {
               LOG_WARN("failed to get value from left child", strrc(rc));
               return rc;
             }
@@ -205,7 +205,8 @@ RC LogicalPlanGenerator::create_plan(FilterStmt *filter_stmt, unique_ptr<Logical
 
           if (right_type == ExprType::VALUE) {
             Value right_val;
-            if (OB_FAIL(cast_expr->try_get_value(right_val))) {
+            rc = cast_expr->try_get_value(right_val);
+            if (OB_FAIL(rc)) {
               LOG_WARN("failed to get value from right child", strrc(rc));
               return rc;
             }

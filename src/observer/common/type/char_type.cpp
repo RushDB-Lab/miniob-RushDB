@@ -46,7 +46,7 @@ RC CharType::cast_to(const Value &val, AttrType type, Value &result) const
         return RC::INVALID_ARGUMENT;
       }
       if (!check_date(y, m, d)) {
-        return RC::INVALID_ARGUMENT;
+        return RC::ERROR_DATE;
       }
       result.attr_type_ = AttrType::DATES;
       result.set_date(y * 10000 + m * 100 + d);
