@@ -81,40 +81,41 @@ enum yytokentype
   STRING_T     = 282, /* STRING_T  */
   FLOAT_T      = 283, /* FLOAT_T  */
   DATE_T       = 284, /* DATE_T  */
-  NOT          = 285, /* NOT  */
-  NULL_T       = 286, /* NULL_T  */
-  NULLABLE     = 287, /* NULLABLE  */
-  HELP         = 288, /* HELP  */
-  EXIT         = 289, /* EXIT  */
-  DOT          = 290, /* DOT  */
-  INTO         = 291, /* INTO  */
-  VALUES       = 292, /* VALUES  */
-  FROM         = 293, /* FROM  */
-  WHERE        = 294, /* WHERE  */
-  AND          = 295, /* AND  */
-  SET          = 296, /* SET  */
-  ON           = 297, /* ON  */
-  LOAD         = 298, /* LOAD  */
-  DATA         = 299, /* DATA  */
-  INFILE       = 300, /* INFILE  */
-  EXPLAIN      = 301, /* EXPLAIN  */
-  STORAGE      = 302, /* STORAGE  */
-  FORMAT       = 303, /* FORMAT  */
-  INNER        = 304, /* INNER  */
-  JOIN         = 305, /* JOIN  */
-  EQ           = 306, /* EQ  */
-  LT           = 307, /* LT  */
-  GT           = 308, /* GT  */
-  LE           = 309, /* LE  */
-  GE           = 310, /* GE  */
-  NE           = 311, /* NE  */
-  LIKE         = 312, /* LIKE  */
-  IS           = 313, /* IS  */
-  NUMBER       = 314, /* NUMBER  */
-  FLOAT        = 315, /* FLOAT  */
-  ID           = 316, /* ID  */
-  SSS          = 317, /* SSS  */
-  UMINUS       = 318  /* UMINUS  */
+  TEXT_T       = 285, /* TEXT_T  */
+  NOT          = 286, /* NOT  */
+  NULL_T       = 287, /* NULL_T  */
+  NULLABLE     = 288, /* NULLABLE  */
+  HELP         = 289, /* HELP  */
+  EXIT         = 290, /* EXIT  */
+  DOT          = 291, /* DOT  */
+  INTO         = 292, /* INTO  */
+  VALUES       = 293, /* VALUES  */
+  FROM         = 294, /* FROM  */
+  WHERE        = 295, /* WHERE  */
+  AND          = 296, /* AND  */
+  SET          = 297, /* SET  */
+  ON           = 298, /* ON  */
+  LOAD         = 299, /* LOAD  */
+  DATA         = 300, /* DATA  */
+  INFILE       = 301, /* INFILE  */
+  EXPLAIN      = 302, /* EXPLAIN  */
+  STORAGE      = 303, /* STORAGE  */
+  FORMAT       = 304, /* FORMAT  */
+  INNER        = 305, /* INNER  */
+  JOIN         = 306, /* JOIN  */
+  EQ           = 307, /* EQ  */
+  LT           = 308, /* LT  */
+  GT           = 309, /* GT  */
+  LE           = 310, /* LE  */
+  GE           = 311, /* GE  */
+  NE           = 312, /* NE  */
+  LIKE         = 313, /* LIKE  */
+  IS           = 314, /* IS  */
+  NUMBER       = 315, /* NUMBER  */
+  FLOAT        = 316, /* FLOAT  */
+  ID           = 317, /* ID  */
+  SSS          = 318, /* SSS  */
+  UMINUS       = 319  /* UMINUS  */
 };
 typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -123,7 +124,7 @@ typedef enum yytokentype yytoken_kind_t;
 #if !defined YYSTYPE && !defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 125 "yacc_sql.y"
+#line 126 "yacc_sql.y"
 
   ParsedSqlNode                            *sql_node;
   ConditionSqlNode                         *condition;
@@ -148,7 +149,7 @@ union YYSTYPE
   float                                     floats;
   bool                                      nullable_info;
 
-#line 152 "yacc_sql.hpp"
+#line 153 "yacc_sql.hpp"
 };
 typedef union YYSTYPE YYSTYPE;
 #define YYSTYPE_IS_TRIVIAL 1

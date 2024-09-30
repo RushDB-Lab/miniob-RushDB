@@ -91,6 +91,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
         STRING_T
         FLOAT_T
         DATE_T
+        TEXT_T
         NOT
         NULL_T
         NULLABLE
@@ -396,6 +397,8 @@ attr_def:
         $$->length = 4;
       } else if ($$->type == AttrType::CHARS) {
         $$->length = 4;
+      } else if ($$->type == AttrType::TEXTS) {
+        $$->length = 4096;
       } else {
         ASSERT(false, "$$->type is invalid.");
       }
@@ -425,11 +428,13 @@ nullable_constraint:
 number:
     NUMBER {$$ = $1;}
     ;
+
 type:
-    INT_T      { $$ = static_cast<int>(AttrType::INTS); }
-    | STRING_T { $$ = static_cast<int>(AttrType::CHARS); }
+      INT_T    { $$ = static_cast<int>(AttrType::INTS);   }
+    | STRING_T { $$ = static_cast<int>(AttrType::CHARS);  }
     | FLOAT_T  { $$ = static_cast<int>(AttrType::FLOATS); }
     | DATE_T   { $$ = static_cast<int>(AttrType::DATES);  }
+    | TEXT_T   { $$ = static_cast<int>(AttrType::TEXTS);  }
     ;
 
 insert_stmt:        /*insert   语句的语法解析树*/
