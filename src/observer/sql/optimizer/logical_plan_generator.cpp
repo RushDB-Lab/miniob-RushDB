@@ -161,7 +161,7 @@ RC LogicalPlanGenerator::create_plan(FilterStmt *filter_stmt, unique_ptr<Logical
   RC rc = RC::SUCCESS;
 
   if (filter_stmt == nullptr || filter_stmt->condition_empty()) {
-    return RC::INVALID_ARGUMENT;
+    return {};
   }
   std::unique_ptr<Expression> &condition = filter_stmt->condition();
 
