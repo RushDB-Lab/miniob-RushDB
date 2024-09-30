@@ -483,7 +483,6 @@ delete_stmt:    /*  delete 语句的语法解析树*/
       $$->deletion.relation_name = $3;
       if ($4 != nullptr) {
         $$->deletion.condition = std::unique_ptr<Expression>($4);
-        delete $4;
       }
       free($3);
     }

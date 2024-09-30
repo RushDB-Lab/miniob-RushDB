@@ -77,7 +77,7 @@ public:
   /**
    * @brief 根据具体的tuple，来计算当前表达式的值。tuple有可能是一个具体某个表的行数据
    */
-  virtual RC get_value(const Tuple &tuple, Value &value)  = 0;
+  virtual RC get_value(const Tuple &tuple, Value &value) = 0;
 
   /**
    * @brief 在没有实际运行的情况下，也就是无法获取tuple的情况下，尝试获取表达式的值
@@ -165,7 +165,7 @@ public:
   ExprType type() const override { return ExprType::STAR; }
   AttrType value_type() const override { return AttrType::UNDEFINED; }
 
-  RC get_value(const Tuple &tuple, Value &value)  override { return RC::UNIMPLEMENTED; }  // 不需要实现
+  RC get_value(const Tuple &tuple, Value &value) override { return RC::UNIMPLEMENTED; }  // 不需要实现
 
   const char *table_name() const { return table_name_.c_str(); }
 
@@ -185,7 +185,7 @@ public:
   ExprType type() const override { return ExprType::UNBOUND_FIELD; }
   AttrType value_type() const override { return AttrType::UNDEFINED; }
 
-  RC get_value(const Tuple &tuple, Value &value)  override { return RC::INTERNAL; }
+  RC get_value(const Tuple &tuple, Value &value) override { return RC::INTERNAL; }
 
   const char *table_name() const { return table_name_.c_str(); }
   const char *field_name() const { return field_name_.c_str(); }
@@ -223,7 +223,7 @@ public:
 
   RC get_column(Chunk &chunk, Column &column) override;
 
-  RC get_value(const Tuple &tuple, Value &value)  override;
+  RC get_value(const Tuple &tuple, Value &value) override;
 
 private:
   Field field_;
@@ -243,7 +243,7 @@ public:
 
   bool equal(const Expression &other) const override;
 
-  RC get_value(const Tuple &tuple, Value &value)  override;
+  RC get_value(const Tuple &tuple, Value &value) override;
   RC get_column(Chunk &chunk, Column &column) override;
   RC try_get_value(Value &value) const override
   {
@@ -274,7 +274,7 @@ public:
 
   ExprType type() const override { return ExprType::CAST; }
 
-  RC get_value(const Tuple &tuple, Value &value)  override;
+  RC get_value(const Tuple &tuple, Value &value) override;
 
   RC try_get_value(Value &value) const override;
 
@@ -319,7 +319,7 @@ public:
   virtual ~ComparisonExpr();
 
   ExprType type() const override { return ExprType::COMPARISON; }
-  RC       get_value(const Tuple &tuple, Value &value)  override;
+  RC       get_value(const Tuple &tuple, Value &value) override;
   AttrType value_type() const override { return AttrType::BOOLEANS; }
   CompOp   comp() const { return comp_; }
 
@@ -407,7 +407,7 @@ public:
 
   ExprType type() const override { return ExprType::CONJUNCTION; }
   AttrType value_type() const override { return AttrType::BOOLEANS; }
-  RC       get_value(const Tuple &tuple, Value &value)  override;
+  RC       get_value(const Tuple &tuple, Value &value) override;
 
   Type conjunction_type() const { return conjunction_type_; }
 
@@ -475,7 +475,7 @@ public:
     return 4;  // sizeof(float) or sizeof(int)
   };
 
-  RC get_value(const Tuple &tuple, Value &value)  override;
+  RC get_value(const Tuple &tuple, Value &value) override;
 
   RC get_column(Chunk &chunk, Column &column) override;
 
@@ -543,7 +543,7 @@ public:
 
   std::unique_ptr<Expression> &child() { return child_; }
 
-  RC       get_value(const Tuple &tuple, Value &value)  override { return RC::INTERNAL; }
+  RC       get_value(const Tuple &tuple, Value &value) override { return RC::INTERNAL; }
   AttrType value_type() const override { return child_->value_type(); }
 
 private:
@@ -575,7 +575,7 @@ public:
   AttrType value_type() const override { return child_->value_type(); }
   int      value_length() const override { return child_->value_length(); }
 
-  RC get_value(const Tuple &tuple, Value &value)  override;
+  RC get_value(const Tuple &tuple, Value &value) override;
 
   RC get_column(Chunk &chunk, Column &column) override;
 
@@ -588,7 +588,7 @@ public:
   std::unique_ptr<Aggregator> create_aggregator() const;
 
   // 聚集函数表达式的 traverse[_check] 需要特殊对待 param 可能是个 *
-  void traverse(const std::function<void(Expression *)> &func, const std::function<bool(Expression*)>& filter) override
+  void traverse(const std::function<void(Expression *)> &func, const std::function<bool(Expression *)> &filter) override
   {
     if (filter(this)) {
       child_->traverse(func, filter);
@@ -641,6 +641,8 @@ public:
   RC generate_select_stmt(Db* db, const std::unordered_map<std::string, Table *> &tables);
   RC generate_logical_oper();
   RC generate_physical_oper();
+
+  size_t res_nums() const{return res_query.size();}
 
 private:
   SelectSqlNode& sql_node_;
