@@ -260,6 +260,11 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
 
   // 处理 IN 和 NOT IN 操作
   if (comp_ == IN_OP || comp_ == NOT_IN_OP) {
+
+    if (right_->type() == ExprType::EXPRLIST) {
+      static_cast<ListExpr *>(right_.get())->reset();
+    }
+
     if (left_value.is_null()) {
       value.set_boolean(false);
       if (right_subquery_expr) {

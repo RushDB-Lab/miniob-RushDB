@@ -143,6 +143,8 @@ public:
   // 后序遍历 检查
   virtual RC traverse_check(const std::function<RC(Expression *)> &check_func) { return check_func(this); }
 
+  //
+
 protected:
   /**
    * @brief 表达式在下层算子返回的 chunk 中的位置
