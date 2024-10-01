@@ -37,9 +37,9 @@ public:
 
   StmtType type() const override { return StmtType::CREATE_INDEX; }
 
-  Table             *table() const { return table_; }
-  const vector<FieldMeta>   &field_meta() const { return field_meta_; }
-  const std::string &index_name() const { return index_name_; }
+  Table                   *table() const { return table_; }
+  const vector<FieldMeta> &field_meta() const { return field_meta_; }
+  const std::string       &index_name() const { return index_name_; }
 
 public:
   static RC create(Db *db, const CreateIndexSqlNode &create_index, Stmt *&stmt);

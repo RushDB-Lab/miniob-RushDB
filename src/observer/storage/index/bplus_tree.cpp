@@ -59,7 +59,7 @@ void IndexNodeHandler::init_empty(bool leaf)
 }
 PageNum IndexNodeHandler::page_num() const { return frame_->page_num(); }
 
-int IndexNodeHandler::key_size() const { return header_.index().fields_total_len(); }
+int IndexNodeHandler::key_size() const { return header_.key_length; }
 
 int IndexNodeHandler::value_size() const
 {
@@ -836,12 +836,9 @@ RC BplusTreeHandler::create(LogHandler &log_handler, DiskBufferPool &buffer_pool
     return RC::INTERNAL;
   }
 
-  char *pdata       = header_frame->data();
-  auto *file_header = (IndexFileHeader *)pdata;
-  rc                = file_header->init(index);
-  if (OB_FAIL(rc)) {
-    LOG_WARN("fail to init file_header, index:%s", index.to_string().c_str());
-  }
+  char            *pdata         = header_frame->data();
+  IndexFileHeader *file_header   = (IndexFileHeader *)pdata;
+  file_header->init(index);
 
   // 取消记录日志的原因请参考下面的sync调用的地方。
   // mtr.logger().init_header_page(header_frame, *file_header);
@@ -1840,18 +1837,6 @@ RC BplusTreeScanner::open(const char *left_user_key, int left_len, bool left_inc
   } else {
 
     char *fixed_left_key = const_cast<char *>(left_user_key);
-//    if (tree_handler_.file_header_.attr_type == AttrType::CHARS) {
-//      bool should_inclusive_after_fix = false;
-//      rc = fix_user_key(left_user_key, left_len, true /*greater*/, &fixed_left_key, &should_inclusive_after_fix);
-//      if (OB_FAIL(rc)) {
-//        LOG_WARN("failed to fix left user key. rc=%s", strrc(rc));
-//        return rc;
-//      }
-//
-//      if (should_inclusive_after_fix) {
-//        left_inclusive = true;
-//      }
-//    }
 
     MemPoolItem::item_unique_ptr left_pkey;
     if (left_inclusive) {
@@ -1905,29 +1890,17 @@ RC BplusTreeScanner::open(const char *left_user_key, int left_len, bool left_inc
     right_key_ = nullptr;
   } else {
 
-//    char *fixed_right_key          = const_cast<char *>(right_user_key);
-//    bool  should_include_after_fix = false;
-//    if (tree_handler_.file_header_.attr_type == AttrType::CHARS) {
-//      rc = fix_user_key(right_user_key, right_len, false /*want_greater*/, &fixed_right_key, &should_include_after_fix);
-//      if (OB_FAIL(rc)) {
-//        LOG_WARN("failed to fix right user key. rc=%s", strrc(rc));
-//        return rc;
-//      }
-//
-//      if (should_include_after_fix) {
-//        right_inclusive = true;
-//      }
-//    }
-//    if (right_inclusive) {
-//      right_key_ = tree_handler_.make_key(fixed_right_key, *RID::max());
-//    } else {
-//      right_key_ = tree_handler_.make_key(fixed_right_key, *RID::min());
-//    }
-//
-//    if (fixed_right_key != right_user_key) {
-//      delete[] fixed_right_key;
-//      fixed_right_key = nullptr;
-//    }
+    char *fixed_right_key          = const_cast<char *>(right_user_key);
+    if (right_inclusive) {
+      right_key_ = tree_handler_.make_key(fixed_right_key, *RID::max());
+    } else {
+      right_key_ = tree_handler_.make_key(fixed_right_key, *RID::min());
+    }
+
+    if (fixed_right_key != right_user_key) {
+      delete[] fixed_right_key;
+      fixed_right_key = nullptr;
+    }
   }
 
   if (touch_end()) {
@@ -2014,57 +1987,6 @@ RC BplusTreeScanner::close()
 {
   inited_ = false;
   LOG_TRACE("bplus tree scanner closed");
-  return RC::SUCCESS;
-}
-
-RC BplusTreeScanner::fix_user_key(
-    const char *user_key, int key_len, bool want_greater, char **fixed_key, bool *should_inclusive)
-{
-  if (nullptr == fixed_key || nullptr == should_inclusive) {
-    return RC::INVALID_ARGUMENT;
-  }
-
-  // 这里很粗暴，变长字段才需要做调整，其它默认都不需要做调整
-//  assert(tree_handler_.file_header_.attr_type == AttrType::CHARS);
-//  assert(strlen(user_key) >= static_cast<size_t>(key_len));
-
-  *should_inclusive = false;
-
-  int32_t attr_length = tree_handler_.file_header_.attr_length;
-  char   *key_buf     = new char[attr_length];
-  if (nullptr == key_buf) {
-    return RC::NOMEM;
-  }
-
-  if (key_len <= attr_length) {
-    memcpy(key_buf, user_key, key_len);
-    memset(key_buf + key_len, 0, attr_length - key_len);
-
-    *fixed_key = key_buf;
-    return RC::SUCCESS;
-  }
-
-  // key_len > attr_length
-  memcpy(key_buf, user_key, attr_length);
-
-  char c = user_key[attr_length];
-  if (c == 0) {
-    *fixed_key = key_buf;
-    return RC::SUCCESS;
-  }
-
-  // 扫描 >=/> user_key 的数据
-  // 示例：>=/> ABCD1 的数据，attr_length=4,
-  //      等价于扫描 >= ABCE 的数据
-  // 如果是扫描 <=/< user_key的数据
-  // 示例：<=/< ABCD1  <==> <= ABCD  (attr_length=4)
-  // NOTE: 假设都是普通的ASCII字符，不包含二进制字符，使用char不会溢出
-  *should_inclusive = true;
-  if (want_greater) {
-    key_buf[attr_length - 1]++;
-  }
-
-  *fixed_key = key_buf;
   return RC::SUCCESS;
 }
 

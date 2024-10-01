@@ -101,8 +101,6 @@ public:
     }
   }
 
-  [[nodiscard]] const vector<AttrComparator> &attr_comparator() const { return attr_comparator_; }
-
   int compare_key(const char *v1, const char *v2) const
   {
     for (int i = 0; i < index_.fields().size(); i++) {
@@ -160,16 +158,22 @@ private:
  * @details this is the first page of bplus tree.
  * only one field can be supported, can you extend it to multi-fields?
  */
-class IndexFileHeader
+struct IndexFileHeader
 {
-public:
-  [[nodiscard]] RC init(const IndexMeta &index);
+  RC init(const IndexMeta &index);
 
-  [[nodiscard]] string to_string() const
+  PageNum root_page = BP_INVALID_PAGE_NUM;  ///< 根节点在磁盘中的页号
+  int32_t internal_max_size;                ///< 内部节点最大的键值对数
+  int32_t leaf_max_size;                    ///< 叶子节点最大的键值对数
+  int32_t attr_length;                      ///< 字段部分的长度
+  int32_t key_length;                       ///< 键的长度
+
+  const string to_string() const
   {
     stringstream ss;
 
-    ss << "index:" << index_.to_string() << ","
+    ss << "attr_length:" << attr_length << ","
+       << "key_length:" << key_length << ","
        << "root_page:" << root_page << ","
        << "internal_max_size:" << internal_max_size << ","
        << "leaf_max_size:" << leaf_max_size << ";";
@@ -177,14 +181,7 @@ public:
     return ss.str();
   }
 
-public:
   [[nodiscard]] const IndexMeta &index() const { return index_; }
-
-  PageNum root_page = BP_INVALID_PAGE_NUM;  ///< 根节点在磁盘中的页号
-  int32_t internal_max_size;                ///< 内部节点最大的键值对数
-  int32_t leaf_max_size;                    ///< 叶子节点最大的键值对数
-  int32_t attr_length;                      ///< 字段部分的长度
-  int32_t key_length;                       ///< 键的长度
 
 private:
   IndexMeta index_;  ///< 索引元数据
@@ -689,11 +686,6 @@ public:
   RC close();
 
 private:
-  /**
-   * 如果key的类型是CHARS, 扩展或缩减user_key的大小刚好是schema中定义的大小
-   */
-  RC fix_user_key(const char *user_key, int key_len, bool want_greater, char **fixed_key, bool *should_inclusive);
-
   void fetch_item(RID &rid);
 
   /**

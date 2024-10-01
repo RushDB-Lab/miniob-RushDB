@@ -26,7 +26,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/clog/log_replayer.h"
 // #include "storage/index/bplus_tree_log_entry.h"
 
-class IndexFileHeader;
+struct IndexFileHeader;
 class LogEntry;
 class LogHandler;
 class BplusTreeHandler;

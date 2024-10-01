@@ -46,15 +46,12 @@ public:
 
   void to_json(Json::Value &json_value) const;
 
-  [[nodiscard]] static RC from_json(const Json::Value &json_value, IndexMeta &index);
+  static RC from_json(const Json::Value &json_value, IndexMeta &index);
 
   [[nodiscard]] char *make_entry_from_record(const char *record)
   {
     char *entry = new char[fields_total_len_];
-    for (size_t i = 0; i < fields_.size(); i++) {
-      auto &field = fields_[i];
-      memcpy(entry + fields_offset_[i], record + field.offset(), field.len());
-    }
+    make_entry_from_record(entry, record);
     return entry;
   }
 
@@ -68,7 +65,6 @@ public:
 
   [[nodiscard]] const char              *name() const { return name_.c_str(); }
   [[nodiscard]] int                      fields_total_len() const { return fields_total_len_; }
-  [[nodiscard]] const vector<int>       &fields_offset() const { return fields_offset_; }
   [[nodiscard]] const vector<FieldMeta> &fields() const { return fields_; }
 
 private:
