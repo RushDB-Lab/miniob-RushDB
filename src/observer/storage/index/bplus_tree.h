@@ -180,11 +180,6 @@ struct IndexFileHeader
 
     return ss.str();
   }
-
-  [[nodiscard]] const IndexMeta &index() const { return index_; }
-
-private:
-  IndexMeta index_;  ///< 索引元数据
 };
 
 /**
@@ -630,6 +625,7 @@ protected:
   DiskBufferPool *disk_buffer_pool_ = nullptr;  /// 磁盘缓冲池
   bool            header_dirty_     = false;    /// 是否需要更新头页面
   IndexFileHeader file_header_;
+  IndexMeta       index_meta_;
 
   // 在调整根节点时，需要加上这个锁。
   // 这个锁可以使用递归读写锁，但是这里偷懒先不改

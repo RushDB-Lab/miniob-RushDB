@@ -855,6 +855,7 @@ RC BplusTreeHandler::create(LogHandler &log_handler, DiskBufferPool &buffer_pool
     return RC::NOMEM;
   }
 
+  index_meta_ = index;
   key_comparator_.init(index);
   key_printer_.init(index);
 
@@ -927,8 +928,8 @@ RC BplusTreeHandler::open(LogHandler &log_handler, DiskBufferPool &buffer_pool)
   // close old page_handle
   buffer_pool.unpin_page(frame);
 
-  key_comparator_.init(file_header_.index());
-  key_printer_.init(file_header_.index());
+  key_comparator_.init(index_meta_);
+  key_printer_.init(index_meta_);
   LOG_INFO("Successfully open index");
   return RC::SUCCESS;
 }
@@ -1409,8 +1410,8 @@ RC BplusTreeHandler::recover_init_header_page(
   header_dirty_ = false;
   frame->mark_dirty();
 
-  key_comparator_.init(file_header_.index());
-  key_printer_.init(file_header_.index());
+  key_comparator_.init(index_meta_);
+  key_printer_.init(index_meta_);
 
   return RC::SUCCESS;
 }
@@ -1993,7 +1994,6 @@ RC BplusTreeScanner::close()
 RC IndexFileHeader::init(const IndexMeta &index)
 {
   root_page   = BP_INVALID_PAGE_NUM;
-  index_      = index;
   attr_length = index.fields_total_len();
   key_length  = attr_length + static_cast<int>(sizeof(RID));
 
