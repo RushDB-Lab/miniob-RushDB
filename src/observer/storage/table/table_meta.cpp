@@ -158,16 +158,6 @@ const IndexMeta *TableMeta::index(const char *name) const
   return nullptr;
 }
 
-const IndexMeta *TableMeta::find_index_by_field(const char *field) const
-{
-  for (const IndexMeta &index : indexes_) {
-    if (0 == strcmp(index.field(), field)) {
-      return &index;
-    }
-  }
-  return nullptr;
-}
-
 const IndexMeta *TableMeta::index(int i) const { return &indexes_[i]; }
 
 int TableMeta::index_num() const { return indexes_.size(); }
@@ -293,7 +283,7 @@ int TableMeta::deserialize(std::istream &is)
       IndexMeta &index = indexes[i];
 
       const Json::Value &index_value = indexes_value[i];
-      rc                             = IndexMeta::from_json(*this, index_value, index);
+      rc                             = IndexMeta::from_json(index_value, index);
       if (rc != RC::SUCCESS) {
         LOG_ERROR("Failed to deserialize table meta. table name=%s", table_name.c_str());
         return -1;

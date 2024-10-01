@@ -51,8 +51,11 @@ RC ShowIndexExecutor::execute(SQLStageEvent *sql_event)
     const TableMeta &table_meta = table->table_meta();
     for (int i = 0; i < table_meta.index_num(); i++) {
       auto index = table_meta.index(i);
-      // TODO 目前尚未支持唯一索引
-      oper->append({table_name, "1", index->name(), "1", index->field()});
+      oper->append({table_name, "1", index->name()});
+      auto fields = index->fields();
+      for (auto &name : fields) {
+        oper->append({"1", name.name()});
+      }
     }
 
     sql_result->set_operator(unique_ptr<PhysicalOperator>(oper));

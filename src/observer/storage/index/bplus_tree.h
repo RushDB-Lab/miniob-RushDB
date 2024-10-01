@@ -56,6 +56,10 @@ enum class BplusTreeOperationType
 class AttrComparator
 {
 public:
+  AttrComparator() = default;
+
+  AttrComparator(AttrType type, int length) { init(type, length); }
+
   void init(AttrType type, int length)
   {
     attr_type_   = type;
@@ -89,50 +93,42 @@ private:
 class KeyComparator
 {
 public:
-  void init(AttrType type, int length) { attr_comparator_.init(type, length); }
+  void init(const IndexMeta &index)
+  {
+    index_ = index;
+    for (const auto &i : index.fields()) {
+      attr_comparator_.emplace_back(i.type(), (i.len()));
+    }
+  }
 
-  const AttrComparator &attr_comparator() const { return attr_comparator_; }
+  [[nodiscard]] const vector<AttrComparator> &attr_comparator() const { return attr_comparator_; }
+
+  int compare_key(const char *v1, const char *v2) const
+  {
+    for (int i = 0; i < index_.fields().size(); i++) {
+      int result = attr_comparator_[i](v1, v2);
+      if (result != 0) {
+        return result;
+      }
+    }
+    return 0;
+  }
 
   int operator()(const char *v1, const char *v2) const
   {
-    int result = attr_comparator_(v1, v2);
+    auto result = compare_key(v1, v2);
     if (result != 0) {
       return result;
     }
 
-    const RID *rid1 = (const RID *)(v1 + attr_comparator_.attr_length());
-    const RID *rid2 = (const RID *)(v2 + attr_comparator_.attr_length());
+    const RID *rid1 = (const RID *)(v1 + index_.fields_total_len());
+    const RID *rid2 = (const RID *)(v2 + index_.fields_total_len());
     return RID::compare(rid1, rid2);
   }
 
 private:
-  AttrComparator attr_comparator_;
-};
-
-/**
- * @brief 属性打印,调试使用(BplusTree)
- * @ingroup BPlusTree
- */
-class AttrPrinter
-{
-public:
-  void init(AttrType type, int length)
-  {
-    attr_type_   = type;
-    attr_length_ = length;
-  }
-
-  int attr_length() const { return attr_length_; }
-
-  string operator()(const char *v) const
-  {
-    Value value(attr_type_, const_cast<char *>(v), attr_length_);
-    return value.to_string();
-  }
-
-private:
-  AttrType attr_type_;
-  int      attr_length_;
+  IndexMeta              index_;
+  vector<AttrComparator> attr_comparator_;
 };
 
 /**
@@ -142,22 +138,20 @@ private:
 class KeyPrinter
 {
 public:
-  void init(AttrType type, int length) { attr_printer_.init(type, length); }
-
-  const AttrPrinter &attr_printer() const { return attr_printer_; }
+  void init(const IndexMeta &index) { index_ = index; }
 
   string operator()(const char *v) const
   {
     stringstream ss;
-    ss << "{key:" << attr_printer_(v) << ",";
+    ss << "{key:" << index_.to_string() << ",";
 
-    const RID *rid = (const RID *)(v + attr_printer_.attr_length());
+    const RID *rid = (const RID *)(v + index_.fields_total_len());
     ss << "rid:{" << rid->to_string() << "}}";
     return ss.str();
   }
 
 private:
-  AttrPrinter attr_printer_;
+  IndexMeta index_;
 };
 
 /**
@@ -166,33 +160,34 @@ private:
  * @details this is the first page of bplus tree.
  * only one field can be supported, can you extend it to multi-fields?
  */
-struct IndexFileHeader
+class IndexFileHeader
 {
-  IndexFileHeader()
-  {
-    memset(this, 0, sizeof(IndexFileHeader));
-    root_page = BP_INVALID_PAGE_NUM;
-  }
-  PageNum  root_page;          ///< 根节点在磁盘中的页号
-  int32_t  internal_max_size;  ///< 内部节点最大的键值对数
-  int32_t  leaf_max_size;      ///< 叶子节点最大的键值对数
-  int32_t  attr_length;        ///< 键值的长度
-  int32_t  key_length;         ///< attr length + sizeof(RID)
-  AttrType attr_type;          ///< 键值的类型
+public:
+  [[nodiscard]] RC init(const IndexMeta &index);
 
-  const string to_string() const
+  [[nodiscard]] string to_string() const
   {
     stringstream ss;
 
-    ss << "attr_length:" << attr_length << ","
-       << "key_length:" << key_length << ","
-       << "attr_type:" << attr_type_to_string(attr_type) << ","
+    ss << "index:" << index_.to_string() << ","
        << "root_page:" << root_page << ","
        << "internal_max_size:" << internal_max_size << ","
        << "leaf_max_size:" << leaf_max_size << ";";
 
     return ss.str();
   }
+
+public:
+  [[nodiscard]] const IndexMeta &index() const { return index_; }
+
+  PageNum root_page = BP_INVALID_PAGE_NUM;  ///< 根节点在磁盘中的页号
+  int32_t internal_max_size;                ///< 内部节点最大的键值对数
+  int32_t leaf_max_size;                    ///< 叶子节点最大的键值对数
+  int32_t attr_length;                      ///< 字段部分的长度
+  int32_t key_length;                       ///< 键的长度
+
+private:
+  IndexMeta index_;  ///< 索引元数据
 };
 
 /**
@@ -459,10 +454,8 @@ public:
    * @param internal_max_size 内部节点最大大小
    * @param leaf_max_size 叶子节点最大大小
    */
-  RC create(LogHandler &log_handler, BufferPoolManager &bpm, const char *file_name, AttrType attr_type, int attr_length,
-      int internal_max_size = -1, int leaf_max_size = -1);
-  RC create(LogHandler &log_handler, DiskBufferPool &buffer_pool, AttrType attr_type, int attr_length,
-      int internal_max_size = -1, int leaf_max_size = -1);
+  RC create(LogHandler &log_handler, BufferPoolManager &bpm, const char *file_name, const IndexMeta &index);
+  RC create(LogHandler &log_handler, DiskBufferPool &buffer_pool, const IndexMeta &index);
 
   /**
    * @brief 打开一个B+树
