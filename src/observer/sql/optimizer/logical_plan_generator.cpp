@@ -181,8 +181,11 @@ RC LogicalPlanGenerator::create_plan(FilterStmt *filter_stmt, unique_ptr<Logical
       auto &left      = comp_expr->left();
       auto &right     = comp_expr->right();
 
-      if (!(right->type() == ExprType::EXPRLIST && (comp_expr->comp() == IN_OP || comp_expr->comp() == NOT_IN_OP)))
-        return RC::UNSUPPORTED;
+      if (right->type() == ExprType::EXPRLIST) {
+        if (comp_expr->comp() != IN_OP && comp_expr->comp() != NOT_IN_OP) {
+          return RC::UNSUPPORTED;
+        }
+      }
 
       if (left->value_type() != right->value_type()) {
         auto left_to_right_cost = implicit_cast_cost(left->value_type(), right->value_type());
