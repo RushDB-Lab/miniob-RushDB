@@ -253,7 +253,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
   }
 
   // 检查子查询是否有多行结果
-  if (left_subquery_expr && left_subquery_expr->has_more_row(tuple)) {
+  if (left_subquery_expr && left_subquery_expr->has_more_row()) {
     left_subquery_expr->close();  // 关闭子查询
     return RC::INVALID_ARGUMENT;
   }
@@ -304,7 +304,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
   }
 
   // 检查右侧子查询是否有多行结果
-  if (right_subquery_expr && right_subquery_expr->has_more_row(tuple)) {
+  if (right_subquery_expr && right_subquery_expr->has_more_row()) {
     right_subquery_expr->close();
     return RC::INVALID_ARGUMENT;
   }
@@ -797,10 +797,7 @@ RC SubQueryExpr::generate_physical_oper()
   }
   return open(nullptr);
 }
-bool SubQueryExpr::one_row_ret() const
-{
-  return (sql_node_.expressions.size() == 1 && sql_node_.expressions[0]->type() == ExprType::UNBOUND_AGGREGATION);
-}
+bool SubQueryExpr::one_row_ret() const { return res_query.size() == 1; }
 
 // 子算子树的 open 和 close 逻辑由外部控制
 RC SubQueryExpr::open(Trx *trx)
@@ -830,7 +827,7 @@ RC SubQueryExpr::close()
   return RC::SUCCESS;
 }
 
-bool SubQueryExpr::has_more_row(const Tuple &tuple) const { return visited_index + 1 < res_query.size(); }
+bool SubQueryExpr::has_more_row() const { return res_query.size() > 1; }
 
 RC SubQueryExpr::get_value(const Tuple &tuple, Value &value)
 {

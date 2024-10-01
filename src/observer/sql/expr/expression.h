@@ -630,7 +630,7 @@ public:
 
   RC   open(Trx *trx);
   RC   close();
-  bool has_more_row(const Tuple &tuple) const;
+  bool has_more_row() const;
 
   RC get_value(const Tuple &tuple, Value &value) override;
 
