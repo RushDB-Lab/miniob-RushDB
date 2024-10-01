@@ -259,7 +259,7 @@ RC ExpressionBinder::bind_comparison_expression(
     return RC::SUCCESS;
   }
 
-  auto comparison_expr = static_cast<ComparisonExpr *>(expr.get());
+  auto comparison_expr = dynamic_cast<ComparisonExpr *>(expr.get());
 
   vector<unique_ptr<Expression>> child_bound_expressions;
   unique_ptr<Expression>        &left_expr  = comparison_expr->left();
@@ -277,7 +277,7 @@ RC ExpressionBinder::bind_comparison_expression(
 
   unique_ptr<Expression> &left = child_bound_expressions[0];
   if (left.get() != left_expr.get()) {
-    left_expr.reset(left.release());
+    left_expr = std::move(left);
   }
 
   child_bound_expressions.clear();
@@ -293,7 +293,7 @@ RC ExpressionBinder::bind_comparison_expression(
 
   unique_ptr<Expression> &right = child_bound_expressions[0];
   if (right.get() != right_expr.get()) {
-    right_expr.reset(right.release());
+    right_expr = std::move(right);
   }
 
   bound_expressions.emplace_back(std::move(expr));
@@ -327,7 +327,7 @@ RC ExpressionBinder::bind_conjunction_expression(
 
     unique_ptr<Expression> &child = child_bound_expressions[0];
     if (child.get() != child_expr.get()) {
-      child_expr.reset(child.release());
+      child_expr = std::move(child);
     }
   }
 
@@ -361,7 +361,7 @@ RC ExpressionBinder::bind_arithmetic_expression(
 
   unique_ptr<Expression> &left = child_bound_expressions[0];
   if (left.get() != left_expr.get()) {
-    left_expr.reset(left.release());
+    left_expr = std::move(left);
   }
 
   child_bound_expressions.clear();
@@ -377,7 +377,7 @@ RC ExpressionBinder::bind_arithmetic_expression(
 
   unique_ptr<Expression> &right = child_bound_expressions[0];
   if (right.get() != right_expr.get()) {
-    right_expr.reset(right.release());
+    right_expr = std::move(right);
   }
 
   bound_expressions.emplace_back(std::move(expr));

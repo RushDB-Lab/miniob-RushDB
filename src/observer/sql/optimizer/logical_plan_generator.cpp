@@ -181,12 +181,17 @@ RC LogicalPlanGenerator::create_plan(FilterStmt *filter_stmt, unique_ptr<Logical
       auto &left      = comp_expr->left();
       auto &right     = comp_expr->right();
 
+      const auto op = comp_expr->comp();
+
       if (left->value_type() != right->value_type()) {
         auto left_to_right_cost = implicit_cast_cost(left->value_type(), right->value_type());
         auto right_to_left_cost = implicit_cast_cost(right->value_type(), left->value_type());
 
         if (right->type() == ExprType::SUBQUERY || right->type() == ExprType::EXPRLIST ||
             left->type() == ExprType::SUBQUERY || left->type() == ExprType::EXPRLIST) {
+          if (op != CompOp::IN_OP || op != CompOp::NOT_IN_OP) {
+            return RC::UNSUPPORTED;
+          }
           // 暂时在这里不做处理
           return RC::SUCCESS;
         } else if (left_to_right_cost <= right_to_left_cost && left_to_right_cost != INT32_MAX) {
