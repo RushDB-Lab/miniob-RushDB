@@ -50,12 +50,14 @@ RC ShowIndexExecutor::execute(SQLStageEvent *sql_event)
     auto             oper       = new StringListPhysicalOperator;
     const TableMeta &table_meta = table->table_meta();
     for (int i = 0; i < table_meta.index_num(); i++) {
-      auto index = table_meta.index(i);
-      oper->append({table_name, "1", index->name()});
-      auto fields = index->fields();
+      auto           index  = table_meta.index(i);
+      vector<string> list   = {table_name, "1", index->name()};
+      auto           fields = index->fields();
       for (auto &name : fields) {
-        oper->append({"1", name.name()});
+        list.emplace_back("1");
+        list.emplace_back(name.name());
       }
+      oper->append(list);
     }
 
     sql_result->set_operator(unique_ptr<PhysicalOperator>(oper));
