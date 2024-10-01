@@ -797,6 +797,10 @@ RC SubQueryExpr::generate_physical_oper()
   }
   return open(nullptr);
 }
+bool SubQueryExpr::one_row_ret() const
+{
+  return (sql_node_.expressions.size() == 1 && sql_node_.expressions[0]->type() == ExprType::UNBOUND_AGGREGATION);
+}
 
 // 子算子树的 open 和 close 逻辑由外部控制
 RC SubQueryExpr::open(Trx *trx)

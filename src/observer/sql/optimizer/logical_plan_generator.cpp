@@ -182,6 +182,23 @@ RC LogicalPlanGenerator::create_plan(FilterStmt *filter_stmt, unique_ptr<Logical
       auto &right     = comp_expr->right();
 
       const auto op = comp_expr->comp();
+      // 处理合法子查询
+      auto sub_right = dynamic_cast<SubQueryExpr *>(right.get());
+      if (sub_right != nullptr) {
+        if (op == IN_OP || op == NOT_IN_OP) {
+
+        } else if (!sub_right->one_row_ret()) {
+          return RC::UNSUPPORTED;
+        }
+      }
+      auto sub_left = dynamic_cast<SubQueryExpr *>(left.get());
+      if (sub_left != nullptr) {
+        if (op == IN_OP || op == NOT_IN_OP) {
+
+        } else if (!sub_left->one_row_ret()) {
+          return RC::UNSUPPORTED;
+        }
+      }
 
       if (left->value_type() != right->value_type()) {
         auto left_to_right_cost = implicit_cast_cost(left->value_type(), right->value_type());
@@ -189,9 +206,6 @@ RC LogicalPlanGenerator::create_plan(FilterStmt *filter_stmt, unique_ptr<Logical
 
         if (right->type() == ExprType::SUBQUERY || right->type() == ExprType::EXPRLIST ||
             left->type() == ExprType::SUBQUERY || left->type() == ExprType::EXPRLIST) {
-          if (op != CompOp::IN_OP || op != CompOp::NOT_IN_OP) {
-            return RC::UNSUPPORTED;
-          }
           // 暂时在这里不做处理
           return RC::SUCCESS;
         } else if (left_to_right_cost <= right_to_left_cost && left_to_right_cost != INT32_MAX) {

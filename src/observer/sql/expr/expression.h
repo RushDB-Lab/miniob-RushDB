@@ -648,6 +648,8 @@ public:
 
   size_t res_nums() const { return res_query.size(); }
 
+  bool one_row_ret() const;
+
 private:
   SelectSqlNode                    &sql_node_;
   std::unique_ptr<SelectStmt>       select_stmt_;
