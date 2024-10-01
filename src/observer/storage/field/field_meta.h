@@ -31,13 +31,13 @@ class FieldMeta
 public:
   FieldMeta();
 
-  FieldMeta(const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id,
-      bool nullable = false);
+  FieldMeta(
+      const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id, bool nullable);
 
   ~FieldMeta() = default;
 
-  RC init(const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id,
-      bool nullable = false);
+  RC init(
+      const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id, bool nullable);
 
 public:
   const char *name() const;

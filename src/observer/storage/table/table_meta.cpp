@@ -135,6 +135,24 @@ const FieldMeta *TableMeta::field(const char *name) const
   return nullptr;
 }
 
+RC TableMeta::get_field_metas(const vector<string> &fields, vector<FieldMeta> &result) const
+{
+  for (const auto &attribute_name : fields) {
+    FieldMeta field_meta;
+    for (const FieldMeta &field : fields_) {
+      if (0 == strcmp(field.name(), attribute_name.c_str())) {
+        field_meta = field;
+        break;
+      }
+    }
+    if (field_meta.len() == 0) {
+      return RC::SCHEMA_FIELD_NOT_EXIST;
+    }
+    result.emplace_back(field_meta);
+  }
+  return RC::SUCCESS;
+}
+
 const FieldMeta *TableMeta::find_field_by_offset(int offset) const
 {
   for (const FieldMeta &field : fields_) {

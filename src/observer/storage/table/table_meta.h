@@ -49,6 +49,7 @@ public:
   const FieldMeta    *trx_field() const;
   const FieldMeta    *field(int index) const;
   const FieldMeta    *field(const char *name) const;
+  RC                  get_field_metas(const vector<string>& fields, vector<FieldMeta> &result) const;
   const FieldMeta    *find_field_by_offset(int offset) const;
   auto                field_metas() const -> const std::vector<FieldMeta>                *{ return &fields_; }
   auto                trx_fields() const -> std::span<const FieldMeta>;
