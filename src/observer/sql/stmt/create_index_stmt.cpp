@@ -47,6 +47,7 @@ RC CreateIndexStmt::create(Db *db, const CreateIndexSqlNode &create_index, Stmt 
              db->name(), table_name,  attribute_name.c_str());
       return RC::SCHEMA_FIELD_NOT_EXIST;
     }
+    field_metas.push_back(*field_meta);
   }
 
   Index *index = table->find_index(create_index.index_name.c_str());
