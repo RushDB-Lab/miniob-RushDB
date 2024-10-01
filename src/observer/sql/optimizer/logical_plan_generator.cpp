@@ -184,13 +184,16 @@ RC LogicalPlanGenerator::create_plan(FilterStmt *filter_stmt, unique_ptr<Logical
         auto left_to_right_cost = implicit_cast_cost(left->value_type(), right->value_type());
         auto right_to_left_cost = implicit_cast_cost(right->value_type(), left->value_type());
 
-        if (left_to_right_cost <= right_to_left_cost && left_to_right_cost != INT32_MAX) {
+        if (right->type() == ExprType::SUBQUERY || right->type() == ExprType::EXPRLIST) {
+          // 暂时在这里不做处理
+          return RC::SUCCESS;
+        } else if (left_to_right_cost <= right_to_left_cost && left_to_right_cost != INT32_MAX) {
           ExprType left_type = left->type();
           auto     cast_expr = make_unique<CastExpr>(std::move(left), right->value_type());
 
           if (left_type == ExprType::VALUE) {
             Value left_val;
-            rc=cast_expr->try_get_value(left_val);
+            rc = cast_expr->try_get_value(left_val);
             if (OB_FAIL(rc)) {
               LOG_WARN("failed to get value from left child", strrc(rc));
               return rc;

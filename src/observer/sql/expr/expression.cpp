@@ -205,7 +205,8 @@ RC ComparisonExpr::try_get_value(Value &cell) const
   return RC::INVALID_ARGUMENT;
 }
 
-RC ComparisonExpr::get_value(const Tuple &tuple, Value &value) {
+RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
+{
   Value left_value;
   Value right_value;
 
@@ -220,17 +221,17 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value) {
   };
 
   // 辅助函数：检查表达式是否为子查询并返回类型转换后的指针
-  auto get_subquery_expr = [](const std::unique_ptr<Expression> &expr) -> SubQueryExpr* {
+  auto get_subquery_expr = [](const std::unique_ptr<Expression> &expr) -> SubQueryExpr * {
     return expr->type() == ExprType::SUBQUERY ? dynamic_cast<SubQueryExpr *>(expr.get()) : nullptr;
   };
 
   // 检查左侧和右侧是否为子查询表达式
-  SubQueryExpr *left_subquery_expr = get_subquery_expr(left_);
+  SubQueryExpr *left_subquery_expr  = get_subquery_expr(left_);
   SubQueryExpr *right_subquery_expr = get_subquery_expr(right_);
 
   // 处理 EXISTS 和 NOT EXISTS 操作
   if (comp_ == EXISTS_OP || comp_ == NOT_EXISTS_OP) {
-    RC rc = right_->get_value(tuple, right_value);
+    RC   rc     = right_->get_value(tuple, right_value);
     bool exists = (rc == RC::SUCCESS);
     value.set_boolean(comp_ == EXISTS_OP ? exists : !exists);
     // 调用 right_subquery_expr->close() 确保资源释放
@@ -253,7 +254,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value) {
 
   // 检查子查询是否有多行结果
   if (left_subquery_expr && left_subquery_expr->has_more_row(tuple)) {
-    left_subquery_expr->close(); // 关闭子查询
+    left_subquery_expr->close();  // 关闭子查询
     return RC::INVALID_ARGUMENT;
   }
 
@@ -262,13 +263,13 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value) {
     if (left_value.is_null()) {
       value.set_boolean(false);
       if (right_subquery_expr) {
-        right_subquery_expr->close(); // 关闭子查询
+        right_subquery_expr->close();  // 关闭子查询
       }
       return RC::SUCCESS;
     }
 
     bool has_match = false;
-    bool has_null = false;
+    bool has_null  = false;
 
     while (RC::SUCCESS == (rc = right_->get_value(tuple, right_value))) {
       if (right_value.is_null()) {
@@ -305,7 +306,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value) {
 
   // 比较左值和右值
   bool bool_value = false;
-  rc = compare_value(left_value, right_value, bool_value);
+  rc              = compare_value(left_value, right_value, bool_value);
   if (rc == RC::SUCCESS) {
     value.set_boolean(bool_value);
   }
@@ -320,7 +321,6 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value) {
 
   return rc;
 }
-
 
 RC ComparisonExpr::eval(Chunk &chunk, std::vector<uint8_t> &select)
 {
@@ -845,4 +845,12 @@ AttrType SubQueryExpr::value_type() const
 std::unique_ptr<Expression> SubQueryExpr::deep_copy() const
 {
   return {};
+}
+
+ListExpr::ListExpr(std::vector<Expression *> &&exprs)
+{
+  for (auto expr : exprs) {
+    exprs_.emplace_back(std::unique_ptr<Expression>(expr));
+  }
+  exprs.clear();
 }

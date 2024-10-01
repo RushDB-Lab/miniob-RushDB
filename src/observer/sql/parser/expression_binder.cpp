@@ -116,6 +116,10 @@ RC ExpressionBinder::bind_expression(unique_ptr<Expression> &expr, vector<unique
     case ExprType::SUBQUERY: {
       return bind_subquery_expression(expr, bound_expressions);
     } break;
+
+    case ExprType::EXPRLIST: {
+      return bind_exprlist_expression(expr, bound_expressions);
+    } break;
     default: {
       LOG_WARN("unknown expression type: %d", static_cast<int>(expr->type()));
       return RC::INTERNAL;
@@ -465,7 +469,7 @@ RC ExpressionBinder::bind_aggregate_expression(
   }
 
   auto aggregate_expr = make_unique<AggregateExpr>(aggregate_type, std::move(child_expr));
-  // aggregate_expr->set_name(unbound_aggregate_expr->name());
+
   // set name 阶段
   if (unbound_aggregate_expr->name_empty()) {
     string name;
@@ -492,9 +496,28 @@ RC ExpressionBinder::bind_aggregate_expression(
 RC ExpressionBinder::bind_subquery_expression(
     std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions)
 {
+  RC   rc            = RC::SUCCESS;
   auto subquery_expr = dynamic_cast<SubQueryExpr *>(expr.get());
 
-  subquery_expr->generate_select_stmt(context_.get_db(),context_.table_map());
+  rc = subquery_expr->generate_select_stmt(context_.get_db(), context_.table_map());
   bound_expressions.emplace_back(std::move(expr));
-  return RC::SUCCESS;
+  return rc;
+}
+RC ExpressionBinder::bind_exprlist_expression(
+    std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions)
+{
+  RC                             rc        = RC::SUCCESS;
+  auto                           list_expr = dynamic_cast<ListExpr *>(expr.get());
+  vector<unique_ptr<Expression>> child_bound_expressions;
+  for (auto &child_expr : list_expr->get_list()) {
+    if (child_expr->type()!=ExprType::VALUE) {
+      LOG_WARN("invalid children type of LIST expression: %d", child_bound_expressions.size());
+      return RC::INVALID_ARGUMENT;
+    }
+
+}
+
+bound_expressions.emplace_back(std::move(expr));
+return rc;
+
 }

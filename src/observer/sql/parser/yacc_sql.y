@@ -576,9 +576,14 @@ expression:
     | expression '/' expression {
       $$ = create_arithmetic_expression(ArithmeticExpr::Type::DIV, $1, $3, sql_string, &@$);
     }
-    | LBRACE expression RBRACE {
-      $$ = $2;
+    | LBRACE expression_list RBRACE {
+      if ($2->size() == 1) {
+        $$ = $2->front().get();
+      } else {
+        $$ = new ExprListExpr(std::move(*$2));
+      }
       $$->set_name(token_name(sql_string, &@$));
+      delete $2;
     }
     | '-' expression %prec UMINUS {
       $$ = create_arithmetic_expression(ArithmeticExpr::Type::NEGATIVE, $2, nullptr, sql_string, &@$);

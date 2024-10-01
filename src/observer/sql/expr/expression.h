@@ -49,6 +49,7 @@ enum class ExprType
   ARITHMETIC,   ///< 算术运算
   AGGREGATION,  ///< 聚合运算
   SUBQUERY,     ///< 子查询
+  EXPRLIST      ///<  列表
 };
 
 /**
@@ -596,12 +597,13 @@ public:
     }
   }
 
-  RC traverse_check(const std::function<RC(Expression*)>& check_func) override
+  RC traverse_check(const std::function<RC(Expression *)> &check_func) override
   {
     RC rc = RC::SUCCESS;
     if (RC::SUCCESS != (rc = child_->traverse_check(check_func))) {
       return rc;
-    } if (RC::SUCCESS != (rc = check_func(this))) {
+    }
+    if (RC::SUCCESS != (rc = check_func(this))) {
       return rc;
     }
     return rc;
@@ -621,14 +623,14 @@ class PhysicalOperator;
 class SubQueryExpr : public Expression
 {
 public:
-  explicit SubQueryExpr( SelectSqlNode &select_node);
+  explicit SubQueryExpr(SelectSqlNode &select_node);
   virtual ~SubQueryExpr();
 
-  RC open(Trx* trx);
-  RC close();
+  RC   open(Trx *trx);
+  RC   close();
   bool has_more_row(const Tuple &tuple) const;
 
-  RC get_value(const Tuple &tuple, Value &value)  override;
+  RC get_value(const Tuple &tuple, Value &value) override;
 
   RC try_get_value(Value &value) const override;
 
@@ -638,16 +640,16 @@ public:
 
   std::unique_ptr<Expression> deep_copy() const;
 
-  RC generate_select_stmt(Db* db, const std::unordered_map<std::string, Table *> &tables);
+  RC generate_select_stmt(Db *db, const std::unordered_map<std::string, Table *> &tables);
   RC generate_logical_oper();
   RC generate_physical_oper();
 
-  size_t res_nums() const{return res_query.size();}
+  size_t res_nums() const { return res_query.size(); }
 
 private:
-  SelectSqlNode& sql_node_;
-  std::unique_ptr<SelectStmt> select_stmt_;
-  std::unique_ptr<LogicalOperator> logical_oper_;
+  SelectSqlNode                    &sql_node_;
+  std::unique_ptr<SelectStmt>       select_stmt_;
+  std::unique_ptr<LogicalOperator>  logical_oper_;
   std::unique_ptr<PhysicalOperator> physical_oper_;
 
 private:
@@ -655,4 +657,54 @@ private:
   bool res_query_avaliable=false;
   size_t visited_index=0;
 
+};
+
+class ListExpr : public Expression
+{
+public:
+  explicit ListExpr(std::vector<Expression*>&& exprs);
+  explicit ListExpr(std::vector<std::unique_ptr<Expression>>&& exprs) : exprs_(std::move(exprs)) {}
+  virtual ~ListExpr() = default;
+
+  void reset() noexcept
+  {
+    cur_idx_ = 0;
+  }
+
+  RC get_value(const Tuple &tuple, Value &value) override
+  {
+    if (cur_idx_ >= exprs_.size()) {
+      return RC::RECORD_EOF;
+    }
+    return exprs_[cur_idx_++]->get_value(tuple, value);  // 移除const_cast
+  }
+
+  RC try_get_value(Value &value) const override { return RC::UNIMPLEMENTED; }
+
+  ExprType type() const override { return ExprType::EXPRLIST; }
+
+  AttrType value_type() const override { return AttrType::UNDEFINED; }
+
+  // 通过引用传递std::function避免拷贝
+  void traverse(const std::function<void(Expression*)>& func, const std::function<bool(Expression*)>& filter) override
+  {
+    if (filter(this)) {
+      for (auto& expr : exprs_) {
+        expr->traverse(func, filter);
+      }
+      func(this);
+    }
+  }
+
+  RC traverse_check(const std::function<RC(Expression*)>& check_func) override
+  {
+    return RC::SUCCESS;
+
+  }
+
+  std::vector<std::unique_ptr<Expression>>& get_list(){return exprs_;}
+
+private:
+  size_t cur_idx_ = 0;
+  std::vector<std::unique_ptr<Expression>> exprs_;
 };
