@@ -172,7 +172,8 @@ RC LogicalPlanGenerator::create_plan(FilterStmt *filter_stmt, unique_ptr<Logical
     // 已经全部在yacc阶段就改成expr了，现在主要是处理子查询
     if (expr->type() == ExprType::SUBQUERY) {
       auto *sub_query_expr = dynamic_cast<SubQueryExpr *>(expr);
-      return sub_query_expr->generate_logical_oper();
+      rc                   = sub_query_expr->generate_logical_oper();
+      return rc;
     }
 
     if (expr->type() == ExprType::COMPARISON) {
@@ -184,7 +185,8 @@ RC LogicalPlanGenerator::create_plan(FilterStmt *filter_stmt, unique_ptr<Logical
         auto left_to_right_cost = implicit_cast_cost(left->value_type(), right->value_type());
         auto right_to_left_cost = implicit_cast_cost(right->value_type(), left->value_type());
 
-        if (right->type() == ExprType::SUBQUERY || right->type() == ExprType::EXPRLIST) {
+        if (right->type() == ExprType::SUBQUERY || right->type() == ExprType::EXPRLIST ||
+            left->type() == ExprType::SUBQUERY || left->type() == ExprType::EXPRLIST) {
           // 暂时在这里不做处理
           return RC::SUCCESS;
         } else if (left_to_right_cost <= right_to_left_cost && left_to_right_cost != INT32_MAX) {
