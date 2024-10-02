@@ -439,7 +439,11 @@ nullable_constraint:
     }
     | NULLABLE
     {
-      $$ = true;  // NULLABLE 对应的可空性为 true
+      $$ = true;  // NULLABLE 对应的可空性为 true 2022
+    }
+    | NULL_T
+    {
+      $$ = true;  // NULL 对应的可空性也为 true 2023
     }
     | /* empty */
     {
