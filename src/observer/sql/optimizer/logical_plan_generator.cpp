@@ -187,50 +187,52 @@ RC LogicalPlanGenerator::create_plan(FilterStmt *filter_stmt, unique_ptr<Logical
         }
       }
 
-      if (left->value_type() != right->value_type()) {
-        auto left_to_right_cost = implicit_cast_cost(left->value_type(), right->value_type());
-        auto right_to_left_cost = implicit_cast_cost(right->value_type(), left->value_type());
+      if (left->value_type() != AttrType::NULLS && right->value_type() != AttrType::NULLS) {
+        if (left->value_type() != right->value_type()) {
+          auto left_to_right_cost = implicit_cast_cost(left->value_type(), right->value_type());
+          auto right_to_left_cost = implicit_cast_cost(right->value_type(), left->value_type());
 
-        if (right->type() == ExprType::SUBQUERY || right->type() == ExprType::EXPRLIST ||
-            left->type() == ExprType::SUBQUERY || left->type() == ExprType::EXPRLIST) {
-          // 暂时在这里不做处理
-          return RC::SUCCESS;
-        } else if (left_to_right_cost <= right_to_left_cost && left_to_right_cost != INT32_MAX) {
-          ExprType left_type = left->type();
-          auto     cast_expr = make_unique<CastExpr>(std::move(left), right->value_type());
+          if (right->type() == ExprType::SUBQUERY || right->type() == ExprType::EXPRLIST ||
+              left->type() == ExprType::SUBQUERY || left->type() == ExprType::EXPRLIST) {
+            // 暂时在这里不做处理
+            return RC::SUCCESS;
+          } else if (left_to_right_cost <= right_to_left_cost && left_to_right_cost != INT32_MAX) {
+            ExprType left_type = left->type();
+            auto     cast_expr = make_unique<CastExpr>(std::move(left), right->value_type());
 
-          if (left_type == ExprType::VALUE) {
-            Value left_val;
-            rc = cast_expr->try_get_value(left_val);
-            if (OB_FAIL(rc)) {
-              LOG_WARN("failed to get value from left child", strrc(rc));
-              return rc;
+            if (left_type == ExprType::VALUE) {
+              Value left_val;
+              rc = cast_expr->try_get_value(left_val);
+              if (OB_FAIL(rc)) {
+                LOG_WARN("failed to get value from left child", strrc(rc));
+                return rc;
+              }
+              left = make_unique<ValueExpr>(left_val);
+            } else {
+              left = std::move(cast_expr);
             }
-            left = make_unique<ValueExpr>(left_val);
-          } else {
-            left = std::move(cast_expr);
-          }
-        } else if (right_to_left_cost < left_to_right_cost && right_to_left_cost != INT32_MAX) {
-          ExprType right_type = right->type();
-          auto     cast_expr  = make_unique<CastExpr>(std::move(right), left->value_type());
+          } else if (right_to_left_cost < left_to_right_cost && right_to_left_cost != INT32_MAX) {
+            ExprType right_type = right->type();
+            auto     cast_expr  = make_unique<CastExpr>(std::move(right), left->value_type());
 
-          if (right_type == ExprType::VALUE) {
-            Value right_val;
-            rc = cast_expr->try_get_value(right_val);
-            if (OB_FAIL(rc)) {
-              LOG_WARN("failed to get value from right child", strrc(rc));
-              return rc;
+            if (right_type == ExprType::VALUE) {
+              Value right_val;
+              rc = cast_expr->try_get_value(right_val);
+              if (OB_FAIL(rc)) {
+                LOG_WARN("failed to get value from right child", strrc(rc));
+                return rc;
+              }
+              right = make_unique<ValueExpr>(right_val);
+            } else {
+              right = std::move(cast_expr);
             }
-            right = make_unique<ValueExpr>(right_val);
           } else {
-            right = std::move(cast_expr);
+            rc = RC::UNSUPPORTED;
+            LOG_WARN("unsupported cast from %s to %s",
+                         attr_type_to_string(left->value_type()),
+                         attr_type_to_string(right->value_type()));
+            return rc;
           }
-        } else {
-          rc = RC::UNSUPPORTED;
-          LOG_WARN("unsupported cast from %s to %s",
-                   attr_type_to_string(left->value_type()),
-                   attr_type_to_string(right->value_type()));
-          return rc;
         }
       }
     }
