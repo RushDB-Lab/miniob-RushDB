@@ -24,12 +24,33 @@ using namespace common;
 
 Table *BinderContext::find_table(const char *table_name) const
 {
-  auto pred = [table_name](Table *table) { return 0 == strcasecmp(table_name, table->name()); };
-  auto iter = ranges::find_if(query_tables_, pred);
-  if (iter == query_tables_.end()) {
+  auto iter = this->tables_->find(table_name);
+  if (iter == tables_->end()) {
     return nullptr;
   }
-  return *iter;
+  return iter->second;
+}
+bool BinderContext::only_one_table()
+{
+  {
+    if (query_tables_.empty()) {
+      return false;  // 如果列表为空，返回false
+    } else if (query_tables_.size() == 1) {
+      return true;
+    }
+
+    // 获取第一个表指针作为基准
+    Table *first_table = query_tables_[0];
+
+    // 遍历整个向量，检查所有的表是否与第一个表相同
+    for (size_t i = 1; i < query_tables_.size(); ++i) {
+      if (query_tables_[i] != first_table) {
+        return false;  // 如果有不同的表，返回false
+      }
+    }
+
+    return true;  // 如果所有的表都是一样的，返回true
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -105,6 +126,13 @@ RC ExpressionBinder::bind_expression(unique_ptr<Expression> &expr, vector<unique
       return bind_aggregate_expression(expr, bound_expressions);
     } break;
 
+    case ExprType::SUBQUERY: {
+      return bind_subquery_expression(expr, bound_expressions);
+    } break;
+
+    case ExprType::EXPRLIST: {
+      return bind_exprlist_expression(expr, bound_expressions);
+    } break;
     default: {
       LOG_WARN("unknown expression type: %d", static_cast<int>(expr->type()));
       return RC::INTERNAL;
@@ -159,7 +187,7 @@ RC ExpressionBinder::bind_unbound_field_expression(
 
   Table *table = nullptr;
   if (is_blank(table_name)) {
-    if (context_.query_tables().size() != 1) {
+    if (!context_.only_one_table()) {
       LOG_INFO("cannot determine table for field: %s", field_name);
       return RC::SCHEMA_TABLE_NOT_EXIST;
     }
@@ -266,7 +294,7 @@ RC ExpressionBinder::bind_comparison_expression(
     return RC::SUCCESS;
   }
 
-  auto comparison_expr = static_cast<ComparisonExpr *>(expr.get());
+  auto comparison_expr = dynamic_cast<ComparisonExpr *>(expr.get());
 
   vector<unique_ptr<Expression>> child_bound_expressions;
   unique_ptr<Expression>        &left_expr  = comparison_expr->left();
@@ -284,7 +312,7 @@ RC ExpressionBinder::bind_comparison_expression(
 
   unique_ptr<Expression> &left = child_bound_expressions[0];
   if (left.get() != left_expr.get()) {
-    left_expr.reset(left.release());
+    left_expr = std::move(left);
   }
 
   child_bound_expressions.clear();
@@ -300,7 +328,7 @@ RC ExpressionBinder::bind_comparison_expression(
 
   unique_ptr<Expression> &right = child_bound_expressions[0];
   if (right.get() != right_expr.get()) {
-    right_expr.reset(right.release());
+    right_expr = std::move(right);
   }
 
   bound_expressions.emplace_back(std::move(expr));
@@ -334,7 +362,7 @@ RC ExpressionBinder::bind_conjunction_expression(
 
     unique_ptr<Expression> &child = child_bound_expressions[0];
     if (child.get() != child_expr.get()) {
-      child_expr.reset(child.release());
+      child_expr = std::move(child);
     }
   }
 
@@ -368,7 +396,7 @@ RC ExpressionBinder::bind_arithmetic_expression(
 
   unique_ptr<Expression> &left = child_bound_expressions[0];
   if (left.get() != left_expr.get()) {
-    left_expr.reset(left.release());
+    left_expr = std::move(left);
   }
 
   child_bound_expressions.clear();
@@ -384,7 +412,7 @@ RC ExpressionBinder::bind_arithmetic_expression(
 
   unique_ptr<Expression> &right = child_bound_expressions[0];
   if (right.get() != right_expr.get()) {
-    right_expr.reset(right.release());
+    right_expr = std::move(right);
   }
 
   bound_expressions.emplace_back(std::move(expr));
@@ -478,7 +506,7 @@ RC ExpressionBinder::bind_aggregate_expression(
   }
 
   auto aggregate_expr = make_unique<AggregateExpr>(aggregate_type, std::move(child_expr));
-  // aggregate_expr->set_name(unbound_aggregate_expr->name());
+
   // set name 阶段
   if (unbound_aggregate_expr->name_empty()) {
     string name;
@@ -501,4 +529,32 @@ RC ExpressionBinder::bind_aggregate_expression(
 
   bound_expressions.emplace_back(std::move(aggregate_expr));
   return RC::SUCCESS;
+}
+RC ExpressionBinder::bind_subquery_expression(
+    std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions)
+{
+  RC   rc            = RC::SUCCESS;
+  auto subquery_expr = dynamic_cast<SubQueryExpr *>(expr.get());
+
+  rc = subquery_expr->generate_select_stmt(context_.get_db(), context_.table_map());
+  bound_expressions.emplace_back(std::move(expr));
+  return rc;
+}
+RC ExpressionBinder::bind_exprlist_expression(
+    std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions)
+{
+  RC                             rc        = RC::SUCCESS;
+  auto                           list_expr = dynamic_cast<ListExpr *>(expr.get());
+  vector<unique_ptr<Expression>> child_bound_expressions;
+  for (auto &child_expr : list_expr->get_list()) {
+    if (child_expr->type()!=ExprType::VALUE) {
+      LOG_WARN("invalid children type of LIST expression: %d", child_bound_expressions.size());
+      return RC::INVALID_ARGUMENT;
+    }
+
+}
+
+bound_expressions.emplace_back(std::move(expr));
+return rc;
+
 }

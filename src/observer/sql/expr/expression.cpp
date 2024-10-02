@@ -16,9 +16,16 @@ See the Mulan PSL v2 for more details. */
 #include "sql/expr/tuple.h"
 #include "sql/expr/arithmetic_operator.hpp"
 
+#include "sql/stmt/select_stmt.h"
+#include "sql/operator/logical_operator.h"
+#include "sql/operator/physical_operator.h"
+#include "sql/optimizer/logical_plan_generator.h"
+#include "sql/optimizer/physical_plan_generator.h"
+#include "common/lang/defer.h"
+
 using namespace std;
 
-RC FieldExpr::get_value(const Tuple &tuple, Value &value) const
+RC FieldExpr::get_value(const Tuple &tuple, Value &value)
 {
   return tuple.find_cell(TupleCellSpec(table_name(), field_name()), value);
 }
@@ -59,7 +66,7 @@ bool ValueExpr::equal(const Expression &other) const
   return value_.compare(other_value_expr.get_value()) == 0;
 }
 
-RC ValueExpr::get_value(const Tuple &tuple, Value &value) const
+RC ValueExpr::get_value(const Tuple &tuple, Value &value)
 {
   value = value_;
   return RC::SUCCESS;
@@ -88,7 +95,7 @@ RC CastExpr::cast(const Value &value, Value &cast_value) const
   return rc;
 }
 
-RC CastExpr::get_value(const Tuple &tuple, Value &result) const
+RC CastExpr::get_value(const Tuple &tuple, Value &result)
 {
   Value value;
   RC    rc = child_->get_value(tuple, value);
@@ -112,11 +119,15 @@ RC CastExpr::try_get_value(Value &result) const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ComparisonExpr::ComparisonExpr(CompOp comp, unique_ptr<Expression> left, unique_ptr<Expression> right)
+ComparisonExpr::ComparisonExpr(CompOp comp, Expression *left, Expression *right)
+    : comp_(comp), left_(std::unique_ptr<Expression>(left)), right_(std::unique_ptr<Expression>(right))
+{}
+
+ComparisonExpr::ComparisonExpr(CompOp comp, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right)
     : comp_(comp), left_(std::move(left)), right_(std::move(right))
 {}
 
-ComparisonExpr::~ComparisonExpr() {}
+ComparisonExpr::~ComparisonExpr() = default;
 
 RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &result) const
 {
@@ -198,28 +209,61 @@ RC ComparisonExpr::try_get_value(Value &cell) const
   return RC::INVALID_ARGUMENT;
 }
 
-RC ComparisonExpr::get_value(const Tuple &tuple, Value &value) const
+RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
 {
   Value left_value;
   Value right_value;
 
+  // 重置
+  left_->reset();
+  right_->reset();
+
+  // 获取左值
   RC rc = left_->get_value(tuple, left_value);
-  if (rc != RC::SUCCESS) {
+  if (rc != RC::SUCCESS && !left_value.is_null()) {
     LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
     return rc;
   }
+
+  // 处理 IN 和 NOT IN 操作
+  if (comp_ == IN_OP || comp_ == NOT_IN_OP) {
+
+    if (left_value.is_null()) {
+      value.set_boolean(false);
+      return RC::SUCCESS;
+    }
+
+    bool has_match = false;
+    bool has_null  = false;
+
+    while (RC::SUCCESS == (rc = right_->get_value(tuple, right_value))) {
+      if (right_value.is_null()) {
+        has_null = true;
+      } else if (left_value.compare(right_value) == 0) {
+        has_match = true;
+      }
+    }
+
+    bool result = (comp_ == IN_OP) ? has_match : (!has_null && !has_match);
+    value.set_boolean(result);
+
+    return (rc == RC::RECORD_EOF) ? RC::SUCCESS : rc;
+  }
+
+  // 获取右值
   rc = right_->get_value(tuple, right_value);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
     return rc;
   }
 
+  // 比较左值和右值
   bool bool_value = false;
-
-  rc = compare_value(left_value, right_value, bool_value);
+  rc              = compare_value(left_value, right_value, bool_value);
   if (rc == RC::SUCCESS) {
     value.set_boolean(bool_value);
   }
+
   return rc;
 }
 
@@ -279,7 +323,18 @@ ConjunctionExpr::ConjunctionExpr(Type type, vector<unique_ptr<Expression>> &chil
     : conjunction_type_(type), children_(std::move(children))
 {}
 
-RC ConjunctionExpr::get_value(const Tuple &tuple, Value &value) const
+ConjunctionExpr::ConjunctionExpr(Type type, Expression *left, Expression *right) : conjunction_type_(type)
+{
+  children_.emplace_back(left);
+  children_.emplace_back(right);
+}
+
+ConjunctionExpr::ConjunctionExpr(Type type, std::unique_ptr<Expression> children) : conjunction_type_(type)
+{
+  children_.push_back(std::move(children));
+}
+
+RC ConjunctionExpr::get_value(const Tuple &tuple, Value &value)
 {
   RC rc = RC::SUCCESS;
   if (children_.empty()) {
@@ -445,7 +500,7 @@ RC ArithmeticExpr::execute_calc(
   return rc;
 }
 
-RC ArithmeticExpr::get_value(const Tuple &tuple, Value &value) const
+RC ArithmeticExpr::get_value(const Tuple &tuple, Value &value)
 {
   RC rc = RC::SUCCESS;
 
@@ -606,10 +661,7 @@ unique_ptr<Aggregator> AggregateExpr::create_aggregator() const
   return aggregator;
 }
 
-RC AggregateExpr::get_value(const Tuple &tuple, Value &value) const
-{
-  return tuple.find_cell(TupleCellSpec(name()), value);
-}
+RC AggregateExpr::get_value(const Tuple &tuple, Value &value) { return tuple.find_cell(TupleCellSpec(name()), value); }
 
 RC AggregateExpr::type_from_string(const char *type_str, AggregateExpr::Type &type)
 {
@@ -628,4 +680,128 @@ RC AggregateExpr::type_from_string(const char *type_str, AggregateExpr::Type &ty
     rc = RC::INVALID_ARGUMENT;
   }
   return rc;
+}
+
+SubQueryExpr::SubQueryExpr(SelectSqlNode &select_node) : sql_node_(select_node) {}
+
+SubQueryExpr::~SubQueryExpr() = default;
+
+RC SubQueryExpr::generate_select_stmt(Db *db, const std::unordered_map<std::string, Table *> &tables)
+{
+  // 仿照普通 select 的执行流程，tables 用来传递别名
+  Stmt *stmt = nullptr;
+  RC    rc   = SelectStmt::create(db, sql_node_, stmt);
+  if (OB_FAIL(rc)) {
+    LOG_WARN("failed to create subquery select statement. return %s", strrc(rc));
+    return rc;
+  }
+
+  // 确保生成的 stmt 类型为 SELECT 类型
+  if (stmt->type() != StmtType::SELECT) {
+    LOG_WARN("subquery stmt type is not SELECT.");
+    return RC::INVALID_ARGUMENT;
+  }
+
+  // 动态转换为 SelectStmt 类型，并进行子查询列数校验
+  auto *select_stmt = dynamic_cast<SelectStmt *>(stmt);
+  if (select_stmt == nullptr) {
+    LOG_WARN("failed to cast subquery stmt to SelectStmt. ");
+    return RC::INVALID_ARGUMENT;
+  }
+
+  // 子查询不能有超过一个列
+  if (select_stmt->query_expressions_size() > 1) {
+    LOG_WARN("too many columns in subquery expression.");
+    return RC::TO_LONG_SUBQUERY_EXPR;
+  }
+
+  // 将 select_stmt_ 指针设置为 select_stmt，使用 std::unique_ptr 来管理
+  select_stmt_ = std::unique_ptr<SelectStmt>(select_stmt);
+  return RC::SUCCESS;
+}
+
+RC SubQueryExpr::generate_logical_oper()
+{
+  RC rc = LogicalPlanGenerator::create(select_stmt_.get(), logical_oper_);
+  if (OB_FAIL(rc)) {
+    LOG_WARN("failed to generate logical operator for subquery. return %s", strrc(rc));
+    return rc;
+  }
+  return RC::SUCCESS;
+}
+
+RC SubQueryExpr::generate_physical_oper()
+{
+  RC rc = PhysicalPlanGenerator::create(*logical_oper_, physical_oper_);
+  if (OB_FAIL(rc)) {
+    LOG_WARN("failed to generate physical operator for subquery. return %s", strrc(rc));
+    return rc;
+  }
+  return open(nullptr);
+}
+bool SubQueryExpr::one_row_ret() const { return res_query.size() <= 1; }
+
+// 子算子树的 open 和 close 逻辑由外部控制
+RC SubQueryExpr::open(Trx *trx)
+{
+  RC rc = RC::SUCCESS;
+  rc    = physical_oper_->open(trx);
+  if (OB_FAIL(rc)) {
+    return rc;
+  }
+
+  Value sub_query_value;
+  res_query.clear();
+  while (RC::SUCCESS == physical_oper_->next()) {
+    physical_oper_->current_tuple()->cell_at(0, sub_query_value);
+    res_query.push_back(sub_query_value);
+  }
+
+  res_query_avaliable = true;
+  visited_index       = 0;
+  rc                  = physical_oper_->close();
+  return rc;
+}
+
+RC SubQueryExpr::reset()
+{
+  visited_index = 0;
+  return RC::SUCCESS;
+}
+
+bool SubQueryExpr::has_more_row() const { return res_query.size() > 1; }
+
+RC SubQueryExpr::get_value(const Tuple &tuple, Value &value)
+{
+  if (res_query.empty()) {
+    value.set_null(true);
+    return RC::RECORD_EOF;
+  }
+  if (visited_index == res_query.size()) {
+    return RC::RECORD_EOF;
+  }
+  value = res_query[visited_index++];
+  return RC::SUCCESS;
+}
+
+RC SubQueryExpr::try_get_value(Value &value) const { return RC::UNIMPLEMENTED; }
+
+ExprType SubQueryExpr::type() const { return ExprType::SUBQUERY; }
+
+AttrType SubQueryExpr::value_type() const
+{
+  return AttrType::UNDEFINED;
+}
+
+std::unique_ptr<Expression> SubQueryExpr::deep_copy() const
+{
+  return {};
+}
+
+ListExpr::ListExpr(std::vector<Expression *> &&exprs)
+{
+  for (auto expr : exprs) {
+    exprs_.emplace_back(std::unique_ptr<Expression>(expr));
+  }
+  exprs.clear();
 }

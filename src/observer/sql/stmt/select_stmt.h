@@ -33,10 +33,11 @@ class Table;
 class SelectStmt : public Stmt
 {
 public:
-  SelectStmt() = default;
+   SelectStmt() = default;
   ~SelectStmt() override;
 
   StmtType type() const override { return StmtType::SELECT; }
+  size_t   query_expressions_size() const { return query_expressions_.size(); }
 
 public:
   static RC create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt);

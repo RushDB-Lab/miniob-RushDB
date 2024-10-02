@@ -38,7 +38,7 @@ public:
   const std::vector<Value>     &values() const { return values_; }
   FilterStmt                   *filter_stmt() const { return filter_stmt_; }
 
-  static RC create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt);
+  static RC create(Db *db, UpdateSqlNode &update_sql, Stmt *&stmt);
 
 private:
   Table                 *table_ = nullptr;

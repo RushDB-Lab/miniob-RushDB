@@ -46,16 +46,20 @@ struct RelAttrSqlNode
  */
 enum CompOp
 {
-  EQUAL_TO,     ///< "="
-  LESS_EQUAL,   ///< "<="
-  NOT_EQUAL,    ///< "<>"
-  LESS_THAN,    ///< "<"
-  GREAT_EQUAL,  ///< ">="
-  GREAT_THAN,   ///< ">"
-  OP_IS,        ///< "IS"
-  OP_IS_NOT,    ///< "IS NOT"
-  LIKE_OP,      ///< "like"
-  NOT_LIKE_OP,  ///< "not like"
+  EQUAL_TO,       ///< "="
+  LESS_EQUAL,     ///< "<="
+  NOT_EQUAL,      ///< "<>"
+  LESS_THAN,      ///< "<"
+  GREAT_EQUAL,    ///< ">="
+  GREAT_THAN,     ///< ">"
+  OP_IS,          ///< "IS"
+  OP_IS_NOT,      ///< "IS NOT"
+  LIKE_OP,        ///< "like"
+  NOT_LIKE_OP,    ///< "not like"
+  IN_OP,          ///< "in (sub query)"
+  NOT_IN_OP,      ///< "not in (sub query)"
+  EXISTS_OP,      ///< "exists (sub query)"
+  NOT_EXISTS_OP,  ///< "not exists (sub query)"
   NO_OP
 };
 
@@ -86,9 +90,18 @@ struct ConditionSqlNode
 struct RelationNode
 {
   RelationNode(std::string relation_, std::string alias_) : relation(std::move(relation_)), alias(std::move(alias_)) {}
-  explicit RelationNode(std::string relation_) : relation(std::move(relation_)) {}
+  explicit    RelationNode(std::string relation_) : relation(std::move(relation_)) {}
   std::string relation;  ///< 查询的表
   std::string alias;     ///< 该表的别名 (may be NULL)
+};
+
+/**
+ * @brief 描述一个orderby的节点
+ */
+struct OrderBySqlNode
+{
+  std::unique_ptr<Expression> expr;
+  bool                        is_asc;  ///< 默认true 为升序
 };
 
 /**
@@ -105,8 +118,9 @@ struct SelectSqlNode
 {
   std::vector<std::unique_ptr<Expression>> expressions;  ///< 查询的表达式
   std::vector<RelationNode>                relations;    ///< 查询的表
-  std::vector<ConditionSqlNode>            conditions;   ///< 查询条件，使用AND串联起来多个条件
+  std::unique_ptr<Expression>              conditions;   ///< 查询条件，使用AND串联起来多个条件
   std::vector<std::unique_ptr<Expression>> group_by;     ///< group by clause
+  std::vector<OrderBySqlNode>              order_by;     ///< attributes in order clause
 };
 
 /**
@@ -116,8 +130,8 @@ struct SelectSqlNode
  */
 struct JoinSqlNode
 {
-  std::string                   relation;    ///< 查询的表
-  std::vector<ConditionSqlNode> conditions;  ///< 查询条件，可能有多个
+  std::vector<std::string>    relations;   ///< 查询的表
+  std::unique_ptr<Expression> conditions;  ///< 查询条件，可能有多个
 };
 
 /**
@@ -146,8 +160,8 @@ struct InsertSqlNode
  */
 struct DeleteSqlNode
 {
-  std::string                   relation_name;  ///< Relation to delete from
-  std::vector<ConditionSqlNode> conditions;
+  std::string                 relation_name;  ///< Relation to delete from
+  std::unique_ptr<Expression> condition;
 };
 
 /**
@@ -168,7 +182,7 @@ struct UpdateSqlNode
 {
   std::string                   relation_name;  ///< Relation to update
   std::vector<SetClauseSqlNode> set_clauses;    ///< 更新的set语句，支持多个字段和值
-  std::vector<ConditionSqlNode> conditions;
+  std::unique_ptr<Expression>   conditions;     ///< 谓词条件
 };
 
 /**

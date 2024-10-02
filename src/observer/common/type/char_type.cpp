@@ -34,7 +34,7 @@ static RC parse_date(const char *str, int &result)
     return RC::INVALID_ARGUMENT;
   }
   if (!check_date(y, m, d)) {
-    return RC::INVALID_ARGUMENT;
+    return RC::ERROR_DATE;
   }
   result = y * 10000 + m * 100 + d;
   return RC::SUCCESS;
