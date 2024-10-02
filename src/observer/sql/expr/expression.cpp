@@ -209,67 +209,26 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
 {
   Value left_value;
   Value right_value;
-
-  // 辅助函数：获取表达式值，处理子查询返回值
-  auto get_expr_value = [&tuple](const std::unique_ptr<Expression> &expr, Value &value) -> RC {
-    RC rc = expr->get_value(tuple, value);
-    if (expr->type() == ExprType::SUBQUERY && rc == RC::RECORD_EOF) {
-      value.set_null(true);
-      return RC::SUCCESS;
-    }
-    return rc;
-  };
-
-  // 辅助函数：检查表达式是否为子查询并返回类型转换后的指针
-  auto get_subquery_expr = [](const std::unique_ptr<Expression> &expr) -> SubQueryExpr * {
-    return expr->type() == ExprType::SUBQUERY ? dynamic_cast<SubQueryExpr *>(expr.get()) : nullptr;
-  };
-
-  // 检查左侧和右侧是否为子查询表达式
-  SubQueryExpr *left_subquery_expr  = get_subquery_expr(left_);
-  SubQueryExpr *right_subquery_expr = get_subquery_expr(right_);
-
   // 处理 EXISTS 和 NOT EXISTS 操作
   if (comp_ == EXISTS_OP || comp_ == NOT_EXISTS_OP) {
     RC   rc     = right_->get_value(tuple, right_value);
     bool exists = (rc == RC::SUCCESS);
     value.set_boolean(comp_ == EXISTS_OP ? exists : !exists);
-    // 调用 right_subquery_expr->close() 确保资源释放
-    if (right_subquery_expr) {
-      right_subquery_expr->close();
-    }
     return exists ? RC::SUCCESS : RC::RECORD_EOF;
   }
 
   // 获取左值
-  RC rc = get_expr_value(left_, left_value);
-  if (rc != RC::SUCCESS) {
+  RC rc = left_->get_value(tuple, left_value);
+  if (rc != RC::SUCCESS && !left_value.is_null()) {
     LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
-    // 调用 left_subquery_expr->close() 确保资源释放
-    if (left_subquery_expr) {
-      left_subquery_expr->close();
-    }
     return rc;
-  }
-
-  // 检查子查询是否有多行结果
-  if (left_subquery_expr && left_subquery_expr->has_more_row()) {
-    left_subquery_expr->close();  // 关闭子查询
-    return RC::INVALID_ARGUMENT;
   }
 
   // 处理 IN 和 NOT IN 操作
   if (comp_ == IN_OP || comp_ == NOT_IN_OP) {
 
-    if (right_->type() == ExprType::EXPRLIST) {
-      static_cast<ListExpr *>(right_.get())->reset();
-    }
-
     if (left_value.is_null()) {
       value.set_boolean(false);
-      if (right_subquery_expr) {
-        right_subquery_expr->close();  // 关闭子查询
-      }
       return RC::SUCCESS;
     }
 
@@ -286,27 +245,15 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
 
     bool result = (comp_ == IN_OP) ? has_match : (!has_null && !has_match);
     value.set_boolean(result);
-    // 调用 right_subquery_expr->close() 确保资源释放
-    if (right_subquery_expr) {
-      right_subquery_expr->close();
-    }
+
     return (rc == RC::RECORD_EOF) ? RC::SUCCESS : rc;
   }
 
   // 获取右值
-  rc = get_expr_value(right_, right_value);
+  rc = right_->get_value(tuple, right_value);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
-    if (right_subquery_expr) {
-      right_subquery_expr->close();
-    }
     return rc;
-  }
-
-  // 检查右侧子查询是否有多行结果
-  if (right_subquery_expr && right_subquery_expr->has_more_row()) {
-    right_subquery_expr->close();
-    return RC::INVALID_ARGUMENT;
   }
 
   // 比较左值和右值
@@ -314,14 +261,6 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
   rc              = compare_value(left_value, right_value, bool_value);
   if (rc == RC::SUCCESS) {
     value.set_boolean(bool_value);
-  }
-
-  // 调用 left_subquery_expr 和 right_subquery_expr 的 close 确保资源释放
-  if (left_subquery_expr) {
-    left_subquery_expr->close();
-  }
-  if (right_subquery_expr) {
-    right_subquery_expr->close();
   }
 
   return rc;
@@ -831,17 +770,20 @@ bool SubQueryExpr::has_more_row() const { return res_query.size() > 1; }
 
 RC SubQueryExpr::get_value(const Tuple &tuple, Value &value)
 {
+  if (res_query.empty()) {
+    value.set_null(true);
+    return RC::RECORD_EOF;
+  }
   if (visited_index == res_query.size()) {
     return RC::RECORD_EOF;
   }
-  value=res_query[visited_index++];
-  return  RC::SUCCESS;
+  value = res_query[visited_index++];
+  return RC::SUCCESS;
 }
 
 RC SubQueryExpr::try_get_value(Value &value) const { return RC::UNIMPLEMENTED; }
 
-ExprType SubQueryExpr::type() const { return ExprType::SUBQUERY;
-}
+ExprType SubQueryExpr::type() const { return ExprType::SUBQUERY; }
 
 AttrType SubQueryExpr::value_type() const
 {
