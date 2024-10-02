@@ -226,6 +226,12 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
 
   // 处理 IN 和 NOT IN 操作
   if (comp_ == IN_OP || comp_ == NOT_IN_OP) {
+    if (right_->type() == ExprType::EXPRLIST) {
+      dynamic_cast<ListExpr *>(right_.get())->reset();
+    }
+    if (right_->type() == ExprType::SUBQUERY) {
+      dynamic_cast<SubQueryExpr *>(right_.get())->reset();
+    }
 
     if (left_value.is_null()) {
       value.set_boolean(false);
@@ -760,7 +766,7 @@ RC SubQueryExpr::open(Trx *trx)
   return rc;
 }
 
-RC SubQueryExpr::close()
+RC SubQueryExpr::reset()
 {
   visited_index = 0;
   return RC::SUCCESS;

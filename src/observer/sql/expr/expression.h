@@ -629,7 +629,7 @@ public:
   virtual ~SubQueryExpr();
 
   RC   open(Trx *trx);
-  RC   close();
+  RC   reset();
   bool has_more_row() const;
 
   RC get_value(const Tuple &tuple, Value &value) override;
