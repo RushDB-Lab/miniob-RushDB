@@ -17,6 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include <string>
 
 #include "sql/stmt/stmt.h"
+#include "storage/table/table_meta.h"
 
 struct CreateIndexSqlNode;
 class Table;
