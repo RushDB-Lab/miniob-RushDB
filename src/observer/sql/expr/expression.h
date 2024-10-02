@@ -143,7 +143,7 @@ public:
   // 后序遍历 检查
   virtual RC traverse_check(const std::function<RC(Expression *)> &check_func) { return check_func(this); }
 
-  //
+  virtual RC reset() { return RC::SUCCESS; }
 
 protected:
   /**
@@ -629,7 +629,7 @@ public:
   virtual ~SubQueryExpr();
 
   RC   open(Trx *trx);
-  RC   reset();
+  RC   reset() override;
   bool has_more_row() const;
 
   RC get_value(const Tuple &tuple, Value &value) override;
@@ -670,9 +670,10 @@ public:
   explicit ListExpr(std::vector<std::unique_ptr<Expression>>&& exprs) : exprs_(std::move(exprs)) {}
   virtual ~ListExpr() = default;
 
-  void reset() noexcept
+  RC reset() override
   {
     cur_idx_ = 0;
+    return RC::SUCCESS;
   }
 
   RC get_value(const Tuple &tuple, Value &value) override

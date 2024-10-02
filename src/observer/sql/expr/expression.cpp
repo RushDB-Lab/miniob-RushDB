@@ -209,13 +209,10 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
 {
   Value left_value;
   Value right_value;
-  // 处理 EXISTS 和 NOT EXISTS 操作
-  if (comp_ == EXISTS_OP || comp_ == NOT_EXISTS_OP) {
-    RC   rc     = right_->get_value(tuple, right_value);
-    bool exists = (rc == RC::SUCCESS);
-    value.set_boolean(comp_ == EXISTS_OP ? exists : !exists);
-    return exists ? RC::SUCCESS : RC::RECORD_EOF;
-  }
+
+  // 重置
+  left_->reset();
+  right_->reset();
 
   // 获取左值
   RC rc = left_->get_value(tuple, left_value);
@@ -223,15 +220,9 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
     LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
     return rc;
   }
-  //重置右值
-  if (right_->type() == ExprType::SUBQUERY) {
-    dynamic_cast<SubQueryExpr *>(right_.get())->reset();
-  }
+
   // 处理 IN 和 NOT IN 操作
   if (comp_ == IN_OP || comp_ == NOT_IN_OP) {
-    if (right_->type() == ExprType::EXPRLIST) {
-      dynamic_cast<ListExpr *>(right_.get())->reset();
-    }
 
     if (left_value.is_null()) {
       value.set_boolean(false);
