@@ -163,7 +163,7 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
           return RC::UNSUPPORTED;
         }
         SubQueryExpr *right_subquery_expr = get_subquery_expr(comparison_expr->right());
-        if (right_subquery_expr != nullptr && right_subquery_expr->one_row_ret()) {
+        if (right_subquery_expr != nullptr && !right_subquery_expr->one_row_ret()) {
           return RC::UNSUPPORTED;
         }
       }
