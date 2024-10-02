@@ -547,14 +547,12 @@ RC ExpressionBinder::bind_exprlist_expression(
   auto                           list_expr = dynamic_cast<ListExpr *>(expr.get());
   vector<unique_ptr<Expression>> child_bound_expressions;
   for (auto &child_expr : list_expr->get_list()) {
-    if (child_expr->type()!=ExprType::VALUE) {
+    if (child_expr->type() != ExprType::VALUE) {
       LOG_WARN("invalid children type of LIST expression: %d", child_bound_expressions.size());
       return RC::INVALID_ARGUMENT;
     }
+  }
 
-}
-
-bound_expressions.emplace_back(std::move(expr));
-return rc;
-
+  bound_expressions.emplace_back(std::move(expr));
+  return rc;
 }

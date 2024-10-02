@@ -788,15 +788,9 @@ RC SubQueryExpr::try_get_value(Value &value) const { return RC::UNIMPLEMENTED; }
 
 ExprType SubQueryExpr::type() const { return ExprType::SUBQUERY; }
 
-AttrType SubQueryExpr::value_type() const
-{
-  return AttrType::UNDEFINED;
-}
+AttrType SubQueryExpr::value_type() const { return AttrType::UNDEFINED; }
 
-std::unique_ptr<Expression> SubQueryExpr::deep_copy() const
-{
-  return {};
-}
+std::unique_ptr<Expression> SubQueryExpr::deep_copy() const { return {}; }
 
 ListExpr::ListExpr(std::vector<Expression *> &&exprs)
 {

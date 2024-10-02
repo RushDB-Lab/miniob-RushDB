@@ -32,7 +32,7 @@ class FieldMeta;
 class FilterStmt
 {
 public:
-           FilterStmt() = default;
+  FilterStmt() = default;
   virtual ~FilterStmt();
 
 public:

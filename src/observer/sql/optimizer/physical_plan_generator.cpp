@@ -136,7 +136,7 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
       SubQueryExpr *sub_query_expr = static_cast<SubQueryExpr *>(expr);
       sub_query_expr->generate_physical_oper();
     }
- return RC::SUCCESS;
+    return RC::SUCCESS;
   };
 
   Index     *index      = nullptr;

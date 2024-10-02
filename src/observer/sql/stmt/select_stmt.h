@@ -33,7 +33,7 @@ class Table;
 class SelectStmt : public Stmt
 {
 public:
-   SelectStmt() = default;
+  SelectStmt() = default;
   ~SelectStmt() override;
 
   StmtType type() const override { return StmtType::SELECT; }

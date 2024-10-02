@@ -56,4 +56,3 @@ RC FilterStmt::create(Db *db, Table *default_table, std::unordered_map<std::stri
   stmt = tmp_stmt;
   return rc;
 }
-

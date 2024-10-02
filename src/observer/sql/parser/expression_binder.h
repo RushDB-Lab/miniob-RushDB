@@ -36,7 +36,7 @@ public:
   const std::vector<Table *>               &query_tables() const { return query_tables_; }
   std::unordered_map<std::string, Table *> &table_map() { return *tables_; }
 
-  bool only_one_table ();
+  bool only_one_table();
 
 private:
   Db                                       *db_;
@@ -78,8 +78,9 @@ private:
       std::unique_ptr<Expression> &aggregate_expr, std::vector<std::unique_ptr<Expression>> &bound_expressions);
   RC bind_subquery_expression(
       std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions);
-    RC bind_exprlist_expression(
-     std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions);
+  RC bind_exprlist_expression(
+      std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions);
+
 private:
   bool           multi_tables_;
   BinderContext &context_;

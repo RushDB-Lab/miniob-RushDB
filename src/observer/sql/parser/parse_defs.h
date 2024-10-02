@@ -90,7 +90,7 @@ struct ConditionSqlNode
 struct RelationNode
 {
   RelationNode(std::string relation_, std::string alias_) : relation(std::move(relation_)), alias(std::move(alias_)) {}
-  explicit    RelationNode(std::string relation_) : relation(std::move(relation_)) {}
+  explicit RelationNode(std::string relation_) : relation(std::move(relation_)) {}
   std::string relation;  ///< 查询的表
   std::string alias;     ///< 该表的别名 (may be NULL)
 };

@@ -38,7 +38,7 @@ class GroupByLogicalOperator;
 class PhysicalPlanGenerator
 {
 public:
-           PhysicalPlanGenerator() = default;
+  PhysicalPlanGenerator()          = default;
   virtual ~PhysicalPlanGenerator() = default;
 
   static RC create(LogicalOperator &logical_operator, std::unique_ptr<PhysicalOperator> &oper);
