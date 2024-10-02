@@ -58,7 +58,7 @@ RC UpdatePhysicalOperator::open(Trx *trx)
         if (values_[i].is_null()) {
           new_record.data()[null_offset] = '1';
         } else {
-          new_record.data()[null_offset] = '0';
+          new_record.data()[null_offset] = 0;
         }
       } else {
         if (values_[i].is_null()) {
