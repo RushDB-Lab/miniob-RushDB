@@ -223,14 +223,14 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
     LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
     return rc;
   }
-
+  //重置右值
+  if (right_->type() == ExprType::SUBQUERY) {
+    dynamic_cast<SubQueryExpr *>(right_.get())->reset();
+  }
   // 处理 IN 和 NOT IN 操作
   if (comp_ == IN_OP || comp_ == NOT_IN_OP) {
     if (right_->type() == ExprType::EXPRLIST) {
       dynamic_cast<ListExpr *>(right_.get())->reset();
-    }
-    if (right_->type() == ExprType::SUBQUERY) {
-      dynamic_cast<SubQueryExpr *>(right_.get())->reset();
     }
 
     if (left_value.is_null()) {
