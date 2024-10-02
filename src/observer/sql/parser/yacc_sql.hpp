@@ -151,8 +151,9 @@ union YYSTYPE
   int                                       number;
   float                                     floats;
   bool                                      nullable_info;
+  std::vector<std::string>                 *index_attr_list;
 
-#line 156 "yacc_sql.hpp"
+#line 157 "yacc_sql.hpp"
 };
 typedef union YYSTYPE YYSTYPE;
 #define YYSTYPE_IS_TRIVIAL 1

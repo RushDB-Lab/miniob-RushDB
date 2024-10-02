@@ -149,6 +149,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
   int                                        number;
   float                                      floats;
   bool                                       nullable_info;
+  std::vector<std::string> *                 index_attr_list;
 }
 
 %token <number> NUMBER
@@ -185,6 +186,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 %type <orderby_unit>        sort_unit
 %type <orderby_list>        sort_list
 %type <orderby_list>        opt_order_by
+%type <index_attr_list>     attr_list
 %type <sql_node>            calc_stmt
 %type <sql_node>            select_stmt
 %type <sql_node>            insert_stmt
@@ -314,17 +316,32 @@ show_index_stmt:
     }
     ;
 
-create_index_stmt:    /*create index 语句的语法解析树*/
-    CREATE INDEX ID ON ID LBRACE ID RBRACE
+create_index_stmt:
+    CREATE INDEX ID ON ID LBRACE attr_list RBRACE
     {
       $$ = new ParsedSqlNode(SCF_CREATE_INDEX);
       CreateIndexSqlNode &create_index = $$->create_index;
       create_index.index_name = $3;
       create_index.relation_name = $5;
-      create_index.attribute_name = $7;
+      create_index.attribute_name.swap(*$7); // $7 是 vector<string> 类型
+      delete $7; // 释放指针
       free($3);
       free($5);
-      free($7);
+    }
+    ;
+
+attr_list:
+    ID
+    {
+      $$ = new std::vector<std::string>; // 创建一个新的 vector
+      $$->emplace_back($1); // 将列名加入 vector
+      free($1);
+    }
+    | ID COMMA attr_list
+    {
+      $$ = $3; // 使用现有的 vector
+      $$->emplace($$->begin(), $1); // 将新列名加入 vector 开头
+      free($1);
     }
     ;
 

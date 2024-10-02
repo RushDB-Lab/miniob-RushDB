@@ -35,7 +35,7 @@ public:
     strings_.emplace_back(begin, end);
   }
 
-  void append(std::initializer_list<std::string> init) { strings_.emplace_back(init); }
+  void append(const std::vector<std::string> &init) { strings_.emplace_back(init); }
 
   template <typename T>
   void append(const T &v)
