@@ -36,10 +36,17 @@ public:
   const std::vector<Table *>               &query_tables() const { return query_tables_; }
   std::unordered_map<std::string, Table *> &table_map() { return *tables_; }
 
-  bool only_one_table ();
+  bool only_one_table();
 
 private:
-  Db                                       *db_;
+  Db *db_;
+
+public:
+  [[nodiscard]] Table *default_table() const { return default_table_; }
+  void                 set_default_table(Table *default_table) { default_table_ = default_table; }
+
+private:
+  Table                                    *default_table_;
   std::vector<Table *>                      query_tables_;
   std::unordered_map<std::string, Table *> *tables_;
 };
@@ -77,8 +84,8 @@ private:
       std::unique_ptr<Expression> &aggregate_expr, std::vector<std::unique_ptr<Expression>> &bound_expressions);
   RC bind_subquery_expression(
       std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions);
-    RC bind_exprlist_expression(
-     std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions);
+  RC bind_exprlist_expression(
+      std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions);
 private:
   BinderContext &context_;
 };

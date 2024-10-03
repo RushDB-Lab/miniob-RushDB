@@ -27,4 +27,6 @@ GPATH
 GTAGS
 docs/book
 test_sql
+./CMakeLists.txt
+test
 #*#

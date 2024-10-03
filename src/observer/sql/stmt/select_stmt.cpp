@@ -67,8 +67,12 @@ RC SelectStmt::create(
     tables.push_back(table);
     table_map.insert({table_name, table});
   }
+ Table *default_table = nullptr;
+  if (tables.size() == 1) {
+    default_table = tables[0];
+  }
   binder_context.set_tables(&table_map);
-
+  binder_context.set_default_table(default_table);
   // collect query fields in `select` statement
   vector<unique_ptr<Expression>> bound_expressions;
   ExpressionBinder               expression_binder(binder_context);
@@ -88,11 +92,6 @@ RC SelectStmt::create(
       LOG_INFO("bind expression failed. rc=%s", strrc(rc));
       return rc;
     }
-  }
-
-  Table *default_table = nullptr;
-  if (tables.size() == 1) {
-    default_table = tables[0];
   }
 
   // create filter statement in `where` statement
