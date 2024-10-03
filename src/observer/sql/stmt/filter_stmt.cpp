@@ -42,6 +42,7 @@ RC FilterStmt::create(Db *db, Table *default_table, std::unordered_map<std::stri
   }
   binder_context.add_db(db);
   binder_context.set_tables(tables);
+  binder_context.set_default_table(default_table);
   ExpressionBinder expression_binder(binder_context);
 
   rc = expression_binder.bind_expression(condition, cond_expressions);

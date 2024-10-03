@@ -217,6 +217,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 
 %left OR
 %left AND
+%left EQ LT GT LE GE NE
 %left '+' '-'
 %left '*' '/'
 %nonassoc UMINUS

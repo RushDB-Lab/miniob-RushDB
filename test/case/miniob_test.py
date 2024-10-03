@@ -47,7 +47,9 @@ python3 miniob_test.py
 
 运行 basic 测试用例
 python3 miniob_test.py --test-cases=basic
-
+python3 miniob_test.py --test-cases=primary-date
+python3 miniob_test.py --test-cases=primary-complex-sub-query
+python3 miniob_test.py --test-cases=primary-simple-sub-query
 如果要运行多个测试用例，则在 --test-cases 参数中使用 ',' 分隔写多个即可
 """
 

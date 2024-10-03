@@ -160,6 +160,7 @@ RC PlainCommunicator::write_debug(SessionEvent *request, bool &need_disconnect)
 RC PlainCommunicator::write_result(SessionEvent *event, bool &need_disconnect)
 {
   RC rc = write_result_internal(event, need_disconnect);
+
   if (!need_disconnect) {
     RC rc1 = write_debug(event, need_disconnect);
     if (OB_FAIL(rc1)) {
@@ -180,8 +181,7 @@ RC PlainCommunicator::write_result(SessionEvent *event, bool &need_disconnect)
 
 RC PlainCommunicator::write_result_internal(SessionEvent *event, bool &need_disconnect)
 {
-  RC rc = RC::SUCCESS;
-
+  RC rc           = RC::SUCCESS;
   need_disconnect = true;
 
   SqlResult *sql_result = event->sql_result();
@@ -205,38 +205,16 @@ RC PlainCommunicator::write_result_internal(SessionEvent *event, bool &need_disc
     const char          *alias = spec.alias();
     if (nullptr != alias || alias[0] != 0) {
       if (0 != i) {
-        const char *delim = " | ";
-
-        rc = writer_->writen(delim, strlen(delim));
-        if (OB_FAIL(rc)) {
-          LOG_WARN("failed to send data to client. err=%s", strerror(errno));
-          return rc;
-        }
+        title_stream << " | ";
       }
-
-      int len = strlen(alias);
-
-      rc = writer_->writen(alias, len);
-      if (OB_FAIL(rc)) {
-        LOG_WARN("failed to send data to client. err=%s", strerror(errno));
-        sql_result->close();
-        return rc;
-      }
+      title_stream << alias;  // 将alias存入流中
     }
   }
 
   if (cell_num > 0) {
-    char newline = '\n';
-
-    rc = writer_->writen(&newline, 1);
-    if (OB_FAIL(rc)) {
-      LOG_WARN("failed to send data to client. err=%s", strerror(errno));
-      sql_result->close();
-      return rc;
-    }
+    title_stream << '\n';  // 将换行符存入流中
   }
 
-  rc = RC::SUCCESS;
   if (event->session()->get_execution_mode() == ExecutionMode::CHUNK_ITERATOR && event->session()->used_chunk_mode()) {
     rc = write_chunk_result(sql_result);
   } else {
@@ -244,7 +222,36 @@ RC PlainCommunicator::write_result_internal(SessionEvent *event, bool &need_disc
   }
 
   if (OB_FAIL(rc)) {
-    return rc;
+    sql_result->close();
+    sql_result->set_return_code(rc);
+    return write_state(event, need_disconnect);
+  } else {
+    // 将 title_stream 中的内容一次性写入到 writer_
+    std::string buffer = title_stream.str();  // 获取整个缓冲区的内容
+    title_stream.str("");                     // 清空流内容
+    title_stream.clear();                     // 重置流状态（但不会清空内容）
+
+    rc = writer_->writen(buffer.c_str(), buffer.size());
+    if (OB_FAIL(rc)) {
+      LOG_WARN("failed to send data to client. err=%s", strerror(errno));
+      sql_result->close();
+      return rc;
+    }
+
+    buffer.clear();  // 清空字符串内容
+
+    // 将 sql_result_stream 中的内容一次性写入到 writer_
+    buffer = sql_result_stream.str();  // 获取缓冲区的内容
+    sql_result_stream.str("");         // 清空流内容
+    sql_result_stream.clear();         // 重置流状态
+
+    rc = writer_->writen(buffer.c_str(), buffer.size());
+    buffer.clear();  // 清空字符串内容
+    if (OB_FAIL(rc)) {
+      LOG_WARN("failed to send data to client. err=%s", strerror(errno));
+      sql_result->close();
+      return rc;
+    }
   }
 
   if (cell_num == 0) {
@@ -273,6 +280,7 @@ RC PlainCommunicator::write_tuple_result(SqlResult *sql_result)
 {
   RC     rc    = RC::SUCCESS;
   Tuple *tuple = nullptr;
+
   while (RC::SUCCESS == (rc = sql_result->next_tuple(tuple))) {
     assert(tuple != nullptr);
 
@@ -280,13 +288,7 @@ RC PlainCommunicator::write_tuple_result(SqlResult *sql_result)
     for (int i = 0; i < cell_num; i++) {
       if (i != 0) {
         const char *delim = " | ";
-
-        rc = writer_->writen(delim, strlen(delim));
-        if (OB_FAIL(rc)) {
-          LOG_WARN("failed to send data to client. err=%s", strerror(errno));
-          sql_result->close();
-          return rc;
-        }
+        sql_result_stream << delim;  // 将分隔符存入流中
       }
 
       Value value;
@@ -297,24 +299,13 @@ RC PlainCommunicator::write_tuple_result(SqlResult *sql_result)
         return rc;
       }
 
-      string cell_str = value.to_string();
-
-      rc = writer_->writen(cell_str.data(), cell_str.size());
-      if (OB_FAIL(rc)) {
-        LOG_WARN("failed to send data to client. err=%s", strerror(errno));
-        sql_result->close();
-        return rc;
-      }
+      // 将cell的值存入流中
+      std::string cell_str = value.to_string();
+      sql_result_stream << cell_str;
     }
 
-    char newline = '\n';
-
-    rc = writer_->writen(&newline, 1);
-    if (OB_FAIL(rc)) {
-      LOG_WARN("failed to send data to client. err=%s", strerror(errno));
-      sql_result->close();
-      return rc;
-    }
+    // 将换行符存入流中
+    sql_result_stream << '\n';
   }
 
   if (rc == RC::RECORD_EOF) {

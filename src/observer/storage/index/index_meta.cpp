@@ -43,7 +43,7 @@ void IndexMeta::to_json(Json::Value &json_value) const
 {
   json_value["name"]             = name_;
   json_value["fields_total_len"] = fields_total_len_;
-  json_value["unique"]          = unique_;
+  json_value["unique"]           = unique_;
 
   Json::Value fields_json(Json::arrayValue);
   for (const auto &field : fields_) {

@@ -131,42 +131,11 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
   // 看看是否有可以用于索引查找的表达式
   Table *table = table_get_oper.table();
 
-  auto process_subquery = [](Expression *expr) {
-    if (expr->type() == ExprType::SUBQUERY) {
-      SubQueryExpr *sub_query_expr = static_cast<SubQueryExpr *>(expr);
-      sub_query_expr->generate_physical_oper();
-    }
-    return RC::SUCCESS;
-  };
-
   Index     *index      = nullptr;
   ValueExpr *value_expr = nullptr;
   for (auto &expr : predicates) {
-    // 先执行子查询
-    if (RC rc = expr->traverse_check(process_subquery); RC::SUCCESS != rc) {
-      return rc;
-    }
-
     if (expr->type() == ExprType::COMPARISON) {
-      auto comparison_expr = static_cast<ComparisonExpr *>(expr.get());
-
-      // 子查询合法化
-      if (comparison_expr->comp() == IN_OP || comparison_expr->comp() == NOT_IN_OP) {
-        continue;
-      } else {
-        auto get_subquery_expr = [](const std::unique_ptr<Expression> &expr) -> SubQueryExpr * {
-          return expr->type() == ExprType::SUBQUERY ? dynamic_cast<SubQueryExpr *>(expr.get()) : nullptr;
-        };
-        // 检查左侧和右侧是否为子查询表达式
-        SubQueryExpr *left_subquery_expr = get_subquery_expr(comparison_expr->left());
-        if (left_subquery_expr != nullptr && !left_subquery_expr->one_row_ret()) {
-          return RC::UNSUPPORTED;
-        }
-        SubQueryExpr *right_subquery_expr = get_subquery_expr(comparison_expr->right());
-        if (right_subquery_expr != nullptr && !right_subquery_expr->one_row_ret()) {
-          return RC::UNSUPPORTED;
-        }
-      }
+      auto comparison_expr = dynamic_cast<ComparisonExpr *>(expr.get());
 
       // 简单处理，就找等值查询
       if (comparison_expr->comp() != EQUAL_TO) {
@@ -183,12 +152,12 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
       FieldExpr *field_expr = nullptr;
       if (left_expr->type() == ExprType::FIELD) {
         ASSERT(right_expr->type() == ExprType::VALUE, "right expr should be a value expr while left is field expr");
-        field_expr = static_cast<FieldExpr *>(left_expr.get());
-        value_expr = static_cast<ValueExpr *>(right_expr.get());
+        field_expr = dynamic_cast<FieldExpr *>(left_expr.get());
+        value_expr = dynamic_cast<ValueExpr *>(right_expr.get());
       } else if (right_expr->type() == ExprType::FIELD) {
         ASSERT(left_expr->type() == ExprType::VALUE, "left expr should be a value expr while right is a field expr");
-        field_expr = static_cast<FieldExpr *>(right_expr.get());
-        value_expr = static_cast<ValueExpr *>(left_expr.get());
+        field_expr = dynamic_cast<FieldExpr *>(right_expr.get());
+        value_expr = dynamic_cast<ValueExpr *>(left_expr.get());
       }
 
       if (field_expr == nullptr) {
