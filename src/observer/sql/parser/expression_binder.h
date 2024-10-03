@@ -39,7 +39,14 @@ public:
   bool only_one_table();
 
 private:
-  Db                                       *db_;
+  Db *db_;
+
+public:
+  [[nodiscard]] Table *default_table() const { return default_table_; }
+  void                 set_default_table(Table *default_table) { default_table_ = default_table; }
+
+private:
+  Table                                    *default_table_;
   std::vector<Table *>                      query_tables_;
   std::unordered_map<std::string, Table *> *tables_;
 };

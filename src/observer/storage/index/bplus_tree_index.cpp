@@ -93,6 +93,7 @@ RC BplusTreeIndex::insert_entry(const char *record, const RID *rid)
       return RC::RECORD_DUPLICATE_KEY;
     }
   }
+
   return index_handler_.insert_entry(entry, rid);
 }
 

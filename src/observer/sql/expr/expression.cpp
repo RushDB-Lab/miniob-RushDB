@@ -211,59 +211,95 @@ RC ComparisonExpr::try_get_value(Value &cell) const
 
 RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
 {
+  RC    rc = RC::SUCCESS;
   Value left_value;
   Value right_value;
 
-  // 重置
-  left_->reset();
-  right_->reset();
+  SubQueryExpr *left_subquery_expr  = nullptr;
+  SubQueryExpr *right_subquery_expr = nullptr;
 
-  // 获取左值
-  RC rc = left_->get_value(tuple, left_value);
-  if (rc != RC::SUCCESS && !left_value.is_null()) {
+  // Lambda to check if the expression is a subquery and open it
+  auto open_subquery = [&tuple](const std::unique_ptr<Expression> &expr, SubQueryExpr *&subquery_expr) -> RC {
+    if (expr->type() == ExprType::SUBQUERY) {
+      subquery_expr = dynamic_cast<SubQueryExpr *>(expr.get());
+      RC rc         = subquery_expr->open(nullptr, tuple);  // Open the subquery expression (pass nullptr for now)
+      if (OB_FAIL(rc)) {
+        return rc;
+      }
+    }
+    return RC::SUCCESS;
+  };
+
+  // Check and open the left subquery expression if it exists
+  rc = open_subquery(left_, left_subquery_expr);
+  if (OB_FAIL(rc)) {
+    LOG_WARN("failed to open left subquery expression. rc=%s", strrc(rc));
+    return rc;
+  }
+
+  // Check and open the right subquery expression if it exists
+  rc = open_subquery(right_, right_subquery_expr);
+  if (OB_FAIL(rc)) {
+    LOG_WARN("failed to open right subquery expression. rc=%s", strrc(rc));
+    return rc;
+  }
+  DEFER(if (nullptr != left_subquery_expr) left_subquery_expr->close();
+        if (nullptr != right_subquery_expr) right_subquery_expr->close(););
+
+  // Get the value of the left expression
+  rc = left_->get_value(tuple, left_value);
+  if (rc != RC::SUCCESS) {
     LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
     return rc;
   }
 
-  // 处理 IN 和 NOT IN 操作
-  if (comp_ == IN_OP || comp_ == NOT_IN_OP) {
+  // Check if the left subquery has more rows (error if true)
+  if (left_subquery_expr && left_subquery_expr->has_more_row(tuple)) {
+    return RC::INVALID_ARGUMENT;
+  }
 
+  // Handle IN and NOT IN operations
+  if (comp_ == IN_OP || comp_ == NOT_IN_OP) {
     if (left_value.is_null()) {
       value.set_boolean(false);
       return RC::SUCCESS;
     }
 
-    bool has_match = false;
-    bool has_null  = false;
+    if (right_->type() == ExprType::EXPRLIST) {
+      static_cast<ListExpr *>(right_.get())->reset();
+    }
 
+    bool res      = false;  // Flag to indicate if a match is found
+    bool has_null = false;  // Flag to indicate if any NULL value is found
     while (RC::SUCCESS == (rc = right_->get_value(tuple, right_value))) {
       if (right_value.is_null()) {
         has_null = true;
       } else if (left_value.compare(right_value) == 0) {
-        has_match = true;
+        res = true;
       }
     }
-
-    bool result = (comp_ == IN_OP) ? has_match : (!has_null && !has_match);
-    value.set_boolean(result);
-
-    return (rc == RC::RECORD_EOF) ? RC::SUCCESS : rc;
+    value.set_boolean(comp_ == IN_OP ? res : (has_null ? false : !res));
+    return rc == RC::RECORD_EOF ? RC::SUCCESS : rc;
   }
 
-  // 获取右值
+  // Get the value of the right expression
   rc = right_->get_value(tuple, right_value);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
     return rc;
   }
 
-  // 比较左值和右值
+  // Check if the right subquery has more rows (error if true)
+  if (right_subquery_expr && right_subquery_expr->has_more_row(tuple)) {
+    return RC::INVALID_ARGUMENT;
+  }
+
+  // Compare the left and right values
   bool bool_value = false;
   rc              = compare_value(left_value, right_value, bool_value);
   if (rc == RC::SUCCESS) {
     value.set_boolean(bool_value);
   }
-
   return rc;
 }
 
@@ -690,7 +726,7 @@ RC SubQueryExpr::generate_select_stmt(Db *db, const std::unordered_map<std::stri
 {
   // 仿照普通 select 的执行流程，tables 用来传递别名
   Stmt *stmt = nullptr;
-  RC    rc   = SelectStmt::create(db, sql_node_, stmt);
+  RC    rc   = SelectStmt::create(db, sql_node_, stmt, tables);
   if (OB_FAIL(rc)) {
     LOG_WARN("failed to create subquery select statement. return %s", strrc(rc));
     return rc;
@@ -737,29 +773,17 @@ RC SubQueryExpr::generate_physical_oper()
     LOG_WARN("failed to generate physical operator for subquery. return %s", strrc(rc));
     return rc;
   }
-  return open(nullptr);
+  return rc;
 }
 bool SubQueryExpr::one_row_ret() const { return res_query.size() <= 1; }
 
 // 子算子树的 open 和 close 逻辑由外部控制
-RC SubQueryExpr::open(Trx *trx)
+RC SubQueryExpr::open(Trx *trx, const Tuple &tuple)
 {
   RC rc = RC::SUCCESS;
-  rc    = physical_oper_->open(trx);
-  if (OB_FAIL(rc)) {
-    return rc;
-  }
+  physical_oper_->set_parent_tuple(&tuple);
+  rc = physical_oper_->open(trx);
 
-  Value sub_query_value;
-  res_query.clear();
-  while (RC::SUCCESS == physical_oper_->next()) {
-    physical_oper_->current_tuple()->cell_at(0, sub_query_value);
-    res_query.push_back(sub_query_value);
-  }
-
-  res_query_avaliable = true;
-  visited_index       = 0;
-  rc                  = physical_oper_->close();
   return rc;
 }
 
@@ -769,20 +793,27 @@ RC SubQueryExpr::reset()
   return RC::SUCCESS;
 }
 
-bool SubQueryExpr::has_more_row() const { return res_query.size() > 1; }
+bool SubQueryExpr::has_more_row(const Tuple &tuple) const
+{
+  physical_oper_->set_parent_tuple(&tuple);
+  return physical_oper_->next() != RC::RECORD_EOF;
+}
 
 RC SubQueryExpr::get_value(const Tuple &tuple, Value &value)
 {
-  if (res_query.empty()) {
+  physical_oper_->set_parent_tuple(&tuple);
+  RC rc = physical_oper_->next();
+  if (OB_FAIL(rc)) {
+    return rc;
+  }
+  rc = physical_oper_->current_tuple()->cell_at(0, value);
+  if (rc == RC::RECORD_EOF)
     value.set_null(true);
-    return RC::RECORD_EOF;
-  }
-  if (visited_index == res_query.size()) {
-    return RC::RECORD_EOF;
-  }
-  value = res_query[visited_index++];
+
   return RC::SUCCESS;
 }
+
+RC SubQueryExpr::close() { return physical_oper_->close(); }
 
 RC SubQueryExpr::try_get_value(Value &value) const { return RC::UNIMPLEMENTED; }
 

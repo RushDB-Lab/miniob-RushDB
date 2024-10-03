@@ -41,3 +41,10 @@ std::string physical_operator_type_name(PhysicalOperatorType type)
 std::string PhysicalOperator::name() const { return physical_operator_type_name(type()); }
 
 std::string PhysicalOperator::param() const { return ""; }
+void        PhysicalOperator::set_parent_tuple(const Tuple *tuple)
+{
+  parent_tuple_ = tuple;
+  for (auto &child : children_) {
+    child->set_parent_tuple(tuple);
+  }
+}

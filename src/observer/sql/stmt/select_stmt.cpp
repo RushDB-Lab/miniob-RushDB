@@ -31,7 +31,8 @@ SelectStmt::~SelectStmt()
   }
 }
 
-RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
+RC SelectStmt::create(
+    Db *db, SelectSqlNode &select_sql, Stmt *&stmt, const std::unordered_map<std::string, Table *> &parent_table_map)
 {
   if (nullptr == db) {
     LOG_WARN("invalid argument. db is null");
@@ -42,8 +43,8 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
 
   // collect tables in `from` statement
   vector<Table *>                tables;
-  unordered_map<string, Table *> table_map;
-  // unordered_map<string, string>  table_alias_map;
+  unordered_map<string, Table *> table_map = parent_table_map;
+
   for (size_t i = 0; i < select_sql.relations.size(); i++) {
     const char *table_name = select_sql.relations[i].relation.c_str();
     if (nullptr == table_name) {
@@ -66,8 +67,12 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
     tables.push_back(table);
     table_map.insert({table_name, table});
   }
+  Table *default_table = nullptr;
+  if (tables.size() == 1) {
+    default_table = tables[0];
+  }
   binder_context.set_tables(&table_map);
-
+  binder_context.set_default_table(default_table);
   // collect query fields in `select` statement
   vector<unique_ptr<Expression>> bound_expressions;
   ExpressionBinder               expression_binder(binder_context);
@@ -87,11 +92,6 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt)
       LOG_INFO("bind expression failed. rc=%s", strrc(rc));
       return rc;
     }
-  }
-
-  Table *default_table = nullptr;
-  if (tables.size() == 1) {
-    default_table = tables[0];
   }
 
   // create filter statement in `where` statement
