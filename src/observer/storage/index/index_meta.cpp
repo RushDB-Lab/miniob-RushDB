@@ -10,11 +10,12 @@ See the Mulan PSL v2 for more details. */
 
 #include "index_meta.h"
 
-RC IndexMeta::init(const char *name, const vector<FieldMeta> &fields)
+RC IndexMeta::init(const char *name, const vector<FieldMeta> &fields, bool unique)
 {
   name_             = name;
   fields_total_len_ = 0;
   fields_           = fields;
+  unique_           = unique;
 
   for (auto &field : fields) {
     fields_offset_.emplace_back(fields_total_len_);
@@ -42,6 +43,7 @@ void IndexMeta::to_json(Json::Value &json_value) const
 {
   json_value["name"]             = name_;
   json_value["fields_total_len"] = fields_total_len_;
+  json_value["unique"]          = unique_;
 
   Json::Value fields_json(Json::arrayValue);
   for (const auto &field : fields_) {
@@ -67,6 +69,7 @@ RC IndexMeta::from_json(const Json::Value &json_value, IndexMeta &index)
 
   index.name_             = json_value["name"].asString();
   index.fields_total_len_ = json_value["fields_total_len"].asInt();
+  index.unique_           = json_value["unique"].asBool();
 
   const Json::Value &fields_json = json_value["fields"];
   for (const auto &field_json : fields_json) {
