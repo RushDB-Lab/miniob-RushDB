@@ -96,6 +96,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
         FLOAT_T
         DATE_T
         NOT
+        UNIQUE
         NULL_T
         NULLABLE
         HELP
@@ -150,6 +151,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
   float                                      floats;
   bool                                       nullable_info;
   std::vector<std::string> *                 index_attr_list;
+  bool                                       unique;
 }
 
 %token <number> NUMBER
@@ -187,6 +189,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 %type <orderby_list>        sort_list
 %type <orderby_list>        opt_order_by
 %type <index_attr_list>     attr_list
+%type <unique>              opt_unique
 %type <sql_node>            calc_stmt
 %type <sql_node>            select_stmt
 %type <sql_node>            insert_stmt
@@ -317,17 +320,23 @@ show_index_stmt:
     ;
 
 create_index_stmt:
-    CREATE INDEX ID ON ID LBRACE attr_list RBRACE
+    CREATE opt_unique INDEX ID ON ID LBRACE attr_list RBRACE
     {
       $$ = new ParsedSqlNode(SCF_CREATE_INDEX);
       CreateIndexSqlNode &create_index = $$->create_index;
-      create_index.index_name = $3;
-      create_index.relation_name = $5;
-      create_index.attribute_name.swap(*$7); // $7 是 vector<string> 类型
-      delete $7; // 释放指针
-      free($3);
-      free($5);
+      create_index.unique = $2; // 用 opt_unique 的返回值来确定是否 UNIQUE
+      create_index.index_name = $4;
+      create_index.relation_name = $6;
+      create_index.attribute_name.swap(*$8); // $8 是 vector<string> 类型
+      delete $8; // 释放指针
+      free($4);
+      free($6);
     }
+    ;
+
+opt_unique:
+    UNIQUE { $$ = true; }
+    | /* 空 */ { $$ = false; }
     ;
 
 attr_list:
