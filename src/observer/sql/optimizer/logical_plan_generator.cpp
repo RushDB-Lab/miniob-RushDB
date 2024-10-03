@@ -228,7 +228,7 @@ RC LogicalPlanGenerator::create_plan(UpdateStmt *update_stmt, unique_ptr<Logical
     return rc;
   }
 
-  auto update_oper = std::make_unique<UpdateLogicalOperator>(table, field_metas, values);
+  auto update_oper = std::make_unique<UpdateLogicalOperator>(table, std::move(field_metas), std::move(values));
 
   if (predicate_oper) {
     predicate_oper->add_child(std::move(table_get_oper));

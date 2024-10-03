@@ -775,6 +775,7 @@ RC SubQueryExpr::generate_physical_oper()
   }
   return rc;
 }
+
 bool SubQueryExpr::one_row_ret() const { return res_query.size() <= 1; }
 
 // 子算子树的 open 和 close 逻辑由外部控制
@@ -807,8 +808,9 @@ RC SubQueryExpr::get_value(const Tuple &tuple, Value &value)
     return rc;
   }
   rc = physical_oper_->current_tuple()->cell_at(0, value);
-  if (rc == RC::RECORD_EOF)
+  if (rc == RC::RECORD_EOF) {
     value.set_null(true);
+  }
 
   return RC::SUCCESS;
 }

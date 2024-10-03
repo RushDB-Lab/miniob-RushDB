@@ -21,16 +21,17 @@
 class UpdateLogicalOperator : public LogicalOperator
 {
 public:
-  explicit UpdateLogicalOperator(Table *table, std::vector<FieldMeta> field_metas, std::vector<Value> values);
+  explicit UpdateLogicalOperator(
+      Table *table, std::vector<FieldMeta> field_metas, std::vector<std::unique_ptr<Expression>> values);
   ~UpdateLogicalOperator() override = default;
 
-  LogicalOperatorType           type() const override { return LogicalOperatorType::UPDATE; }
-  Table                        *table() const { return table_; }
-  const std::vector<FieldMeta> &field_metas() const { return field_metas_; }
-  const std::vector<Value>     &values() const { return values_; }
+  LogicalOperatorType                       type() const override { return LogicalOperatorType::UPDATE; }
+  Table                                    *table() const { return table_; }
+  std::vector<FieldMeta>                   &field_metas() { return field_metas_; }
+  std::vector<std::unique_ptr<Expression>> &values() { return values_; }
 
 private:
-  Table                 *table_ = nullptr;
-  std::vector<FieldMeta> field_metas_;
-  std::vector<Value>     values_;
+  Table                                   *table_ = nullptr;
+  std::vector<FieldMeta>                   field_metas_;
+  std::vector<std::unique_ptr<Expression>> values_;
 };
