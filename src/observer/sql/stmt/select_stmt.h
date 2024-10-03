@@ -40,7 +40,8 @@ public:
   size_t   query_expressions_size() const { return query_expressions_.size(); }
 
 public:
-  static RC create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt);
+  static RC create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt,
+      const std::unordered_map<std::string, Table *> &parent_table_map = {});
 
 public:
   const std::vector<Table *> &tables() const { return tables_; }

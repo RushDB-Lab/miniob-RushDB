@@ -201,6 +201,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
 
 %left OR
 %left AND
+%left EQ LT GT LE GE NE
 %left '+' '-'
 %left '*' '/'
 %nonassoc UMINUS
@@ -580,7 +581,7 @@ expression:
       if ($2->size() == 1) {
         $$ = $2->front().get();
       } else {
-        $$ = new ExprListExpr(std::move(*$2));
+        $$ = new ListExpr(std::move(*$2));
       }
       $$->set_name(token_name(sql_string, &@$));
       delete $2;

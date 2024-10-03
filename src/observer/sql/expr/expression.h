@@ -319,6 +319,7 @@ class ComparisonExpr : public Expression
 {
 public:
            ComparisonExpr(CompOp comp, Expression *left, Expression *right);
+           ComparisonExpr(CompOp comp, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right);
   virtual ~ComparisonExpr();
 
   ExprType type() const override { return ExprType::COMPARISON; }
@@ -628,9 +629,10 @@ public:
   explicit SubQueryExpr(SelectSqlNode &select_node);
   virtual ~SubQueryExpr();
 
-  RC   open(Trx *trx);
+  RC   open(Trx *trx,const Tuple&tuple);
   RC   reset() override;
-  bool has_more_row() const;
+  RC   close();
+  bool has_more_row(const Tuple &tuple) const;
 
   RC get_value(const Tuple &tuple, Value &value) override;
 

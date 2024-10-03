@@ -18,29 +18,31 @@ See the Mulan PSL v2 for more details. */
 
 using namespace std;
 
-RC ExpressionIterator::iterate_child_expr(Expression &expr, function<RC(unique_ptr<Expression> &)> callback)
+RC ExpressionIterator::iterate_child_expr(Expression &expr, const function<RC(unique_ptr<Expression> &)> &callback)
 {
   RC rc = RC::SUCCESS;
 
   switch (expr.type()) {
     case ExprType::CAST: {
-      auto &cast_expr = static_cast<CastExpr &>(expr);
-      rc = callback(cast_expr.child());
+      auto &cast_expr = dynamic_cast<CastExpr &>(expr);
+      rc              = callback(cast_expr.child());
     } break;
 
     case ExprType::COMPARISON: {
 
-      auto &comparison_expr = static_cast<ComparisonExpr &>(expr);
-      rc = callback(comparison_expr.left());
+      auto &comparison_expr = dynamic_cast<ComparisonExpr &>(expr);
+      rc                    = callback(comparison_expr.left());
 
       if (OB_SUCC(rc)) {
         rc = callback(comparison_expr.right());
+      } else {
+        return rc;
       }
 
     } break;
 
     case ExprType::CONJUNCTION: {
-      auto &conjunction_expr = static_cast<ConjunctionExpr &>(expr);
+      auto &conjunction_expr = dynamic_cast<ConjunctionExpr &>(expr);
       for (auto &child : conjunction_expr.children()) {
         rc = callback(child);
         if (OB_FAIL(rc)) {
@@ -51,16 +53,16 @@ RC ExpressionIterator::iterate_child_expr(Expression &expr, function<RC(unique_p
 
     case ExprType::ARITHMETIC: {
 
-      auto &arithmetic_expr = static_cast<ArithmeticExpr &>(expr);
-      rc = callback(arithmetic_expr.left());
+      auto &arithmetic_expr = dynamic_cast<ArithmeticExpr &>(expr);
+      rc                    = callback(arithmetic_expr.left());
       if (OB_SUCC(rc)) {
         rc = callback(arithmetic_expr.right());
       }
     } break;
 
     case ExprType::AGGREGATION: {
-      auto &aggregate_expr = static_cast<AggregateExpr &>(expr);
-      rc = callback(aggregate_expr.child());
+      auto &aggregate_expr = dynamic_cast<AggregateExpr &>(expr);
+      rc                   = callback(aggregate_expr.child());
     } break;
 
     case ExprType::NONE:

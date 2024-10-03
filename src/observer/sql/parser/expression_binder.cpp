@@ -500,6 +500,15 @@ RC ExpressionBinder::bind_subquery_expression(
   auto subquery_expr = dynamic_cast<SubQueryExpr *>(expr.get());
 
   rc = subquery_expr->generate_select_stmt(context_.get_db(), context_.table_map());
+  if (OB_FAIL(rc)) {
+    return rc;
+  }
+  rc = subquery_expr->generate_logical_oper();
+  if (OB_FAIL(rc)) {
+    return rc;
+  }
+  rc = subquery_expr->generate_physical_oper();
+
   bound_expressions.emplace_back(std::move(expr));
   return rc;
 }

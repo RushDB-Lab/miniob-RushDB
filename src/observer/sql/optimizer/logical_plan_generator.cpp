@@ -171,12 +171,8 @@ RC LogicalPlanGenerator::create_plan(FilterStmt *filter_stmt, unique_ptr<Logical
     }
     // 已经全部在yacc阶段就改成expr了，现在主要是处理子查询
     if (expr->type() == ExprType::SUBQUERY) {
-      auto *sub_query_expr = dynamic_cast<SubQueryExpr *>(expr);
-      rc                   = sub_query_expr->generate_logical_oper();
-      return rc;
     }
-
-    if (expr->type() == ExprType::COMPARISON) {
+    else if (expr->type() == ExprType::COMPARISON) {
       auto *comp_expr = dynamic_cast<ComparisonExpr *>(expr);
       auto &left      = comp_expr->left();
       auto &right     = comp_expr->right();

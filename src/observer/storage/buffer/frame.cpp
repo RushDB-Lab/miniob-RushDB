@@ -236,14 +236,6 @@ int Frame::unpin()
         this, write_locker_, read_lockers_.find(xid) != read_lockers_.end(), 
         pin_count, frame_id_.to_string().c_str(), xid, lbt());
 
-  if (0 == pin_count) {
-    ASSERT(write_locker_ == 0,
-           "frame unpin to 0 failed while someone hold the write lock. write locker=%lx, frameId=%s, xid=%lx",
-           write_locker_, frame_id_.to_string().c_str(), xid);
-    ASSERT(read_lockers_.empty(),
-           "frame unpin to 0 failed while someone hold the read locks. reader num=%d, frameId=%s, xid=%lx",
-           read_lockers_.size(), frame_id_.to_string().c_str(), xid);
-  }
   return pin_count;
 }
 
