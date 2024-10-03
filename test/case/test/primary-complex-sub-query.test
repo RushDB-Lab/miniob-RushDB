@@ -37,6 +37,8 @@ INSERT INTO csq_3 VALUES (5, 5, 14.6);
 
 -- sort select * from csq_1 where feat1 <> (select avg(csq_2.feat2) from csq_2 where csq_2.feat2 > csq_1.feat1);
 
+-- sort select * from csq_1 where feat1 > (select min(csq_2.feat2) from csq_2 where csq_2.feat2 > csq_1.feat1);
+
 -- sort select * from csq_1 where col1 not in (select csq_2.col2 from csq_2 where csq_2.id in (select csq_3.id from csq_3 where csq_1.id = csq_3.id));
 
 -- echo 2. Select with empty table
