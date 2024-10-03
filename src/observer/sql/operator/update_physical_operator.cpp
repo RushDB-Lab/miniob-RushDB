@@ -64,6 +64,13 @@ RC UpdatePhysicalOperator::open(Trx *trx)
       return rc;
     }
 
+    // 如果是子查询只能有一行一列
+    if (sub_query_expr && sub_query_expr->has_more_row(tuple)) {
+      LOG_ERROR("Subquery returned more than one row for field: %s",
+                 field_meta.name());
+      return RC::SUBQUERY_RETURNED_MULTIPLE_ROWS;
+    }
+
     // 进行类型校验
     if (value.attr_type() != field_meta.type()) {
       // 尝试转换，发生转换时不考虑数值溢出
