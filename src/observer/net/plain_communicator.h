@@ -43,4 +43,6 @@ private:
 protected:
   vector<char> send_message_delimiter_;  ///< 发送消息分隔符
   vector<char> debug_message_prefix_;    ///< 调试信息前缀
+  std::ostringstream title_stream;
+  std::ostringstream sql_result_stream;
 };
