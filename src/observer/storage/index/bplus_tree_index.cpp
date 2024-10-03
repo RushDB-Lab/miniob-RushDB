@@ -84,18 +84,15 @@ RC BplusTreeIndex::insert_entry(const char *record, const RID *rid)
 {
   char *entry = index_meta_.make_entry_from_record(record);
   if (index_meta_.unique()) {
-    IndexScanner *scanner = create_scanner(entry, index_meta_.fields_total_len(), true, entry, index_meta_.fields_total_len(), true);
-    if (scanner != nullptr) {
-      RID existing_rid;
-      if (scanner->next_entry(&existing_rid) == RC::SUCCESS) {
-        delete scanner;
-        LOG_WARN("Key already exists, duplicate entry is not allowed.");
-        return RC::RECORD_DUPLICATE_KEY;
-      }
-      delete scanner;
+    list<RID> entries;
+    RC        rc = index_handler_.get_entry(entry, index_meta_.fields_total_len(), entries);
+    if (OB_FAIL(rc)) {
+      return rc;
+    }
+    if (!entries.empty()) {
+      return RC::RECORD_DUPLICATE_KEY;
     }
   }
-
   return index_handler_.insert_entry(entry, rid);
 }
 
