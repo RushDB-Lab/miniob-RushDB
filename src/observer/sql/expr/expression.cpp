@@ -210,6 +210,7 @@ RC ComparisonExpr::try_get_value(Value &cell) const
 
 RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
 {
+  RC    rc = RC::SUCCESS;
   Value left_value;
   Value right_value;
 
@@ -217,19 +218,30 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
   SubQueryExpr *right_subquery_expr = nullptr;
 
   // Lambda to check if the expression is a subquery and open it
-  auto if_subquery_open = [&tuple](const std::unique_ptr<Expression> &expr) {
-    SubQueryExpr *sqexp = nullptr;
+  auto if_subquery_open = [&tuple](const std::unique_ptr<Expression> &expr, SubQueryExpr *&subquery_expr) -> RC {
     if (expr->type() == ExprType::SUBQUERY) {
-      sqexp = dynamic_cast<SubQueryExpr *>(expr.get());
-      sqexp->open(nullptr, tuple);  // Open the subquery expression (pass nullptr for now)
+      subquery_expr = dynamic_cast<SubQueryExpr *>(expr.get());
+      RC rc         = subquery_expr->open(nullptr, tuple);  // Open the subquery expression (pass nullptr for now)
+      if (OB_FAIL(rc)) {
+        return rc;
+      }
     }
-    return sqexp;
+    return RC::SUCCESS;
   };
 
-  left_subquery_expr  = if_subquery_open(left_);
-  right_subquery_expr = if_subquery_open(right_);
+  // Check and open the left subquery expression if it exists
+  rc = if_subquery_open(left_, left_subquery_expr);
+  if (OB_FAIL(rc)) {
+    LOG_WARN("failed to open left subquery expression. rc=%s", strrc(rc));
+    return rc;
+  }
 
-  RC rc = RC::SUCCESS;
+  // Check and open the right subquery expression if it exists
+  rc = if_subquery_open(right_, right_subquery_expr);
+  if (OB_FAIL(rc)) {
+    LOG_WARN("failed to open right subquery expression. rc=%s", strrc(rc));
+    return rc;
+  }
 
   // Lambda to retrieve the value from an expression
   auto get_value = [&tuple](const std::unique_ptr<Expression> &expr, Value &value) {
