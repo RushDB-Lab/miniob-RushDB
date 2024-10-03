@@ -126,22 +126,6 @@ public:
    */
   virtual RC eval(Chunk &chunk, std::vector<uint8_t> &select) { return RC::UNIMPLEMENTED; }
 
-  virtual void traverse(const std::function<void(Expression *)> &func)
-  {
-    constexpr auto always_true = [](const Expression *) { return true; };
-    this->traverse(func, always_true);
-  }
-
-  // 带条件的 后序遍历 dfs
-  virtual void traverse(const std::function<void(Expression *)> &func, const std::function<bool(Expression *)> &filter)
-  {
-    if (filter(this)) {
-      func(this);
-    }
-  }
-
-  // 后序遍历 检查
-  virtual RC traverse_check(const std::function<RC(Expression *)> &check_func) { return check_func(this); }
 
   virtual RC reset() { return RC::SUCCESS; }
 
@@ -285,24 +269,6 @@ public:
 
   std::unique_ptr<Expression> &child() { return child_; }
 
-  void traverse(const std::function<void(Expression *)> &func, const std::function<bool(Expression *)> &filter) override
-  {
-    if (filter(this)) {
-      child_->traverse(func, filter);
-      func(this);
-    }
-  }
-
-  RC traverse_check(const std::function<RC(Expression *)> &check_func) override
-  {
-    if (RC rc = child_->traverse_check(check_func); RC::SUCCESS != rc) {
-      return rc;
-    } else if (rc = check_func(this); RC::SUCCESS != rc) {
-      return rc;
-    }
-    return RC::SUCCESS;
-  }
-
 private:
   RC cast(const Value &value, Value &cast_value) const;
 
@@ -351,36 +317,6 @@ public:
   template <typename T>
   RC compare_column(const Column &left, const Column &right, std::vector<uint8_t> &result) const;
 
-  bool has_rhs() const
-  {
-    // return right_;
-    // 虽然 IS_[NOT]_NULL 的情况下 rhs 是 null ValueExpr 但仍然提供这个接口
-    return comp_ != OP_IS && comp_ != OP_IS_NOT;
-  }
-
-  void traverse(const std::function<void(Expression *)> &func, const std::function<bool(Expression *)> &filter) override
-  {
-    if (filter(this)) {
-      left_->traverse(func, filter);
-      if (has_rhs()) {
-        right_->traverse(func, filter);
-      }
-      func(this);
-    }
-  }
-
-  RC traverse_check(const std::function<RC(Expression *)> &check_func) override
-  {
-    RC rc = RC::SUCCESS;
-    if (RC::SUCCESS != (rc = left_->traverse_check(check_func))) {
-      return rc;
-    } else if (has_rhs() && RC::SUCCESS != (rc = right_->traverse_check(check_func))) {
-      return rc;
-    } else if (RC::SUCCESS != (rc = check_func(this))) {
-      return rc;
-    }
-    return RC::SUCCESS;
-  }
 
 private:
   CompOp                      comp_;
@@ -416,30 +352,6 @@ public:
   Type conjunction_type() const { return conjunction_type_; }
 
   std::vector<std::unique_ptr<Expression>> &children() { return children_; }
-
-  void traverse(const std::function<void(Expression *)> &func, const std::function<bool(Expression *)> &filter) override
-  {
-    if (filter(this)) {
-      for (auto &child : children_) {
-        child->traverse(func, filter);
-      }
-      func(this);
-    }
-  }
-
-  RC traverse_check(const std::function<RC(Expression *)> &check_func) override
-  {
-    RC rc = RC::SUCCESS;
-    for (auto &child : children_) {
-      if (RC::SUCCESS != (rc = child->traverse_check(check_func))) {
-        return rc;
-      }
-    }
-    if (RC::SUCCESS != (rc = check_func(this))) {
-      return rc;
-    }
-    return RC::SUCCESS;
-  }
 
 private:
   Type                                     conjunction_type_;
@@ -490,35 +402,6 @@ public:
   std::unique_ptr<Expression> &left() { return left_; }
   std::unique_ptr<Expression> &right() { return right_; }
 
-  bool has_rhs() const
-  {
-    // return arithmetic_type_ != Type::NEGATIVE; // logical
-    return right_ != nullptr;  // physical
-  }
-
-  void traverse(const std::function<void(Expression *)> &func, const std::function<bool(Expression *)> &filter) override
-  {
-    if (filter(this)) {
-      left_->traverse(func, filter);
-      if (has_rhs()) {
-        right_->traverse(func, filter);
-      }
-      func(this);
-    }
-  }
-
-  RC traverse_check(const std::function<RC(Expression *)> &check_func) override
-  {
-    RC rc = RC::SUCCESS;
-    if (RC::SUCCESS != (rc = left_->traverse_check(check_func))) {
-      return rc;
-    } else if (has_rhs() && RC::SUCCESS != (rc = right_->traverse_check(check_func))) {
-      return rc;
-    } else if (RC::SUCCESS != (rc = check_func(this))) {
-      return rc;
-    }
-    return RC::SUCCESS;
-  }
 
 private:
   RC calc_value(const Value &left_value, const Value &right_value, Value &value) const;
@@ -590,27 +473,6 @@ public:
   const std::unique_ptr<Expression> &child() const { return child_; }
 
   std::unique_ptr<Aggregator> create_aggregator() const;
-
-  // 聚集函数表达式的 traverse[_check] 需要特殊对待 param 可能是个 *
-  void traverse(const std::function<void(Expression *)> &func, const std::function<bool(Expression *)> &filter) override
-  {
-    if (filter(this)) {
-      child_->traverse(func, filter);
-      func(this);
-    }
-  }
-
-  RC traverse_check(const std::function<RC(Expression *)> &check_func) override
-  {
-    RC rc = RC::SUCCESS;
-    if (RC::SUCCESS != (rc = child_->traverse_check(check_func))) {
-      return rc;
-    }
-    if (RC::SUCCESS != (rc = check_func(this))) {
-      return rc;
-    }
-    return rc;
-  }
 
 public:
   static RC type_from_string(const char *type_str, Type &type);
@@ -692,22 +554,6 @@ public:
 
   AttrType value_type() const override { return AttrType::UNDEFINED; }
 
-  // 通过引用传递std::function避免拷贝
-  void traverse(const std::function<void(Expression*)>& func, const std::function<bool(Expression*)>& filter) override
-  {
-    if (filter(this)) {
-      for (auto& expr : exprs_) {
-        expr->traverse(func, filter);
-      }
-      func(this);
-    }
-  }
-
-  RC traverse_check(const std::function<RC(Expression*)>& check_func) override
-  {
-    return RC::SUCCESS;
-
-  }
 
   std::vector<std::unique_ptr<Expression>>& get_list(){return exprs_;}
 

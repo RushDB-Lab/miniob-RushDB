@@ -218,7 +218,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
   SubQueryExpr *right_subquery_expr = nullptr;
 
   // Lambda to check if the expression is a subquery and open it
-  auto if_subquery_open = [&tuple](const std::unique_ptr<Expression> &expr, SubQueryExpr *&subquery_expr) -> RC {
+  auto open_subquery = [&tuple](const std::unique_ptr<Expression> &expr, SubQueryExpr *&subquery_expr) -> RC {
     if (expr->type() == ExprType::SUBQUERY) {
       subquery_expr = dynamic_cast<SubQueryExpr *>(expr.get());
       RC rc         = subquery_expr->open(nullptr, tuple);  // Open the subquery expression (pass nullptr for now)
@@ -230,50 +230,30 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
   };
 
   // Check and open the left subquery expression if it exists
-  rc = if_subquery_open(left_, left_subquery_expr);
+  rc = open_subquery(left_, left_subquery_expr);
   if (OB_FAIL(rc)) {
     LOG_WARN("failed to open left subquery expression. rc=%s", strrc(rc));
     return rc;
   }
 
   // Check and open the right subquery expression if it exists
-  rc = if_subquery_open(right_, right_subquery_expr);
+  rc = open_subquery(right_, right_subquery_expr);
   if (OB_FAIL(rc)) {
     LOG_WARN("failed to open right subquery expression. rc=%s", strrc(rc));
     return rc;
   }
-
-  // Lambda to retrieve the value from an expression
-  auto get_value = [&tuple](const std::unique_ptr<Expression> &expr, Value &value) {
-    RC rc = expr->get_value(tuple, value);
-    if (expr->type() == ExprType::SUBQUERY && RC::RECORD_EOF == rc) {
-      value.set_null(true);
-      rc = RC::SUCCESS;
-    }
-    return rc;
-  };
+  DEFER(if (nullptr != left_subquery_expr) left_subquery_expr->close();
+        if (nullptr != right_subquery_expr) right_subquery_expr->close(););
 
   // Get the value of the left expression
-  rc = get_value(left_, left_value);
+  rc = left_->get_value(tuple, left_value);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
-
-    // Close subquery expressions before returning
-    if (left_subquery_expr)
-      left_subquery_expr->close();
-    if (right_subquery_expr)
-      right_subquery_expr->close();
-
     return rc;
   }
 
   // Check if the left subquery has more rows (error if true)
   if (left_subquery_expr && left_subquery_expr->has_more_row(tuple)) {
-    if (left_subquery_expr)
-      left_subquery_expr->close();
-    if (right_subquery_expr)
-      right_subquery_expr->close();
-
     return RC::INVALID_ARGUMENT;
   }
 
@@ -281,13 +261,6 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
   if (comp_ == IN_OP || comp_ == NOT_IN_OP) {
     if (left_value.is_null()) {
       value.set_boolean(false);
-
-      // Close subquery expressions before returning
-      if (left_subquery_expr)
-        left_subquery_expr->close();
-      if (right_subquery_expr)
-        right_subquery_expr->close();
-
       return RC::SUCCESS;
     }
 
@@ -305,37 +278,18 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
       }
     }
     value.set_boolean(comp_ == IN_OP ? res : (has_null ? false : !res));
-
-    // Close subquery expressions before returning
-    if (left_subquery_expr)
-      left_subquery_expr->close();
-    if (right_subquery_expr)
-      right_subquery_expr->close();
-
     return rc == RC::RECORD_EOF ? RC::SUCCESS : rc;
   }
 
   // Get the value of the right expression
-  rc = get_value(right_, right_value);
+  rc = right_->get_value(tuple, right_value);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
-
-    // Close subquery expressions before returning
-    if (left_subquery_expr)
-      left_subquery_expr->close();
-    if (right_subquery_expr)
-      right_subquery_expr->close();
-
     return rc;
   }
 
   // Check if the right subquery has more rows (error if true)
   if (right_subquery_expr && right_subquery_expr->has_more_row(tuple)) {
-    if (left_subquery_expr)
-      left_subquery_expr->close();
-    if (right_subquery_expr)
-      right_subquery_expr->close();
-
     return RC::INVALID_ARGUMENT;
   }
 
@@ -345,13 +299,6 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
   if (rc == RC::SUCCESS) {
     value.set_boolean(bool_value);
   }
-
-  // Close subquery expressions before returning
-  if (left_subquery_expr)
-    left_subquery_expr->close();
-  if (right_subquery_expr)
-    right_subquery_expr->close();
-
   return rc;
 }
 
@@ -852,11 +799,15 @@ bool SubQueryExpr::has_more_row(const Tuple &tuple) const
 RC SubQueryExpr::get_value(const Tuple &tuple, Value &value)
 {
   physical_oper_->set_parent_tuple(&tuple);
-
-  if (RC rc = physical_oper_->next(); RC::SUCCESS != rc) {
+  RC rc = physical_oper_->next();
+  if (OB_FAIL(rc)) {
     return rc;
   }
-  return physical_oper_->current_tuple()->cell_at(0, value);
+  rc = physical_oper_->current_tuple()->cell_at(0, value);
+  if (rc == RC::RECORD_EOF)
+    value.set_null(true);
+
+  return RC::SUCCESS;
 }
 
 RC SubQueryExpr::close() { return physical_oper_->close(); }

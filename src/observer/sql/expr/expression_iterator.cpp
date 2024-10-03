@@ -80,3 +80,99 @@ RC ExpressionIterator::iterate_child_expr(Expression &expr, const function<RC(un
 
   return rc;
 }
+RC ExpressionIterator::condition_iterate_expr(std::unique_ptr<Expression> &expr)
+{
+  RC rc = RC::SUCCESS;
+
+  switch (expr->type()) {
+    case ExprType::CAST: {
+
+    } break;
+
+    case ExprType::COMPARISON: {
+      auto *comp_expr = dynamic_cast<ComparisonExpr *>(expr.get());
+      auto &left      = comp_expr->left();
+      auto &right     = comp_expr->right();
+
+      if (right->type() == ExprType::EXPRLIST) {
+        if (comp_expr->comp() != IN_OP && comp_expr->comp() != NOT_IN_OP) {
+          return RC::UNSUPPORTED;
+        }
+      }
+
+      if (left->value_type() != right->value_type()) {
+        auto left_to_right_cost = Value::implicit_cast_cost(left->value_type(), right->value_type());
+        auto right_to_left_cost = Value::implicit_cast_cost(right->value_type(), left->value_type());
+
+        if (right->type() == ExprType::SUBQUERY || right->type() == ExprType::EXPRLIST ||
+            left->type() == ExprType::SUBQUERY || left->type() == ExprType::EXPRLIST) {
+          // 暂时在这里不做处理
+          return RC::SUCCESS;
+        } else if (left_to_right_cost <= right_to_left_cost && left_to_right_cost != INT32_MAX) {
+          ExprType left_type = left->type();
+          auto     cast_expr = make_unique<CastExpr>(std::move(left), right->value_type());
+
+          if (left_type == ExprType::VALUE) {
+            Value left_val;
+            rc = cast_expr->try_get_value(left_val);
+            if (OB_FAIL(rc)) {
+              LOG_WARN("failed to get value from left child", strrc(rc));
+              return rc;
+            }
+            left = make_unique<ValueExpr>(left_val);
+          } else {
+            left = std::move(cast_expr);
+          }
+        } else if (right_to_left_cost < left_to_right_cost && right_to_left_cost != INT32_MAX) {
+          ExprType right_type = right->type();
+          auto     cast_expr  = make_unique<CastExpr>(std::move(right), left->value_type());
+
+          if (right_type == ExprType::VALUE) {
+            Value right_val;
+            rc = cast_expr->try_get_value(right_val);
+            if (OB_FAIL(rc)) {
+              LOG_WARN("failed to get value from right child", strrc(rc));
+              return rc;
+            }
+            right = make_unique<ValueExpr>(right_val);
+          } else {
+            right = std::move(cast_expr);
+          }
+        } else {
+          rc = RC::UNSUPPORTED;
+          LOG_WARN("unsupported cast from %s to %s",
+                   attr_type_to_string(left->value_type()),
+                   attr_type_to_string(right->value_type()));
+          return rc;
+        }
+      }
+
+    } break;
+
+    case ExprType::CONJUNCTION: {
+      auto conjunction_expr = dynamic_cast<ConjunctionExpr *>(expr.get());
+      for (auto &child : conjunction_expr->children()) {
+        rc = condition_iterate_expr(child);
+        if (OB_FAIL(rc)) {
+          break;
+        }
+      }
+    } break;
+
+    case ExprType::ARITHMETIC:
+    case ExprType::AGGREGATION:
+    case ExprType::NONE:
+    case ExprType::STAR:
+    case ExprType::UNBOUND_FIELD:
+    case ExprType::FIELD:
+    case ExprType::VALUE: {
+      // Do nothing
+    } break;
+
+    default: {
+      ASSERT(false, "Unknown expression type");
+    }
+  }
+
+  return rc;
+}
