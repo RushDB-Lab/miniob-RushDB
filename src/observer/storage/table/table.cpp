@@ -528,10 +528,12 @@ RC Table::update_record(const Record &old_record, const Record &new_record)
   // 出现重复键
   if (rc != RC::SUCCESS) {
     // 因为有些索引还没有插入，删除失败不应该报错
-    rc = delete_entry_of_indexes(new_record.data(), new_record.rid(), false);
-    ASSERT(RC::SUCCESS == rc,
-      "failed to rollback index data when insert index entries failed. table name=%s, rc=%s",
-                name(), strrc(rc));
+    RC delete_entry_of_indexes_rc = delete_entry_of_indexes(new_record.data(), new_record.rid(), false);
+    if (RC::SUCCESS != delete_entry_of_indexes_rc) {
+      LOG_WARN("failed to rollback index data when insert index entries failed. table name=%s, rc=%s", name(), strrc(delete_entry_of_indexes_rc));
+      return delete_entry_of_indexes_rc;
+    }
+    return rc;
   }
 
   // 最后更新记录

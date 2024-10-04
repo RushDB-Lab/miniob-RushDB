@@ -62,18 +62,35 @@ RC UpdatePhysicalOperator::open(Trx *trx)
         }
       } else {
         if (values_[i].is_null()) {
+          rollback();
           return RC::NOT_NULLABLE_VALUE;
         }
       }
     }
-    rc = trx_->update_record(table_, old_record, new_record);
+    auto rollback_old_record = old_record.clone();
+    auto rollback_new_record = new_record.clone();
+    rc                       = trx_->update_record(table_, old_record, new_record);
     if (rc != RC::SUCCESS) {
       LOG_WARN("failed to update record: %s", strrc(rc));
+      rollback();
       return rc;
+    } else {
+      log_records.emplace_back(rollback_old_record, rollback_new_record);
     }
   }
 
   return RC::SUCCESS;
+}
+
+void UpdatePhysicalOperator::rollback()
+{
+  RC rc;
+  for (auto &[rollback_old_record, rollback_new_record] : log_records) {
+    rc = trx_->update_record(table_, rollback_new_record, rollback_old_record);
+    if (OB_FAIL(rc)) {
+      LOG_WARN("failed to update record: %s", strrc(rc));
+    }
+  }
 }
 
 RC UpdatePhysicalOperator::next() { return RC::RECORD_EOF; }

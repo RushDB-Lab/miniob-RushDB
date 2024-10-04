@@ -41,9 +41,12 @@ public:
   Tuple *current_tuple() override { return nullptr; }
 
 private:
-  Trx                   *trx_   = nullptr;
-  Table                 *table_ = nullptr;
-  std::vector<FieldMeta> field_metas_;
-  std::vector<Value>     values_;
-  std::vector<Record>    records_;
+  void rollback();
+
+  Trx                         *trx_   = nullptr;
+  Table                       *table_ = nullptr;
+  std::vector<FieldMeta>       field_metas_;
+  std::vector<Value>           values_;
+  std::vector<Record>          records_;
+  vector<pair<Record, Record>> log_records;
 };
