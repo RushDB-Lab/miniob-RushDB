@@ -471,7 +471,10 @@ RC ExpressionBinder::bind_aggregate_expression(
   const char         *aggregate_name         = unbound_aggregate_expr->aggregate_name();
   AggregateExpr::Type aggregate_type;
   RC                  rc = AggregateExpr::type_from_string(aggregate_name, aggregate_type);
-  if (OB_SUCC(rc) && unbound_aggregate_expr->child().size() == 1) {
+  if (OB_SUCC(rc)) {
+    if (unbound_aggregate_expr->child().size() != 1) {
+      return RC::INVALID_ARGUMENT;
+    }
     unique_ptr<Expression>        &child_expr = unbound_aggregate_expr->child().front();
     vector<unique_ptr<Expression>> child_bound_expressions;
 
