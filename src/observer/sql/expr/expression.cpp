@@ -248,15 +248,21 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
 
   if (comp_ == EXISTS_OP || comp_ == NOT_EXISTS_OP) {
     int visited_num = 0;
+    // 遍历right_并统计非NULL的值
     while (RC::SUCCESS == (rc = right_->get_value(tuple, right_value))) {
       if (!right_value.is_null()) {
         visited_num++;
       }
     }
-
-    value.set_boolean(comp_ == EXISTS_OP ? (visited_num > 0) : visited_num = 0);
+    // 如果是EXISTS_OP，判断是否存在非NULL值；如果是NOT_EXISTS_OP，判断是否没有任何非NULL值
+    if (comp_ == EXISTS_OP) {
+      value.set_boolean(visited_num > 0);  // 如果存在至少一个非NULL值，返回true
+    } else if (comp_ == NOT_EXISTS_OP) {
+      value.set_boolean(visited_num == 0); // 如果所有值都是NULL或者没有值，返回true
+    }
     return RC::SUCCESS;
   }
+
 
   // Get the value of the left expression
   rc = left_->get_value(tuple, left_value);
