@@ -472,7 +472,7 @@ RC ExpressionBinder::bind_aggregate_expression(
   AggregateExpr::Type aggregate_type;
   RC                  rc = AggregateExpr::type_from_string(aggregate_name, aggregate_type);
   if (OB_SUCC(rc)) {
-    unique_ptr<Expression>        &child_expr = unbound_aggregate_expr->args().front();
+    unique_ptr<Expression>        &child_expr = unbound_aggregate_expr->child().front();
     vector<unique_ptr<Expression>> child_bound_expressions;
 
     if (child_expr->type() == ExprType::STAR && aggregate_type == AggregateExpr::Type::COUNT) {

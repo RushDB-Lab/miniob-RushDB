@@ -428,7 +428,7 @@ public:
 
   const char *aggregate_name() const { return aggregate_name_.c_str(); }
 
-  const std::vector<std::unique_ptr<Expression>> &child() { return child_; }
+  std::vector<std::unique_ptr<Expression>> &child() { return child_; }
 
   RC       get_value(const Tuple &, Value &) override { return RC::INTERNAL; }
   AttrType value_type() const override { return {}; }
