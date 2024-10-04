@@ -246,6 +246,18 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
   DEFER(if (nullptr != left_subquery_expr) left_subquery_expr->close();
         if (nullptr != right_subquery_expr) right_subquery_expr->close(););
 
+  if (comp_ == EXISTS_OP || comp_ == NOT_EXISTS_OP) {
+    int visited_num = 0;
+    while (RC::SUCCESS == (rc = right_->get_value(tuple, right_value))) {
+      if (!right_value.is_null()) {
+        visited_num++;
+      }
+    }
+
+    value.set_boolean(comp_ == EXISTS_OP ? (visited_num > 0) : visited_num = 0);
+    return RC::SUCCESS;
+  }
+
   // Get the value of the left expression
   rc = left_->get_value(tuple, left_value);
   if (rc != RC::SUCCESS) {

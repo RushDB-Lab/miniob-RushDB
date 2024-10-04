@@ -1058,7 +1058,7 @@ def compile(work_dir: str, build_dir: str, cmake_args: str, make_args: str, rebu
     make_command = ["make", "--silent", "-C", build_path]
     if isinstance(make_args, str):
         if not make_args:
-            make_command.append('-j4')
+            make_command.append('-j24')
         else:
             args = make_args.split(';')
             for arg in args:
