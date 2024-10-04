@@ -51,7 +51,7 @@ RC ShowIndexExecutor::execute(SQLStageEvent *sql_event)
     const TableMeta &table_meta = table->table_meta();
     for (int i = 0; i < table_meta.index_num(); i++) {
       auto           index  = table_meta.index(i);
-      vector<string> list   = {table_name, "1", index->name()};
+      vector<string> list   = {table_name, index->unique() ? "0" : "1", index->name()};
       auto           fields = index->fields();
       for (auto &name : fields) {
         list.emplace_back("1");
