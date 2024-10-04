@@ -46,7 +46,7 @@ RC UpdatePhysicalOperator::open(Trx *trx)
   // 得到真正的 value，并做校验
   RowTuple           tuple;
   Value              value;
-  std::vector<Value> real_values;
+  std::vector<Value> real_values(values_.size());
   SubQueryExpr      *sub_query_expr = nullptr;
   for (int i = 0; i < values_.size(); ++i) {
     auto &value_expr = values_[i];
@@ -101,7 +101,7 @@ RC UpdatePhysicalOperator::open(Trx *trx)
       sub_query_expr = nullptr;
     }
 
-    real_values.emplace_back(std::move(value));
+    real_values[i] = std::move(value);
   }
 
   // 先收集记录再更新

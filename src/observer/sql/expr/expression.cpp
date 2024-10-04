@@ -804,14 +804,21 @@ RC SubQueryExpr::get_value(const Tuple &tuple, Value &value)
 {
   physical_oper_->set_parent_tuple(&tuple);
   RC rc = physical_oper_->next();
+  if (rc == RC::RECORD_EOF) {
+    // 先返回 null 类型的值，之后再完善具体选择的列类型
+    value.set_type(AttrType::NULLS);
+    value.set_null(true);
+    return RC::SUCCESS;
+  } else if (OB_FAIL(rc)) {
+    // 其他错误
+    return rc;
+  }
+
+  // 到这里确保有一条记录
+  rc = physical_oper_->current_tuple()->cell_at(0, value);
   if (OB_FAIL(rc)) {
     return rc;
   }
-  rc = physical_oper_->current_tuple()->cell_at(0, value);
-  if (rc == RC::RECORD_EOF) {
-    value.set_null(true);
-  }
-
   return RC::SUCCESS;
 }
 
