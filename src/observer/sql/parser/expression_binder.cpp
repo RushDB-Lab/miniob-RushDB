@@ -468,9 +468,9 @@ RC ExpressionBinder::bind_function_expression(
   }
 
   auto                        unbound_function_expr = static_cast<UnboundFunctionExpr *>(expr.get());
-  const char                 *aggregate_name        = unbound_function_expr->function_name();
+  const char                 *function_name         = unbound_function_expr->function_name();
   AggregateFunctionExpr::Type aggregate_type;
-  RC                          rc = AggregateFunctionExpr::type_from_string(aggregate_name, aggregate_type);
+  RC                          rc = AggregateFunctionExpr::type_from_string(function_name, aggregate_type);
   if (OB_SUCC(rc)) {
     if (unbound_function_expr->args().size() != 1) {
       return RC::INVALID_ARGUMENT;
@@ -511,7 +511,16 @@ RC ExpressionBinder::bind_function_expression(
     return RC::SUCCESS;
   }
 
-  return RC::SUCCESS;
+  NormalFunctionExpr::Type func_type;
+  rc = NormalFunctionExpr::type_from_string(function_name, func_type);
+  if (OB_SUCC(rc)) {
+    auto func_expr = make_unique<NormalFunctionExpr>(
+        func_type, unbound_function_expr->function_name(), std::move(unbound_function_expr->args()));
+    bound_expressions.emplace_back(std::move(func_expr));
+    return RC::SUCCESS;
+  }
+
+  return RC::UNKNOWN_FUNCTION;
 }
 RC ExpressionBinder::bind_subquery_expression(
     std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions)

@@ -81,7 +81,8 @@ See the Mulan PSL v2 for more details. */
   DEFINE_RC(VALUE_TOO_LONG)              \
   DEFINE_RC(TO_LONG_SUBQUERY_EXPR)       \
   DEFINE_RC(NOT_NULLABLE_VALUE)          \
-  DEFINE_RC(NOT_NULL_AFTER_IS)
+  DEFINE_RC(NOT_NULL_AFTER_IS)           \
+  DEFINE_RC(UNKNOWN_FUNCTION)
 
 enum class RC
 {

@@ -50,6 +50,7 @@ enum class ExprType
   CONJUNCTION,       ///< 多个表达式使用同一种关系(AND或OR)来联结
   ARITHMETIC,        ///< 算术运算
   AGGREGATION,       ///< 聚合运算
+  NORMAL_FUNCTION,   ///< 普通函数
   SUBQUERY,          ///< 子查询
   EXPRLIST           ///<  列表
 };
@@ -448,6 +449,30 @@ public:
 private:
   std::string                              function_name_;
   std::vector<std::unique_ptr<Expression>> args_;
+};
+
+class NormalFunctionExpr : public UnboundFunctionExpr
+{
+public:
+  enum class Type
+  {
+    LENGTH,
+    ROUND,
+    DATE_FORMAT,
+  };
+
+  NormalFunctionExpr(Type type, const char *aggregate_name, std::vector<std::unique_ptr<Expression>> child)
+      : ::UnboundFunctionExpr(aggregate_name, std::move(child)), type_(type)
+  {}
+
+  static RC type_from_string(const char *type_str, Type &type);
+
+  ExprType type() const override { return ExprType::NORMAL_FUNCTION; }
+
+  Type function_type() const { return type_; }
+
+private:
+  Type type_;
 };
 
 class AggregateFunctionExpr : public Expression

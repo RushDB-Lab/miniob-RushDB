@@ -833,3 +833,18 @@ ListExpr::ListExpr(std::vector<Expression *> &&exprs)
   }
   exprs.clear();
 }
+
+RC NormalFunctionExpr::type_from_string(const char *type_str, NormalFunctionExpr::Type &type)
+{
+  RC rc = RC::SUCCESS;
+  if (0 == strcasecmp(type_str, "date_format")) {
+    type = Type::DATE_FORMAT;
+  } else if (0 == strcasecmp(type_str, "length")) {
+    type = Type::LENGTH;
+  } else if (0 == strcasecmp(type_str, "round")) {
+    type = Type::ROUND;
+  } else {
+    rc = RC::INVALID_ARGUMENT;
+  }
+  return rc;
+}
