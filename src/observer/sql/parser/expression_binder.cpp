@@ -414,7 +414,7 @@ RC ExpressionBinder::bind_arithmetic_expression(
   return RC::SUCCESS;
 }
 
-RC check_aggregate_expression(AggregateExpr &expression)
+RC check_aggregate_expression(AggregateFunctionExpr &expression)
 {
   // 必须有一个子表达式
   Expression *child_expression = expression.child().get();
@@ -424,11 +424,11 @@ RC check_aggregate_expression(AggregateExpr &expression)
   }
 
   // 校验数据类型与聚合类型是否匹配
-  AggregateExpr::Type aggregate_type   = expression.aggregate_type();
-  AttrType            child_value_type = child_expression->value_type();
+  AggregateFunctionExpr::Type aggregate_type   = expression.aggregate_type();
+  AttrType                    child_value_type = child_expression->value_type();
   switch (aggregate_type) {
-    case AggregateExpr::Type::SUM:
-    case AggregateExpr::Type::AVG: {
+    case AggregateFunctionExpr::Type::SUM:
+    case AggregateFunctionExpr::Type::AVG: {
       // 仅支持数值类型
       if (child_value_type != AttrType::INTS && child_value_type != AttrType::FLOATS) {
         LOG_WARN("invalid child value type for aggregate expression: %d", static_cast<int>(child_value_type));
@@ -436,10 +436,10 @@ RC check_aggregate_expression(AggregateExpr &expression)
       }
     } break;
 
-    case AggregateExpr::Type::COUNT:
+    case AggregateFunctionExpr::Type::COUNT:
 
-    case AggregateExpr::Type::MAX:
-    case AggregateExpr::Type::MIN: {
+    case AggregateFunctionExpr::Type::MAX:
+    case AggregateFunctionExpr::Type::MIN: {
       // 任何类型都支持
     } break;
   }
@@ -467,18 +467,18 @@ RC ExpressionBinder::bind_aggregate_expression(
     return RC::SUCCESS;
   }
 
-  auto                unbound_aggregate_expr = static_cast<UnboundAggregateExpr *>(expr.get());
-  const char         *aggregate_name         = unbound_aggregate_expr->aggregate_name();
-  AggregateExpr::Type aggregate_type;
-  RC                  rc = AggregateExpr::type_from_string(aggregate_name, aggregate_type);
+  auto                        unbound_function_expr = static_cast<UnboundFunctionExpr *>(expr.get());
+  const char                 *aggregate_name        = unbound_function_expr->function_name();
+  AggregateFunctionExpr::Type aggregate_type;
+  RC                          rc = AggregateFunctionExpr::type_from_string(aggregate_name, aggregate_type);
   if (OB_SUCC(rc)) {
-    if (unbound_aggregate_expr->child().size() != 1) {
+    if (unbound_function_expr->args().size() != 1) {
       return RC::INVALID_ARGUMENT;
     }
-    unique_ptr<Expression>        &child_expr = unbound_aggregate_expr->child().front();
+    unique_ptr<Expression>        &child_expr = unbound_function_expr->args().front();
     vector<unique_ptr<Expression>> child_bound_expressions;
 
-    if (child_expr->type() == ExprType::STAR && aggregate_type == AggregateExpr::Type::COUNT) {
+    if (child_expr->type() == ExprType::STAR && aggregate_type == AggregateFunctionExpr::Type::COUNT) {
       ValueExpr *value_expr = new ValueExpr(Value(1));
       child_expr.reset(value_expr);
       // count(*) 输出星号
@@ -499,22 +499,32 @@ RC ExpressionBinder::bind_aggregate_expression(
       }
     }
 
-    auto aggregate_expr = make_unique<AggregateExpr>(aggregate_type, std::move(child_expr));
+    auto aggregate_expr = make_unique<AggregateFunctionExpr>(aggregate_type, std::move(child_expr));
 
     // set name 阶段
-    if (unbound_aggregate_expr->name_empty()) {
+    if (unbound_function_expr->name_empty()) {
       string name;
       switch (aggregate_type) {
-        case AggregateExpr::Type::COUNT: name = "COUNT(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-        case AggregateExpr::Type::SUM: name = "SUM(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-        case AggregateExpr::Type::AVG: name = "AVG(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-        case AggregateExpr::Type::MAX: name = "MAX(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-        case AggregateExpr::Type::MIN: name = "MIN(" + std::string(aggregate_expr->child()->name()) + ")"; break;
+        case AggregateFunctionExpr::Type::COUNT:
+          name = "COUNT(" + std::string(aggregate_expr->child()->name()) + ")";
+          break;
+        case AggregateFunctionExpr::Type::SUM:
+          name = "SUM(" + std::string(aggregate_expr->child()->name()) + ")";
+          break;
+        case AggregateFunctionExpr::Type::AVG:
+          name = "AVG(" + std::string(aggregate_expr->child()->name()) + ")";
+          break;
+        case AggregateFunctionExpr::Type::MAX:
+          name = "MAX(" + std::string(aggregate_expr->child()->name()) + ")";
+          break;
+        case AggregateFunctionExpr::Type::MIN:
+          name = "MIN(" + std::string(aggregate_expr->child()->name()) + ")";
+          break;
         default: name = "UNKNOWN_AGGREGATE"; break;
       }
       aggregate_expr->set_name(name);
     } else {
-      aggregate_expr->set_name(unbound_aggregate_expr->name());
+      aggregate_expr->set_name(unbound_function_expr->name());
     }
     rc = check_aggregate_expression(*aggregate_expr);
     if (OB_FAIL(rc)) {
@@ -524,7 +534,7 @@ RC ExpressionBinder::bind_aggregate_expression(
     return RC::SUCCESS;
   }
 
-  return RC::INTERNAL;
+  return RC::SUCCESS;
 }
 RC ExpressionBinder::bind_subquery_expression(
     std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions)

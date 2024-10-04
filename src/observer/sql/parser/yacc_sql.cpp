@@ -110,12 +110,12 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   return expr;
 }
 
-UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
-                                           std::vector<std::unique_ptr<Expression>> child,
-                                           const char *sql_string,
-                                           YYLTYPE *llocp)
+UnboundFunctionExpr *create_aggregate_expression(const char *function_name,
+                                                 std::vector<std::unique_ptr<Expression>> child,
+                                                 const char *sql_string,
+                                                 YYLTYPE *llocp)
 {
-  UnboundAggregateExpr *expr = new UnboundAggregateExpr(aggregate_name, std::move(child));
+  UnboundFunctionExpr *expr = new UnboundFunctionExpr(function_name, std::move(child));
   expr->set_name(token_name(sql_string, llocp));
   return expr;
 }
@@ -2512,7 +2512,7 @@ yyreduce:
   case 90: /* aggr_func_expr: ID LBRACE expression_list RBRACE  */
 #line 755 "yacc_sql.y"
     {
-        (yyval.expression) = new UnboundAggregateExpr((yyvsp[-3].string), std::move(*(yyvsp[-1].expression_list)));
+        (yyval.expression) = new UnboundFunctionExpr((yyvsp[-3].string), std::move(*(yyvsp[-1].expression_list)));
     }
 #line 2518 "yacc_sql.cpp"
     break;
