@@ -94,8 +94,8 @@ RC ExpressionBinder::bind_expression(unique_ptr<Expression> &expr, vector<unique
       return bind_unbound_field_expression(expr, bound_expressions);
     } break;
 
-    case ExprType::UNBOUND_AGGREGATION: {
-      return bind_aggregate_expression(expr, bound_expressions);
+    case ExprType::UNBOUND_FUNCTION: {
+      return bind_function_expression(expr, bound_expressions);
     } break;
 
     case ExprType::FIELD: {
@@ -123,7 +123,7 @@ RC ExpressionBinder::bind_expression(unique_ptr<Expression> &expr, vector<unique
     } break;
 
     case ExprType::AGGREGATION: {
-      return bind_aggregate_expression(expr, bound_expressions);
+      return bind_function_expression(expr, bound_expressions);
     } break;
 
     case ExprType::SUBQUERY: {
@@ -460,7 +460,7 @@ RC check_aggregate_expression(AggregateFunctionExpr &expression)
   return rc;
 }
 
-RC ExpressionBinder::bind_aggregate_expression(
+RC ExpressionBinder::bind_function_expression(
     unique_ptr<Expression> &expr, vector<unique_ptr<Expression>> &bound_expressions)
 {
   if (nullptr == expr) {
@@ -502,30 +502,7 @@ RC ExpressionBinder::bind_aggregate_expression(
     auto aggregate_expr = make_unique<AggregateFunctionExpr>(aggregate_type, std::move(child_expr));
 
     // set name 阶段
-    if (unbound_function_expr->name_empty()) {
-      string name;
-      switch (aggregate_type) {
-        case AggregateFunctionExpr::Type::COUNT:
-          name = "COUNT(" + std::string(aggregate_expr->child()->name()) + ")";
-          break;
-        case AggregateFunctionExpr::Type::SUM:
-          name = "SUM(" + std::string(aggregate_expr->child()->name()) + ")";
-          break;
-        case AggregateFunctionExpr::Type::AVG:
-          name = "AVG(" + std::string(aggregate_expr->child()->name()) + ")";
-          break;
-        case AggregateFunctionExpr::Type::MAX:
-          name = "MAX(" + std::string(aggregate_expr->child()->name()) + ")";
-          break;
-        case AggregateFunctionExpr::Type::MIN:
-          name = "MIN(" + std::string(aggregate_expr->child()->name()) + ")";
-          break;
-        default: name = "UNKNOWN_AGGREGATE"; break;
-      }
-      aggregate_expr->set_name(name);
-    } else {
-      aggregate_expr->set_name(unbound_function_expr->name());
-    }
+    aggregate_expr->set_name(unbound_function_expr->name());
     rc = check_aggregate_expression(*aggregate_expr);
     if (OB_FAIL(rc)) {
       return rc;

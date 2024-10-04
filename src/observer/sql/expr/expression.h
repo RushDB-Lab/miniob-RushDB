@@ -40,19 +40,18 @@ class PhysicalOperator;
 enum class ExprType
 {
   NONE,
-  STAR,                 ///< 星号，表示所有字段
-  UNBOUND_FIELD,        ///< 未绑定的字段，需要在resolver阶段解析为FieldExpr
-  UNBOUND_AGGREGATION,  ///< 未绑定的聚合函数，需要在resolver阶段解析为AggregateFunctionExpr
-
-  FIELD,        ///< 字段。在实际执行时，根据行数据内容提取对应字段的值
-  VALUE,        ///< 常量值
-  CAST,         ///< 需要做类型转换的表达式
-  COMPARISON,   ///< 需要做比较的表达式
-  CONJUNCTION,  ///< 多个表达式使用同一种关系(AND或OR)来联结
-  ARITHMETIC,   ///< 算术运算
-  AGGREGATION,  ///< 聚合运算
-  SUBQUERY,     ///< 子查询
-  EXPRLIST      ///<  列表
+  STAR,              ///< 星号，表示所有字段
+  UNBOUND_FIELD,     ///< 未绑定的字段，需要在resolver阶段解析为FieldExpr
+  UNBOUND_FUNCTION,  ///< 未绑定的聚合函数，需要在resolver阶段解析为AggregateFunctionExpr
+  FIELD,             ///< 字段。在实际执行时，根据行数据内容提取对应字段的值
+  VALUE,             ///< 常量值
+  CAST,              ///< 需要做类型转换的表达式
+  COMPARISON,        ///< 需要做比较的表达式
+  CONJUNCTION,       ///< 多个表达式使用同一种关系(AND或OR)来联结
+  ARITHMETIC,        ///< 算术运算
+  AGGREGATION,       ///< 聚合运算
+  SUBQUERY,          ///< 子查询
+  EXPRLIST           ///<  列表
 };
 
 /**
@@ -424,9 +423,22 @@ public:
   UnboundFunctionExpr(const char *aggregate_name, std::vector<std::unique_ptr<Expression>> child);
   virtual ~UnboundFunctionExpr() = default;
 
-  ExprType type() const override { return ExprType::UNBOUND_AGGREGATION; }
+  ExprType type() const override { return ExprType::UNBOUND_FUNCTION; }
 
   const char *function_name() const { return function_name_.c_str(); }
+
+  string to_string() const
+  {
+    string str = function_name_ + "(";
+    for (size_t i = 0; i < args_.size(); i++) {
+      str += args_[i]->name();
+      if (i < args_.size() - 1) {
+        str += ",";
+      }
+    }
+    str += ")";
+    return str;
+  }
 
   std::vector<std::unique_ptr<Expression>> &args() { return args_; }
 
