@@ -142,6 +142,16 @@ public:
     return *this;
   }
 
+  Record clone()
+  {
+    Record new_record;
+    new_record.rid_  = this->rid_;
+    new_record.len_  = this->len_;
+    new_record.data_ = (char *)malloc(this->len_);
+    memcpy(new_record.data_, this->data_, this->len_);
+    return new_record;
+  }
+
   Record(Record &&other)
   {
     rid_ = other.rid_;
