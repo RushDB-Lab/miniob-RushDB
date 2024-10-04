@@ -577,9 +577,11 @@ Index *Table::find_index(const char *index_name) const
 Index *Table::find_index_by_field(const char *field_name) const
 {
   for (const auto &index : indexes_) {
-    auto name = index->index_meta().fields().front().name();
-    if (0 == strcmp(name, field_name)) {
-      return index;
+    if (index->index_meta().fields().size() == 1) {
+      auto name = index->index_meta().fields().front().name();
+      if (0 == strcmp(name, field_name)) {
+        return index;
+      }
     }
   }
   return nullptr;
