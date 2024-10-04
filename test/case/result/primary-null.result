@@ -1,5 +1,5 @@
 INITIALIZATION
-CREATE TABLE null_table(id int, num int nullable, price float not null, birthday date null);
+CREATE TABLE null_table(id int, num int nullable, price float not null, birthday date nullable);
 SUCCESS
 CREATE TABLE null_table2(id int, num int nullable, price float not null, birthday date nullable);
 SUCCESS

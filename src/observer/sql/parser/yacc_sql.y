@@ -727,6 +727,9 @@ expression:
     | '*' {
       $$ = new StarExpr();
     }
+    | ID DOT '*' {
+      $$ = new StarExpr($1);
+    }
     | aggr_func_expr {
       $$ = $1;      // AggrFuncExpr
     }

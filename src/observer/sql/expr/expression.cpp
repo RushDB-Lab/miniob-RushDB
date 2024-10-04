@@ -254,11 +254,10 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
         visited_num++;
       }
     }
-    // 如果是EXISTS_OP，判断是否存在非NULL值；如果是NOT_EXISTS_OP，判断是否没有任何非NULL值
     if (comp_ == EXISTS_OP) {
-      value.set_boolean(visited_num > 0);  // 如果存在至少一个非NULL值，返回true
+      value.set_boolean(visited_num > 0);
     } else if (comp_ == NOT_EXISTS_OP) {
-      value.set_boolean(visited_num == 0); // 如果所有值都是NULL或者没有值，返回true
+      value.set_boolean(visited_num == 0);
     }
     return RC::SUCCESS;
   }
