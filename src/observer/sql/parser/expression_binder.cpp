@@ -128,6 +128,10 @@ RC ExpressionBinder::bind_star_expression(
 
   auto star_expr = static_cast<StarExpr *>(expr.get());
 
+  if (!is_blank(star_expr->name())) {
+    return RC::INVALID_ALIAS;
+  }
+
   vector<Table *> tables_to_wildcard;
 
   const char *table_name = star_expr->table_name();

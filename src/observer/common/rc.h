@@ -21,6 +21,7 @@ See the Mulan PSL v2 for more details. */
 
 #define DEFINE_RCS                       \
   DEFINE_RC(SUCCESS)                     \
+  DEFINE_RC(INVALID_ALIAS)               \
   DEFINE_RC(INVALID_ARGUMENT)            \
   DEFINE_RC(UNIMPLEMENTED)               \
   DEFINE_RC(SQL_SYNTAX)                  \
