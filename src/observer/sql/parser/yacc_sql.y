@@ -664,7 +664,10 @@ calc_stmt:
     ;
 
 expression_list:
-    expression alias
+    /* empty */ {
+      $$ = new std::vector<std::unique_ptr<Expression>>;
+    }
+    | expression alias
     {
       $$ = new std::vector<std::unique_ptr<Expression>>;
       if (nullptr != $2) {
