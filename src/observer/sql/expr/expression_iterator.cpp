@@ -57,7 +57,7 @@ RC ExpressionIterator::iterate_child_expr(Expression &expr, const function<RC(un
     } break;
 
     case ExprType::AGGREGATION: {
-      auto &aggregate_expr = dynamic_cast<AggregateExpr &>(expr);
+      auto &aggregate_expr = dynamic_cast<AggregateFunctionExpr &>(expr);
       rc                   = callback(aggregate_expr.child());
     } break;
 

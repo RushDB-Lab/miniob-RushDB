@@ -42,7 +42,7 @@ enum class ExprType
   NONE,
   STAR,                 ///< 星号，表示所有字段
   UNBOUND_FIELD,        ///< 未绑定的字段，需要在resolver阶段解析为FieldExpr
-  UNBOUND_AGGREGATION,  ///< 未绑定的聚合函数，需要在resolver阶段解析为AggregateExpr
+  UNBOUND_AGGREGATION,  ///< 未绑定的聚合函数，需要在resolver阶段解析为AggregateFunctionExpr
 
   FIELD,        ///< 字段。在实际执行时，根据行数据内容提取对应字段的值
   VALUE,        ///< 常量值
@@ -418,27 +418,27 @@ private:
   std::unique_ptr<Expression> right_;
 };
 
-class UnboundAggregateExpr : public Expression
+class UnboundFunctionExpr : public Expression
 {
 public:
-  UnboundAggregateExpr(const char *aggregate_name, std::vector<std::unique_ptr<Expression>> child);
-  virtual ~UnboundAggregateExpr() = default;
+  UnboundFunctionExpr(const char *aggregate_name, std::vector<std::unique_ptr<Expression>> child);
+  virtual ~UnboundFunctionExpr() = default;
 
   ExprType type() const override { return ExprType::UNBOUND_AGGREGATION; }
 
-  const char *aggregate_name() const { return aggregate_name_.c_str(); }
+  const char *function_name() const { return function_name_.c_str(); }
 
-  std::vector<std::unique_ptr<Expression>> &child() { return child_; }
+  std::vector<std::unique_ptr<Expression>> &args() { return args_; }
 
   RC       get_value(const Tuple &, Value &) override { return RC::INTERNAL; }
   AttrType value_type() const override { return {}; }
 
 private:
-  std::string                              aggregate_name_;
-  std::vector<std::unique_ptr<Expression>> child_;
+  std::string                              function_name_;
+  std::vector<std::unique_ptr<Expression>> args_;
 };
 
-class AggregateExpr : public Expression
+class AggregateFunctionExpr : public Expression
 {
 public:
   enum class Type
@@ -451,9 +451,9 @@ public:
   };
 
 public:
-  AggregateExpr(Type type, Expression *child);
-  AggregateExpr(Type type, std::unique_ptr<Expression> child);
-  virtual ~AggregateExpr() = default;
+  AggregateFunctionExpr(Type type, Expression *child);
+  AggregateFunctionExpr(Type type, std::unique_ptr<Expression> child);
+  virtual ~AggregateFunctionExpr() = default;
 
   bool equal(const Expression &other) const override;
 

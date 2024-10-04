@@ -24,7 +24,7 @@ AggregateVecPhysicalOperator::AggregateVecPhysicalOperator(vector<Expression *> 
   value_expressions_.reserve(aggregate_expressions_.size());
 
   ranges::for_each(aggregate_expressions_, [this](Expression *expr) {
-    auto       *aggregate_expr = static_cast<AggregateExpr *>(expr);
+    auto       *aggregate_expr = static_cast<AggregateFunctionExpr *>(expr);
     Expression *child_expr     = aggregate_expr->child().get();
     ASSERT(child_expr != nullptr, "aggregation expression must have a child expression");
     value_expressions_.emplace_back(child_expr);
@@ -33,9 +33,9 @@ AggregateVecPhysicalOperator::AggregateVecPhysicalOperator(vector<Expression *> 
   for (size_t i = 0; i < aggregate_expressions_.size(); i++) {
     auto &expr = aggregate_expressions_[i];
     ASSERT(expr->type() == ExprType::AGGREGATION, "expected an aggregation expression");
-    auto *aggregate_expr = static_cast<AggregateExpr *>(expr);
+    auto *aggregate_expr = static_cast<AggregateFunctionExpr *>(expr);
 
-    if (aggregate_expr->aggregate_type() == AggregateExpr::Type::SUM) {
+    if (aggregate_expr->aggregate_type() == AggregateFunctionExpr::Type::SUM) {
       if (aggregate_expr->value_type() == AttrType::INTS) {
         void *aggr_value                     = malloc(sizeof(SumState<int>));
         ((SumState<int> *)aggr_value)->value = 0;
@@ -69,8 +69,8 @@ RC AggregateVecPhysicalOperator::open(Trx *trx)
       Column column;
       value_expressions_[aggr_idx]->get_column(chunk_, column);
       ASSERT(aggregate_expressions_[aggr_idx]->type() == ExprType::AGGREGATION, "expect aggregate expression");
-      auto *aggregate_expr = static_cast<AggregateExpr *>(aggregate_expressions_[aggr_idx]);
-      if (aggregate_expr->aggregate_type() == AggregateExpr::Type::SUM) {
+      auto *aggregate_expr = static_cast<AggregateFunctionExpr *>(aggregate_expressions_[aggr_idx]);
+      if (aggregate_expr->aggregate_type() == AggregateFunctionExpr::Type::SUM) {
         if (aggregate_expr->value_type() == AttrType::INTS) {
           update_aggregate_state<SumState<int>, int>(aggr_values_.at(aggr_idx), column);
         } else if (aggregate_expr->value_type() == AttrType::FLOATS) {

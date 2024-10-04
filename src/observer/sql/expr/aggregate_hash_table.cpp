@@ -169,7 +169,7 @@ RC LinearProbingAggregateHashTable<V>::iter_get(int pos, int &key, V &value)
 template <typename V>
 void LinearProbingAggregateHashTable<V>::aggregate(V *value, V value_to_aggregate)
 {
-  if (aggregate_type_ == AggregateExpr::Type::SUM) {
+  if (aggregate_type_ == AggregateFunctionExpr::Type::SUM) {
     *value += value_to_aggregate;
   } else {
     ASSERT(false, "unsupported aggregate type");

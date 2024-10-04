@@ -244,7 +244,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
     return rc;
   }
   DEFER(if (nullptr != left_subquery_expr) left_subquery_expr->close();
-        if (nullptr != right_subquery_expr) right_subquery_expr->close(););
+      if (nullptr != right_subquery_expr) right_subquery_expr->close(););
 
   // Get the value of the left expression
   rc = left_->get_value(tuple, left_value);
@@ -629,17 +629,18 @@ RC ArithmeticExpr::try_get_value(Value &value) const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-UnboundAggregateExpr::UnboundAggregateExpr(const char *aggregate_name, std::vector<std::unique_ptr<Expression>> child)
-    : aggregate_name_(aggregate_name), child_(std::move(child))
+UnboundFunctionExpr::UnboundFunctionExpr(const char *aggregate_name, std::vector<std::unique_ptr<Expression>> child)
+    : function_name_(aggregate_name), args_(std::move(child))
 {}
 
 ////////////////////////////////////////////////////////////////////////////////
-AggregateExpr::AggregateExpr(Type type, Expression *child) : aggregate_type_(type), child_(child) {}
+AggregateFunctionExpr::AggregateFunctionExpr(Type type, Expression *child) : aggregate_type_(type), child_(child) {}
 
-AggregateExpr::AggregateExpr(Type type, unique_ptr<Expression> child) : aggregate_type_(type), child_(std::move(child))
+AggregateFunctionExpr::AggregateFunctionExpr(Type type, unique_ptr<Expression> child)
+    : aggregate_type_(type), child_(std::move(child))
 {}
 
-RC AggregateExpr::get_column(Chunk &chunk, Column &column)
+RC AggregateFunctionExpr::get_column(Chunk &chunk, Column &column)
 {
   RC rc = RC::SUCCESS;
   if (pos_ != -1) {
@@ -650,7 +651,7 @@ RC AggregateExpr::get_column(Chunk &chunk, Column &column)
   return rc;
 }
 
-bool AggregateExpr::equal(const Expression &other) const
+bool AggregateFunctionExpr::equal(const Expression &other) const
 {
   if (this == &other) {
     return true;
@@ -658,11 +659,11 @@ bool AggregateExpr::equal(const Expression &other) const
   if (other.type() != type()) {
     return false;
   }
-  const AggregateExpr &other_aggr_expr = static_cast<const AggregateExpr &>(other);
+  const AggregateFunctionExpr &other_aggr_expr = static_cast<const AggregateFunctionExpr &>(other);
   return aggregate_type_ == other_aggr_expr.aggregate_type() && child_->equal(*other_aggr_expr.child());
 }
 
-unique_ptr<Aggregator> AggregateExpr::create_aggregator() const
+unique_ptr<Aggregator> AggregateFunctionExpr::create_aggregator() const
 {
   unique_ptr<Aggregator> aggregator;
   switch (aggregate_type_) {
@@ -694,9 +695,12 @@ unique_ptr<Aggregator> AggregateExpr::create_aggregator() const
   return aggregator;
 }
 
-RC AggregateExpr::get_value(const Tuple &tuple, Value &value) { return tuple.find_cell(TupleCellSpec(name()), value); }
+RC AggregateFunctionExpr::get_value(const Tuple &tuple, Value &value)
+{
+  return tuple.find_cell(TupleCellSpec(name()), value);
+}
 
-RC AggregateExpr::type_from_string(const char *type_str, AggregateExpr::Type &type)
+RC AggregateFunctionExpr::type_from_string(const char *type_str, AggregateFunctionExpr::Type &type)
 {
   RC rc = RC::SUCCESS;
   if (0 == strcasecmp(type_str, "count")) {
