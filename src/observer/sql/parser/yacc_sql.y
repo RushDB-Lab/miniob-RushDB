@@ -42,11 +42,11 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 }
 
 UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
-                                           Expression *child,
+                                           std::vector<std::unique_ptr<Expression>> child,
                                            const char *sql_string,
                                            YYLTYPE *llocp)
 {
-  UnboundAggregateExpr *expr = new UnboundAggregateExpr(aggregate_name, child);
+  UnboundAggregateExpr *expr = new UnboundAggregateExpr(aggregate_name, std::move(child));
   expr->set_name(token_name(sql_string, llocp));
   return expr;
 }
@@ -750,16 +750,8 @@ alias:
 aggr_func_expr:
     ID LBRACE expression_list RBRACE
     {
-        if((*$3).size() != 1) {
-           $$ = new UnboundAggregateExpr("max",new StarExpr() );
-        } else {
-            $$ = new UnboundAggregateExpr($1, std::move((*$3)[0]));
-        }
+        $$ = new UnboundAggregateExpr($1, std::move(*$3));
     }
-    | ID LBRACE  RBRACE
-     {
-        $$ = new UnboundAggregateExpr("max",new StarExpr() );
-     }
     ;
 
 sub_query_expr:

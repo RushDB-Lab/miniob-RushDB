@@ -471,59 +471,57 @@ RC ExpressionBinder::bind_aggregate_expression(
   const char         *aggregate_name         = unbound_aggregate_expr->aggregate_name();
   AggregateExpr::Type aggregate_type;
   RC                  rc = AggregateExpr::type_from_string(aggregate_name, aggregate_type);
-  if (OB_FAIL(rc)) {
-    LOG_WARN("invalid aggregate name: %s", aggregate_name);
-    return rc;
-  }
+  if (OB_SUCC(rc)) {
+    unique_ptr<Expression>        &child_expr = unbound_aggregate_expr->args().front();
+    vector<unique_ptr<Expression>> child_bound_expressions;
 
-  unique_ptr<Expression>        &child_expr = unbound_aggregate_expr->child();
-  vector<unique_ptr<Expression>> child_bound_expressions;
+    if (child_expr->type() == ExprType::STAR && aggregate_type == AggregateExpr::Type::COUNT) {
+      ValueExpr *value_expr = new ValueExpr(Value(1));
+      child_expr.reset(value_expr);
+      // count(*) 输出星号
+      child_expr->set_name("*");
+    } else {
+      rc = bind_expression(child_expr, child_bound_expressions);
+      if (OB_FAIL(rc)) {
+        return rc;
+      }
 
-  if (child_expr->type() == ExprType::STAR && aggregate_type == AggregateExpr::Type::COUNT) {
-    ValueExpr *value_expr = new ValueExpr(Value(1));
-    child_expr.reset(value_expr);
-    // count(*) 输出星号
-    child_expr->set_name("*");
-  } else {
-    rc = bind_expression(child_expr, child_bound_expressions);
+      if (child_bound_expressions.size() != 1) {
+        LOG_WARN("invalid children number of aggregate expression: %d", child_bound_expressions.size());
+        return RC::INVALID_ARGUMENT;
+      }
+
+      if (child_bound_expressions[0].get() != child_expr.get()) {
+        child_expr.reset(child_bound_expressions[0].release());
+      }
+    }
+
+    auto aggregate_expr = make_unique<AggregateExpr>(aggregate_type, std::move(child_expr));
+
+    // set name 阶段
+    if (unbound_aggregate_expr->name_empty()) {
+      string name;
+      switch (aggregate_type) {
+        case AggregateExpr::Type::COUNT: name = "COUNT(" + std::string(aggregate_expr->child()->name()) + ")"; break;
+        case AggregateExpr::Type::SUM: name = "SUM(" + std::string(aggregate_expr->child()->name()) + ")"; break;
+        case AggregateExpr::Type::AVG: name = "AVG(" + std::string(aggregate_expr->child()->name()) + ")"; break;
+        case AggregateExpr::Type::MAX: name = "MAX(" + std::string(aggregate_expr->child()->name()) + ")"; break;
+        case AggregateExpr::Type::MIN: name = "MIN(" + std::string(aggregate_expr->child()->name()) + ")"; break;
+        default: name = "UNKNOWN_AGGREGATE"; break;
+      }
+      aggregate_expr->set_name(name);
+    } else {
+      aggregate_expr->set_name(unbound_aggregate_expr->name());
+    }
+    rc = check_aggregate_expression(*aggregate_expr);
     if (OB_FAIL(rc)) {
       return rc;
     }
-
-    if (child_bound_expressions.size() != 1) {
-      LOG_WARN("invalid children number of aggregate expression: %d", child_bound_expressions.size());
-      return RC::INVALID_ARGUMENT;
-    }
-
-    if (child_bound_expressions[0].get() != child_expr.get()) {
-      child_expr.reset(child_bound_expressions[0].release());
-    }
+    bound_expressions.emplace_back(std::move(aggregate_expr));
+    return RC::SUCCESS;
   }
 
-  auto aggregate_expr = make_unique<AggregateExpr>(aggregate_type, std::move(child_expr));
-
-  // set name 阶段
-  if (unbound_aggregate_expr->name_empty()) {
-    string name;
-    switch (aggregate_type) {
-      case AggregateExpr::Type::COUNT: name = "COUNT(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-      case AggregateExpr::Type::SUM: name = "SUM(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-      case AggregateExpr::Type::AVG: name = "AVG(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-      case AggregateExpr::Type::MAX: name = "MAX(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-      case AggregateExpr::Type::MIN: name = "MIN(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-      default: name = "UNKNOWN_AGGREGATE"; break;
-    }
-    aggregate_expr->set_name(name);
-  } else {
-    aggregate_expr->set_name(unbound_aggregate_expr->name());
-  }
-  rc = check_aggregate_expression(*aggregate_expr);
-  if (OB_FAIL(rc)) {
-    return rc;
-  }
-
-  bound_expressions.emplace_back(std::move(aggregate_expr));
-  return RC::SUCCESS;
+  return RC::INTERNAL;
 }
 RC ExpressionBinder::bind_subquery_expression(
     std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions)
