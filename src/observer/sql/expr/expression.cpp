@@ -271,7 +271,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
 
     bool res      = false;  // Flag to indicate if a match is found
     bool has_null = false;  // Flag to indicate if any NULL value is found
-    while (RC::SUCCESS == (rc = right_->get_value(tuple, right_value))) {
+    for (rc = RC::SUCCESS; rc == RC::SUCCESS; rc = right_->get_value(tuple, right_value)) {
       if (right_value.is_null()) {
         has_null = true;
       } else if (left_value.compare(right_value) == 0) {
@@ -806,9 +806,11 @@ RC SubQueryExpr::get_value(const Tuple &tuple, Value &value)
   RC rc = physical_oper_->next();
   if (rc == RC::RECORD_EOF) {
     // 先返回 null 类型的值，之后再完善具体选择的列类型
+    // 如果已经成功执行过一次，结果不为空，那么这里的 value 不会被用到
     value.set_type(AttrType::NULLS);
     value.set_null(true);
-    return RC::SUCCESS;
+    // 给调用者判断结果是否为空，而不是直接返回 RC::SUCCESS
+    return rc;
   } else if (OB_FAIL(rc)) {
     // 其他错误
     return rc;

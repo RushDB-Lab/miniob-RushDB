@@ -58,7 +58,7 @@ RC UpdatePhysicalOperator::open(Trx *trx)
 
     // 得到表达式的值
     rc = value_expr->get_value(tuple, value);
-    if (OB_FAIL(rc)) {
+    if (OB_FAIL(rc) && rc != RC::RECORD_EOF) {
       LOG_ERROR("Failed to get value for field: %s",
                   field_meta.name());
       return rc;
