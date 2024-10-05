@@ -593,16 +593,7 @@ setClause:
     ;
 
 select_stmt:
-    /*  select 语句的语法解析树*/
-    SELECT expression_list
-    {
-      $$ = new ParsedSqlNode(SCF_SELECT);
-      if ($2 != nullptr) {
-        $$->selection.expressions.swap(*$2);
-        delete $2;
-      }
-    }
-    | SELECT expression_list FROM rel_list where group_by opt_order_by
+    SELECT expression_list FROM rel_list where group_by opt_order_by
     {
       $$ = new ParsedSqlNode(SCF_SELECT);
       if ($2 != nullptr) {
@@ -665,6 +656,12 @@ select_stmt:
 
 calc_stmt:
     CALC expression_list
+    {
+      $$ = new ParsedSqlNode(SCF_CALC);
+      $$->calc.expressions.swap(*$2);
+      delete $2;
+    }
+    | SELECT expression_list
     {
       $$ = new ParsedSqlNode(SCF_CALC);
       $$->calc.expressions.swap(*$2);

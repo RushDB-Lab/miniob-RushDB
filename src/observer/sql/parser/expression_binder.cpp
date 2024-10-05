@@ -523,8 +523,10 @@ RC ExpressionBinder::bind_function_expression(
     }
     unbound_function_expr->set_args(std::move(child_bound_expressions));
 
-    auto func_expr = make_unique<NormalFunctionExpr>(
+    string name      = unbound_function_expr->name();
+    auto   func_expr = make_unique<NormalFunctionExpr>(
         func_type, unbound_function_expr->function_name(), std::move(unbound_function_expr->args()));
+    func_expr->set_name(name);
     bound_expressions.emplace_back(std::move(func_expr));
     return RC::SUCCESS;
   }

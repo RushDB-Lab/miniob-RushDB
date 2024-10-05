@@ -632,7 +632,9 @@ RC ArithmeticExpr::try_get_value(Value &value) const
 UnboundFunctionExpr::UnboundFunctionExpr(const char *aggregate_name, std::vector<std::unique_ptr<Expression>> child)
     : function_name_(aggregate_name), args_(std::move(child))
 {
-  Expression::set_name(to_string());
+  if (::Expression::name_empty()) {
+    Expression::set_name(to_string());
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -855,6 +857,33 @@ RC NormalFunctionExpr::get_value(const Tuple &tuple, Value &result)
   for (auto &expr : args()) {
     Value value;
     RC    rc = expr->get_value(tuple, value);
+    if (OB_FAIL(rc)) {
+      return rc;
+    }
+    args_values_.push_back(value);
+  }
+  switch (type_) {
+    case Type::LENGTH: {
+      return STD::LENGTH(args_values_, result);
+    }
+    case Type::ROUND: {
+      return STD::ROUND(args_values_, result);
+    }
+    case Type::DATE_FORMAT: {
+      return STD::DATE_FORMAT(args_values_, result);
+    }
+    default: {
+      return RC::INTERNAL;
+    }
+  }
+  return RC::SUCCESS;
+}
+RC NormalFunctionExpr::try_get_value(Value &result) const
+{
+  vector<Value> args_values_;
+  for (auto &expr : args()) {
+    Value value;
+    RC    rc = expr->try_get_value(value);
     if (OB_FAIL(rc)) {
       return rc;
     }

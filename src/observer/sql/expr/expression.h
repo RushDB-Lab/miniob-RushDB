@@ -442,7 +442,8 @@ public:
     return str;
   }
 
-  std::vector<std::unique_ptr<Expression>> &args() { return args_; }
+  std::vector<std::unique_ptr<Expression>>       &args() { return args_; }
+  const std::vector<std::unique_ptr<Expression>> &args() const { return args_; }
   void set_args(std::vector<std::unique_ptr<Expression>> args) { args_ = std::move(args); }
 
   RC       get_value(const Tuple &, Value &) override { return RC::INTERNAL; }
@@ -474,6 +475,7 @@ public:
   Type function_type() const { return type_; }
 
   RC get_value(const Tuple &tuple, Value &value) override;
+  RC try_get_value(Value &value) const override;
 
 private:
   Type type_;
