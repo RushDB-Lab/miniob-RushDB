@@ -442,6 +442,7 @@ public:
   }
 
   std::vector<std::unique_ptr<Expression>> &args() { return args_; }
+  void set_args(std::vector<std::unique_ptr<Expression>> args) { args_ = std::move(args); }
 
   RC       get_value(const Tuple &, Value &) override { return RC::INTERNAL; }
   AttrType value_type() const override { return {}; }

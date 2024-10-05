@@ -514,6 +514,15 @@ RC ExpressionBinder::bind_function_expression(
   NormalFunctionExpr::Type func_type;
   rc = NormalFunctionExpr::type_from_string(function_name, func_type);
   if (OB_SUCC(rc)) {
+    vector<unique_ptr<Expression>> child_bound_expressions;
+    for (auto &child_expr : unbound_function_expr->args()) {
+      rc = bind_expression(child_expr, child_bound_expressions);
+      if (OB_FAIL(rc)) {
+        return rc;
+      }
+    }
+    unbound_function_expr->set_args(std::move(child_bound_expressions));
+
     auto func_expr = make_unique<NormalFunctionExpr>(
         func_type, unbound_function_expr->function_name(), std::move(unbound_function_expr->args()));
     bound_expressions.emplace_back(std::move(func_expr));
