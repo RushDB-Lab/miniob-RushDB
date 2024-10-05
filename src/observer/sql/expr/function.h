@@ -113,7 +113,6 @@ public:
             str += get_day_with_suffix(day);
             break;
           default:  // 未知格式符，按原样输出
-            str += fmt[i];
             str += fmt[i + 1];
             break;
         }
