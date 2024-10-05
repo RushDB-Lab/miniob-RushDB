@@ -474,6 +474,24 @@ public:
 
   Type function_type() const { return type_; }
 
+  AttrType value_type() const override
+  {
+    switch (type_) {
+      case Type::LENGTH: {
+        return AttrType::INTS;
+      }
+      case Type::ROUND: {
+        return AttrType::FLOATS;
+      }
+      case Type::DATE_FORMAT: {
+        return AttrType::CHARS;
+      }
+      default: {
+        return AttrType::UNDEFINED;
+      }
+    }
+  }
+
   RC get_value(const Tuple &tuple, Value &value) override;
   RC try_get_value(Value &value) const override;
 
