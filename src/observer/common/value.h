@@ -117,6 +117,7 @@ public:
   float       get_float() const;
   string      get_string() const;
   bool        get_boolean() const;
+  int         get_date() const;
   bool        is_null() const { return is_null_; }
   inline bool is_str() const { return attr_type_ == AttrType::CHARS; }
 

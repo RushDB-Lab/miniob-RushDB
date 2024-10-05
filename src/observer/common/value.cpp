@@ -298,7 +298,9 @@ int Value::get_int() const
       return (int)(value_.bool_value_);
     }
     case AttrType::DATES: {
-      return value_.int_value_;
+      // 虽然 date 类型是用 int 存的，但是目前不需要 get_date 函数
+      LOG_TRACE("failed to convert date to number. s=%d", value_.int_value_);
+      return 0;
     }
     default: {
       LOG_WARN("unknown data type. type=%d", attr_type_);
@@ -383,4 +385,12 @@ bool Value::get_boolean() const
     }
   }
   return false;
+}
+int Value::get_date() const
+{
+  if (attr_type_ == AttrType::DATES) {
+    return value_.int_value_;
+  } else {
+    return 0;
+  }
 }

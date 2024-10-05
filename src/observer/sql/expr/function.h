@@ -68,7 +68,7 @@ public:
 
     if (args[0].attr_type() == AttrType::DATES) {
       // 提取年、月、日（假设日期格式为YYYYMMDD）
-      int val = args[0].get_int();
+      int val = args[0].get_date();
       year    = val / 10000;        // 获取年份
       month   = (val / 100) % 100;  // 获取月份
       day     = val % 100;          // 获取日期
