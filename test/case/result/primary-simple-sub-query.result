@@ -82,6 +82,8 @@ select * from ssq_1 where feat1 <> (select avg(ssq_2.feat2) from ssq_2);
 ID | COL1 | FEAT1
 
 2. SELECT WITH EMPTY TABLE
+SELECT * FROM SSQ_1 WHERE COL1 NOT IN (2,NULL);
+ID | COL1 | FEAT1
 select * from ssq_1 where feat1 < (select max(ssq_2.feat2) from ssq_2 where 1=0);
 ID | COL1 | FEAT1
 select * from ssq_1 where id in (select ssq_2.id from ssq_2 where 1=0);

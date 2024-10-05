@@ -1,0 +1,31 @@
+-- echo initialization
+CREATE TABLE csq_1(id int, col1 int, feat1 float);
+CREATE TABLE csq_2(id int, col2 int, feat2 float);
+CREATE TABLE csq_3(id int, col3 int, feat3 float);
+
+INSERT INTO csq_1 VALUES (1, 4, 11.2);
+INSERT INTO csq_1 VALUES (2, 2, 12.0);
+INSERT INTO csq_1 VALUES (3, 3, 13.5);
+INSERT INTO csq_1 VALUES (4, 1, 10.8);
+INSERT INTO csq_1 VALUES (5, 5, 15.3);
+INSERT INTO csq_1 VALUES (6, 7, 12.4);
+INSERT INTO csq_1 VALUES (7, 6, 11.9);
+
+INSERT INTO csq_2 VALUES (1, 2, 13.0);
+INSERT INTO csq_2 VALUES (2, 7, 10.5);
+INSERT INTO csq_2 VALUES (3, 9, 13.8);
+INSERT INTO csq_2 VALUES (4, 5, 14.1);
+INSERT INTO csq_2 VALUES (5, 3, 12.6);
+INSERT INTO csq_2 VALUES (6, 1, 10.2);
+INSERT INTO csq_2 VALUES (7, 4, 12.3);
+
+INSERT INTO csq_3 VALUES (1, 2, 11.0);
+INSERT INTO csq_3 VALUES (2, 3, 13.4);
+INSERT INTO csq_3 VALUES (3, 6, 16.5);
+INSERT INTO csq_3 VALUES (4, 4, 12.9);
+INSERT INTO csq_3 VALUES (5, 5, 14.6);
+INSERT INTO csq_3 VALUES (6, 7, 11.7);
+INSERT INTO csq_3 VALUES (7, 8, 15.0);
+
+-- echo 1. select
+-- sort select * from csq_1 where feat1 <> (select min(csq_2.feat2) from csq_2 where csq_2.feat2 > csq_1.feat1);
