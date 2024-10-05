@@ -131,9 +131,6 @@ RC ExpressionBinder::bind_star_expression(
   if (!is_blank(star_expr->name())) {
     return RC::INVALID_ALIAS;
   }
-  if (context_.query_tables().size() != 1 && is_blank(star_expr->name())) {
-    return RC::INVALID_ARGUMENT;
-  }
 
   vector<Table *> tables_to_wildcard;
 
