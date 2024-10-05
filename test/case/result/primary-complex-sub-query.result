@@ -83,6 +83,11 @@ select * from csq_1 where col1 not in (select csq_2.col2 from csq_2 where csq_2.
 3 | 3 | 13.5
 ID | COL1 | FEAT1
 
+select * from csq_1 where feat1 <> (select min(csq_2.feat2) from csq_2 where csq_2.feat2 > csq_1.feat1);
+1 | 4 | 11.2
+2 | 2 | 12
+ID | COL1 | FEAT1
+
 2. SELECT WITH EMPTY TABLE
 select * from csq_1 where id in (select csq_2.id from csq_2 where csq_2.id in (select csq_3.id from csq_3 where 1=0));
 ID | COL1 | FEAT1

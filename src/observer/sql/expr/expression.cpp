@@ -262,7 +262,6 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
     return RC::SUCCESS;
   }
 
-
   // Get the value of the left expression
   rc = left_->get_value(tuple, left_value);
   if (rc != RC::SUCCESS) {
@@ -820,14 +819,14 @@ RC SubQueryExpr::get_value(const Tuple &tuple, Value &value)
 {
   physical_oper_->set_parent_tuple(&tuple);
   RC rc = physical_oper_->next();
-  if (OB_FAIL(rc)) {
-    return rc;
-  }
-  rc = physical_oper_->current_tuple()->cell_at(0, value);
-  if (rc == RC::RECORD_EOF)
+  if (rc == RC::RECORD_EOF) {
     value.set_null(true);
+    return RC::SUCCESS;
+  }
+  if (OB_SUCC(rc))
+    rc = physical_oper_->current_tuple()->cell_at(0, value);
 
-  return RC::SUCCESS;
+  return rc;
 }
 
 RC SubQueryExpr::close() { return physical_oper_->close(); }
