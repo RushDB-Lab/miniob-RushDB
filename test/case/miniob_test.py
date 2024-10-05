@@ -50,6 +50,7 @@ python3 miniob_test.py --test-cases=basic
 python3 miniob_test.py --test-cases=primary-date
 python3 miniob_test.py --test-cases=primary-complex-sub-query
 python3 miniob_test.py --test-cases=primary-simple-sub-query
+python3 miniob_test.py --test-cases=primary-group-by
 如果要运行多个测试用例，则在 --test-cases 参数中使用 ',' 分隔写多个即可
 """
 

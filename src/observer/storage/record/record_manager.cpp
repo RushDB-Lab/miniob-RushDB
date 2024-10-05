@@ -68,7 +68,7 @@ string PageHeader::to_string() const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-RecordPageIterator::RecordPageIterator() {}
+RecordPageIterator:: RecordPageIterator() {}
 RecordPageIterator::~RecordPageIterator() {}
 
 void RecordPageIterator::init(RecordPageHandler *record_page_handler, SlotNum start_slot_num /*=0*/)
@@ -853,6 +853,7 @@ RC RecordFileScanner::close_scan()
     record_page_handler_->cleanup();
     delete record_page_handler_;
     record_page_handler_ = nullptr;
+    record_page_iterator_.cleanup();
   }
 
   return RC::SUCCESS;

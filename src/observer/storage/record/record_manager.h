@@ -83,7 +83,7 @@ struct PageHeader
 class RecordPageIterator
 {
 public:
-  RecordPageIterator();
+   RecordPageIterator();
   ~RecordPageIterator();
 
   /**
@@ -111,6 +111,8 @@ public:
    */
   bool is_valid() const { return record_page_handler_ != nullptr; }
 
+  inline void cleanup() { record_page_handler_ = nullptr; }
+
 private:
   RecordPageHandler *record_page_handler_ = nullptr;
   PageNum            page_num_            = BP_INVALID_PAGE_NUM;
@@ -125,8 +127,8 @@ private:
 class RecordPageHandler
 {
 public:
-  RecordPageHandler(StorageFormat storage_format) : storage_format_(storage_format) {}
-  virtual ~RecordPageHandler();
+                            RecordPageHandler(StorageFormat storage_format) : storage_format_(storage_format) {}
+  virtual ~                 RecordPageHandler();
   static RecordPageHandler *create(StorageFormat format);
 
   /**
@@ -357,7 +359,7 @@ private:
 class RecordFileHandler
 {
 public:
-  RecordFileHandler(StorageFormat storage_format) : storage_format_(storage_format) {};
+   RecordFileHandler(StorageFormat storage_format) : storage_format_(storage_format){};
   ~RecordFileHandler();
 
   /**

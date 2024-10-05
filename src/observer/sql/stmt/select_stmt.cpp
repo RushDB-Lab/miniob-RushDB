@@ -94,6 +94,15 @@ RC SelectStmt::create(
     }
   }
 
+  vector<unique_ptr<Expression>> order_by_expressions;
+  for (OrderBySqlNode &unit : select_sql.order_by) {
+    RC rc = expression_binder.bind_expression(unit.expr, group_by_expressions);
+    if (OB_FAIL(rc)) {
+      LOG_INFO("bind expression failed. rc=%s", strrc(rc));
+      return rc;
+    }
+  }
+
   // create filter statement in `where` statement
   FilterStmt *filter_stmt = nullptr;
   RC          rc          = FilterStmt::create(db, default_table, &table_map, select_sql.conditions, filter_stmt);
