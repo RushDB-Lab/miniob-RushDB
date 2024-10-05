@@ -269,16 +269,33 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
       static_cast<ListExpr *>(right_.get())->reset();
     }
 
-    bool res      = false;  // Flag to indicate if a match is found
-    bool has_null = false;  // Flag to indicate if any NULL value is found
-    for (rc = RC::SUCCESS; rc == RC::SUCCESS; rc = right_->get_value(tuple, right_value)) {
-      if (right_value.is_null()) {
-        has_null = true;
-      } else if (left_value.compare(right_value) == 0) {
-        res = true;
+    // 比较表达式的结果，如果进入 while 循环且没有提前退出，那么结果即为该值
+    bool res = comp_ == NOT_IN_OP;
+
+    rc = right_->get_value(tuple, right_value);
+    if (rc == RC::RECORD_EOF) {
+      // 子查询结果为空，返回 null 值
+    } else if (OB_FAIL(rc)) {
+      // 其他错误
+      return rc;
+    } else if (left_value.compare(right_value) == 0) {
+      // 不为空才能比较，null 是不可比较的
+      res = comp_ == IN_OP;
+    } else {
+      while (RC::SUCCESS == (rc = right_->get_value(tuple, right_value))) {
+        if (right_value.is_null()) {
+          // 对于 not in，一边有 null 就为假
+          if (comp_ == NOT_IN_OP) {
+            res = false;
+            break;
+          }
+        } else if (left_value.compare(right_value) == 0) {
+          res = comp_ == IN_OP;
+          break;
+        }
       }
     }
-    value.set_boolean(comp_ == IN_OP ? res : (has_null ? false : !res));
+    value.set_boolean(res);
     return rc == RC::RECORD_EOF ? RC::SUCCESS : rc;
   }
 
