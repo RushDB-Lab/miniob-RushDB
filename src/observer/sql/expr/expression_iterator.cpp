@@ -61,6 +61,13 @@ RC ExpressionIterator::iterate_child_expr(Expression &expr, const function<RC(un
       rc                   = callback(aggregate_expr.child());
     } break;
 
+    case ExprType::NORMAL_FUNCTION: {
+      auto &normal_function_expr = dynamic_cast<NormalFunctionExpr &>(expr);
+      for (auto &child_expr : normal_function_expr.args()) {
+        rc = callback(child_expr);
+      }
+    } break;
+
     case ExprType::NONE:
     case ExprType::STAR:
     case ExprType::UNBOUND_FIELD:
@@ -159,6 +166,7 @@ RC ExpressionIterator::condition_iterate_expr(std::unique_ptr<Expression> &expr)
 
     case ExprType::ARITHMETIC:
     case ExprType::AGGREGATION:
+    case ExprType::NORMAL_FUNCTION:
     case ExprType::NONE:
     case ExprType::STAR:
     case ExprType::UNBOUND_FIELD:

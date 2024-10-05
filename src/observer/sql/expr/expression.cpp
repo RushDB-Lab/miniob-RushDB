@@ -848,3 +848,31 @@ RC NormalFunctionExpr::type_from_string(const char *type_str, NormalFunctionExpr
   }
   return rc;
 }
+
+RC NormalFunctionExpr::get_value(const Tuple &tuple, Value &result)
+{
+  vector<Value> args_values_;
+  for (auto &expr : args()) {
+    Value value;
+    RC    rc = expr->get_value(tuple, value);
+    if (OB_FAIL(rc)) {
+      return rc;
+    }
+    args_values_.push_back(value);
+  }
+  switch (type_) {
+    case Type::LENGTH: {
+      return STD::LENGTH(args_values_, result);
+    }
+    case Type::ROUND: {
+      return STD::ROUND(args_values_, result);
+    }
+    case Type::DATE_FORMAT: {
+      return STD::DATE_FORMAT(args_values_, result);
+    }
+    default: {
+      return RC::INTERNAL;
+    }
+  }
+  return RC::SUCCESS;
+}

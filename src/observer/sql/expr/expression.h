@@ -22,6 +22,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/field/field.h"
 #include "sql/expr/aggregator.h"
 #include "storage/common/chunk.h"
+#include "sql/expr/function.h"
 
 class Tuple;
 class SelectStmt;
@@ -471,6 +472,8 @@ public:
   ExprType type() const override { return ExprType::NORMAL_FUNCTION; }
 
   Type function_type() const { return type_; }
+
+  RC get_value(const Tuple &tuple, Value &value) override;
 
 private:
   Type type_;
