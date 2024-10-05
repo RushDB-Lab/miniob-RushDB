@@ -111,6 +111,11 @@ public:
    */
   bool is_valid() const { return record_page_handler_ != nullptr; }
 
+  /**
+   * @brief 操作结束后做的清理工作，初始化成员变量为默认值
+   */
+  RC cleanup();
+
 private:
   RecordPageHandler *record_page_handler_ = nullptr;
   PageNum            page_num_            = BP_INVALID_PAGE_NUM;
