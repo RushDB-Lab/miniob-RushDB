@@ -264,7 +264,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
 
   // Get the value of the left expression
   rc = left_->get_value(tuple, left_value);
-  if (rc != RC::SUCCESS) {
+  if (rc != RC::SUCCESS && rc != RC::RECORD_EOF) {
     LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
     return rc;
   }
@@ -300,7 +300,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
 
   // Get the value of the right expression
   rc = right_->get_value(tuple, right_value);
-  if (rc != RC::SUCCESS) {
+  if (rc != RC::SUCCESS && rc != RC::RECORD_EOF) {
     LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
     return rc;
   }
@@ -821,7 +821,7 @@ RC SubQueryExpr::get_value(const Tuple &tuple, Value &value)
   RC rc = physical_oper_->next();
   if (rc == RC::RECORD_EOF) {
     value.set_null(true);
-    return RC::SUCCESS;
+    return rc;
   }
   if (OB_SUCC(rc))
     rc = physical_oper_->current_tuple()->cell_at(0, value);
