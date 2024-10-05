@@ -60,7 +60,8 @@ RC SelectStmt::create(
     // 建立别名
     const string &table_alias = select_sql.relations[i].alias;
     if (!table_alias.empty()) {
-      table_map.insert({table_alias, table});
+      const auto &success=table_map.insert({table_alias, table});
+      if (!success.second) return RC::INVALID_ALIAS;
     }
 
     binder_context.add_table(table);
