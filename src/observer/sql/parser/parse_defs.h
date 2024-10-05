@@ -170,8 +170,8 @@ struct DeleteSqlNode
  */
 struct SetClauseSqlNode
 {
-  std::string field_name;  ///< 更新的字段
-  Value       value;       ///< 更新的值
+  std::string                 field_name;  ///< 更新的字段
+  std::unique_ptr<Expression> value;       ///< 更新的值
 };
 
 /**

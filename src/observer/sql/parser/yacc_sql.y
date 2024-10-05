@@ -572,22 +572,20 @@ setClauses:
       setClause
     {
       $$ = new std::vector<SetClauseSqlNode>;
-      $$->emplace_back(*$1);
-      delete $1;
+      $$->emplace_back(std::move(*$1));
     }
     | setClauses COMMA setClause
     {
-      $$->emplace_back(*$3);
-      delete $3;
+      $$->emplace_back(std::move(*$3));
     }
     ;
 
 setClause:
-      ID EQ value
+      ID EQ expression
     {
       $$ = new SetClauseSqlNode;
       $$->field_name = $1;
-      $$->value = std::move(*$3);
+      $$->value = std::unique_ptr<Expression>($3);
       free($1);
     }
     ;

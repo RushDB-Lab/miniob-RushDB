@@ -11,8 +11,7 @@
  ***************************************************************/
 
 #include "update_physical_operator.h"
-
-#include <storage/trx/trx.h>
+#include "storage/trx/trx.h"
 
 RC UpdatePhysicalOperator::open(Trx *trx)
 {
@@ -44,6 +43,67 @@ RC UpdatePhysicalOperator::open(Trx *trx)
 
   child->close();
 
+  // 得到真正的 value，并做校验
+  RowTuple           tuple;
+  Value              value;
+  std::vector<Value> real_values(values_.size());
+  SubQueryExpr      *sub_query_expr = nullptr;
+  for (int i = 0; i < values_.size(); ++i) {
+    auto &value_expr = values_[i];
+    auto &field_meta = field_metas_[i];
+
+    if ((sub_query_expr = dynamic_cast<SubQueryExpr *>(value_expr.get()))) {
+      sub_query_expr->open(trx_, tuple);
+    }
+
+    // 得到表达式的值
+    rc = value_expr->get_value(tuple, value);
+    if (OB_FAIL(rc) && rc != RC::RECORD_EOF) {
+      LOG_ERROR("Failed to get value for field: %s",
+                  field_meta.name());
+      return rc;
+    }
+
+    // 如果是子查询只能有一行一列
+    if (sub_query_expr && sub_query_expr->has_more_row(tuple)) {
+      LOG_ERROR("Subquery returned more than one row for field: %s",
+                 field_meta.name());
+      return RC::SUBQUERY_RETURNED_MULTIPLE_ROWS;
+    }
+
+    // 进行类型校验
+    if (value.attr_type() != field_meta.type()) {
+      // 尝试转换，发生转换时不考虑数值溢出
+      Value to_value;
+      // 更新不允许非目标类型的类型提升
+      rc = Value::cast_to(value, field_meta.type(), to_value, false);
+      if (rc != RC::SUCCESS) {
+        LOG_ERROR("Schema field type mismatch and cast to failed. Field: %s, Expected Type: %s, Provided Type: %s",
+                  field_meta.name(),
+                  attr_type_to_string(field_meta.type()),
+                  attr_type_to_string(value.attr_type()));
+        return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+      }
+      // 转换成功
+      value = std::move(to_value);
+    } else if (value.length() > field_meta.len()) {
+      LOG_ERROR("Value length exceeds maximum allowed length for field. Field: %s, Type: %s, Offset: %d, Length: %d, Max Length: %d",
+                field_meta.name(),
+                attr_type_to_string(field_meta.type()),
+                field_meta.offset(),
+                value.length(),
+                field_meta.len());
+      return RC::VALUE_TOO_LONG;
+    }
+
+    if (sub_query_expr) {
+      sub_query_expr->close();
+      sub_query_expr = nullptr;
+    }
+
+    real_values[i] = std::move(value);
+  }
+
   // 先收集记录再更新
   // 记录的有效性由事务来保证，如果事务不保证删除的有效性，那说明此事务类型不支持并发控制，比如VacuousTrx
   Record new_record;
@@ -52,16 +112,16 @@ RC UpdatePhysicalOperator::open(Trx *trx)
     new_record.set_rid(old_record.rid());
     new_record.copy_data(old_record.data(), old_record.len());
     for (int i = 0; i < field_metas_.size(); ++i) {
-      new_record.set_field(field_metas_[i].offset(), field_metas_[i].len(), values_[i]);
+      new_record.set_field(field_metas_[i].offset(), field_metas_[i].len(), real_values[i]);
       if (field_metas_[i].nullable()) {
         auto null_offset = field_metas_[i].offset() + field_metas_[i].len() - 1;
-        if (values_[i].is_null()) {
+        if (real_values[i].is_null()) {
           new_record.data()[null_offset] = '1';
         } else {
           new_record.data()[null_offset] = 0;
         }
       } else {
-        if (values_[i].is_null()) {
+        if (real_values[i].is_null()) {
           rollback();
           return RC::NOT_NULLABLE_VALUE;
         }

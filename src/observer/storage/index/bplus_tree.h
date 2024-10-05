@@ -103,7 +103,7 @@ public:
 
   int compare_key(const char *v1, const char *v2) const
   {
-    auto  field_number = index_.fields().size();
+    auto  field_number  = index_.fields().size();
     auto &fields_offset = index_.fields_offset();
     for (int i = 0; i < field_number; i++) {
       int offset = fields_offset[i];

@@ -244,7 +244,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
     return rc;
   }
   DEFER(if (nullptr != left_subquery_expr) left_subquery_expr->close();
-      if (nullptr != right_subquery_expr) right_subquery_expr->close(););
+        if (nullptr != right_subquery_expr) right_subquery_expr->close(););
 
   // Get the value of the left expression
   rc = left_->get_value(tuple, left_value);
@@ -269,16 +269,33 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
       static_cast<ListExpr *>(right_.get())->reset();
     }
 
-    bool res      = false;  // Flag to indicate if a match is found
-    bool has_null = false;  // Flag to indicate if any NULL value is found
-    while (RC::SUCCESS == (rc = right_->get_value(tuple, right_value))) {
-      if (right_value.is_null()) {
-        has_null = true;
-      } else if (left_value.compare(right_value) == 0) {
-        res = true;
+    // 比较表达式的结果，如果进入 while 循环且没有提前退出，那么结果即为该值
+    bool res = comp_ == NOT_IN_OP;
+
+    rc = right_->get_value(tuple, right_value);
+    if (rc == RC::RECORD_EOF) {
+      // 子查询结果为空，返回 null 值
+    } else if (OB_FAIL(rc)) {
+      // 其他错误
+      return rc;
+    } else if (left_value.compare(right_value) == 0) {
+      // 不为空才能比较，null 是不可比较的
+      res = comp_ == IN_OP;
+    } else {
+      while (RC::SUCCESS == (rc = right_->get_value(tuple, right_value))) {
+        if (right_value.is_null()) {
+          // 对于 not in，一边有 null 就为假
+          if (comp_ == NOT_IN_OP) {
+            res = false;
+            break;
+          }
+        } else if (left_value.compare(right_value) == 0) {
+          res = comp_ == IN_OP;
+          break;
+        }
       }
     }
-    value.set_boolean(comp_ == IN_OP ? res : (has_null ? false : !res));
+    value.set_boolean(res);
     return rc == RC::RECORD_EOF ? RC::SUCCESS : rc;
   }
 
@@ -780,6 +797,7 @@ RC SubQueryExpr::generate_physical_oper()
   }
   return rc;
 }
+
 bool SubQueryExpr::one_row_ret() const { return res_query.size() <= 1; }
 
 // 子算子树的 open 和 close 逻辑由外部控制
@@ -808,13 +826,23 @@ RC SubQueryExpr::get_value(const Tuple &tuple, Value &value)
 {
   physical_oper_->set_parent_tuple(&tuple);
   RC rc = physical_oper_->next();
+  if (rc == RC::RECORD_EOF) {
+    // 先返回 null 类型的值，之后再完善具体选择的列类型
+    // 如果已经成功执行过一次，结果不为空，那么这里的 value 不会被用到
+    value.set_type(AttrType::NULLS);
+    value.set_null(true);
+    // 给调用者判断结果是否为空，而不是直接返回 RC::SUCCESS
+    return rc;
+  } else if (OB_FAIL(rc)) {
+    // 其他错误
+    return rc;
+  }
+
+  // 到这里确保有一条记录
+  rc = physical_oper_->current_tuple()->cell_at(0, value);
   if (OB_FAIL(rc)) {
     return rc;
   }
-  rc = physical_oper_->current_tuple()->cell_at(0, value);
-  if (rc == RC::RECORD_EOF)
-    value.set_null(true);
-
   return RC::SUCCESS;
 }
 

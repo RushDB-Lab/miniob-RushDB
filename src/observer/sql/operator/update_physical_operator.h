@@ -24,15 +24,14 @@ class UpdateStmt;
 class UpdatePhysicalOperator : public PhysicalOperator
 {
 public:
-  UpdatePhysicalOperator(Table *table, std::vector<FieldMeta> field_metas, std::vector<Value> values)
+  UpdatePhysicalOperator(
+      Table *table, std::vector<FieldMeta> field_metas, std::vector<std::unique_ptr<Expression>> values)
       : table_(table), field_metas_(std::move(field_metas)), values_(std::move(values))
   {}
 
   ~UpdatePhysicalOperator() override = default;
 
-  PhysicalOperatorType          type() const override { return PhysicalOperatorType::UPDATE; }
-  const std::vector<FieldMeta> &field_metas() const { return field_metas_; }
-  const std::vector<Value>     &values() const { return values_; }
+  PhysicalOperatorType type() const override { return PhysicalOperatorType::UPDATE; }
 
   RC open(Trx *trx) override;
   RC next() override;
@@ -43,10 +42,10 @@ public:
 private:
   void rollback();
 
-  Trx                         *trx_   = nullptr;
-  Table                       *table_ = nullptr;
-  std::vector<FieldMeta>       field_metas_;
-  std::vector<Value>           values_;
-  std::vector<Record>          records_;
-  vector<pair<Record, Record>> log_records;
+  Trx                                     *trx_   = nullptr;
+  Table                                   *table_ = nullptr;
+  std::vector<FieldMeta>                   field_metas_;
+  std::vector<std::unique_ptr<Expression>> values_;
+  std::vector<Record>                      records_;
+  vector<pair<Record, Record>>             log_records;
 };

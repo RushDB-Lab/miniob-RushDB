@@ -533,6 +533,7 @@ RC ExpressionBinder::bind_function_expression(
 
   return RC::UNKNOWN_FUNCTION;
 }
+
 RC ExpressionBinder::bind_subquery_expression(
     std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions)
 {
@@ -552,6 +553,7 @@ RC ExpressionBinder::bind_subquery_expression(
   bound_expressions.emplace_back(std::move(expr));
   return rc;
 }
+
 RC ExpressionBinder::bind_exprlist_expression(
     std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions)
 {
