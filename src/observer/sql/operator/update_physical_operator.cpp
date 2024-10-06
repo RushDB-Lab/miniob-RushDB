@@ -43,6 +43,11 @@ RC UpdatePhysicalOperator::open(Trx *trx)
 
   child->close();
 
+  // 如果需要更新的记录为空，直接返回成功，即使 value 校验异常也应该返回成功
+  if (records_.empty()) {
+    return RC::SUCCESS;
+  }
+
   // 得到真正的 value，并做校验
   RowTuple           tuple;
   Value              value;
