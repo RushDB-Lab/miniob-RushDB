@@ -433,7 +433,7 @@ attr_def:
       } else if ($$->type == AttrType::CHARS) {
         $$->length = 4;
       } else if ($$->type == AttrType::TEXTS) {
-        $$->length = 4096;
+        $$->length = 65535;
       } else {
         ASSERT(false, "$$->type is invalid.");
       }

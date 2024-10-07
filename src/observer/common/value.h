@@ -137,7 +137,7 @@ private:
   void set_float(float val);
   void set_date(int val);
   void set_string(const char *s, int len = 0);
-  void set_text(const char *s, int len = 0);
+  void set_text(const char *s, int len = 65535);
   void set_string_from_other(const Value &other);
 
 private:

@@ -204,7 +204,7 @@ void Value::set_string(const char *s, int len /*= 0*/)
   }
 }
 
-void Value::set_text(const char *s, int len /*= 0*/)
+void Value::set_text(const char *s, int len /*= 65535*/)
 {
   reset();
   attr_type_ = AttrType::TEXTS;

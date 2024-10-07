@@ -3750,7 +3750,7 @@ yyreduce:
       } else if ((yyval.attr_info)->type == AttrType::CHARS) {
         (yyval.attr_info)->length = 4;
       } else if ((yyval.attr_info)->type == AttrType::TEXTS) {
-        (yyval.attr_info)->length = 4096;
+        (yyval.attr_info)->length = 65535;
       } else {
         ASSERT(false, "$$->type is invalid.");
       }
