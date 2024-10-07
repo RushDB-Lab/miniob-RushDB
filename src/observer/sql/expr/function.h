@@ -78,7 +78,9 @@ public:
     if (args[0].attr_type() == AttrType::CHARS) {
       // 日期格式假设为 '2019-9-17' 或 '2019-09-17'
       std::string date_str = args[0].to_string();
-      sscanf(date_str.c_str(), "%d-%d-%d", &year, &month, &day);
+      if (sscanf(date_str.c_str(), "%d-%d-%d", &year, &month, &day) != 3) {
+        return RC::INVALID_ARGUMENT;
+      }
     }
 
     if (!check_date(year, month, day)) {
