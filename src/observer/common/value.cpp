@@ -225,6 +225,17 @@ void Value::set_text(const char *s, int len /*= 0*/)
   }
 }
 
+void Value::own_text(char *text, int len)
+{
+  ASSERT(text != nullptr, "text data can not be nullptr! ");
+  reset();
+  own_data_                  = true;
+  attr_type_                 = AttrType::TEXTS;
+  value_.pointer_value_      = text;
+  length_                    = len;
+  value_.pointer_value_[len] = '\0';
+}
+
 void Value::set_value(const Value &value)
 {
   switch (value.attr_type_) {

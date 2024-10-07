@@ -25,7 +25,7 @@ class MvccTrxLogHandler;
 class MvccTrxKit : public TrxKit
 {
 public:
-  MvccTrxKit() = default;
+           MvccTrxKit() = default;
   virtual ~MvccTrxKit();
 
   RC                       init() override;
@@ -72,8 +72,8 @@ public:
    * @note 外部不应该直接调用该构造函数，而应该使用TrxKit::create_trx()来创建事务，
    * 创建事务时，TrxKit会有一些内部信息需要记录
    */
-  MvccTrx(MvccTrxKit &trx_kit, LogHandler &log_handler);
-  MvccTrx(MvccTrxKit &trx_kit, LogHandler &log_handler, int32_t trx_id);  // used for recover
+           MvccTrx(MvccTrxKit &trx_kit, LogHandler &log_handler);
+           MvccTrx(MvccTrxKit &trx_kit, LogHandler &log_handler, int32_t trx_id);  // used for recover
   virtual ~MvccTrx();
 
   RC insert_record(Table *table, Record &record) override;

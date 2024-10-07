@@ -433,7 +433,8 @@ attr_def:
       } else if ($$->type == AttrType::CHARS) {
         $$->length = 4;
       } else if ($$->type == AttrType::TEXTS) {
-        $$->length = 4096;
+        // 存指针，12 字节
+        $$->length = 12;
       } else {
         ASSERT(false, "$$->type is invalid.");
       }

@@ -139,6 +139,42 @@ RC RecordPageHandler::init(DiskBufferPool &buffer_pool, LogHandler &log_handler,
   return ret;
 }
 
+RC RecordPageHandler::init_text(DiskBufferPool &buffer_pool, LogHandler &log_handler, PageNum page_num, ReadWriteMode mode)
+{
+  if (disk_buffer_pool_ != nullptr) {
+    if (frame_->page_num() == page_num) {
+      LOG_WARN("Disk buffer pool has been opened for page_num %d.", page_num);
+      return RC::RECORD_OPENNED;
+    } else {
+      cleanup();
+    }
+  }
+
+  RC ret = RC::SUCCESS;
+  if ((ret = buffer_pool.get_this_page(page_num, &frame_)) != RC::SUCCESS) {
+    LOG_ERROR("Failed to get page handle from disk buffer pool. ret=%d:%s", ret, strrc(ret));
+    return ret;
+  }
+
+  char *data = frame_->data();
+
+  if (mode == ReadWriteMode::READ_ONLY) {
+    frame_->read_latch();
+  } else {
+    frame_->write_latch();
+  }
+  disk_buffer_pool_ = &buffer_pool;
+
+  rw_mode_     = mode;
+  // page_header_ = (PageHeader *)(data);
+  // bitmap_      = data + PAGE_HEADER_SIZE;
+
+  // (void)log_handler_.init(log_handler, buffer_pool.id(), page_header_->record_real_size, storage_format_);
+
+  LOG_TRACE("Successfully init page_num %d.", page_num);
+  return ret;
+}
+
 RC RecordPageHandler::recover_init(DiskBufferPool &buffer_pool, PageNum page_num)
 {
   if (disk_buffer_pool_ != nullptr) {
@@ -611,6 +647,32 @@ RC RecordFileHandler::insert_record(const char *data, int record_size, RID *rid)
 
   // 找到空闲位置
   return record_page_handler->insert_record(data, rid);
+}
+
+// 通过页外存储插入 text 字段
+RC RecordFileHandler::insert_text(const Value *data, TextData& text_data)
+{
+  RC ret = RC::SUCCESS;
+
+  Frame *frame = nullptr;
+  // 纯数据页
+  if ((ret = disk_buffer_pool_->allocate_page(&frame)) != RC::SUCCESS) {
+    LOG_ERROR("Failed to allocate page while inserting record. ret:%d", ret);
+    return ret;
+  }
+
+  text_data.start.page_id = frame->page_num();
+  // frame 在allocate_page的时候，是有一个pin的，在init_empty_page时又会增加一个，所以这里手动释放一个
+  frame->unpin();
+
+  // 这里的加锁顺序看起来与上面是相反的，但是不会出现死锁
+  // 上面的逻辑是先加lock锁，然后加页面写锁，这里是先加上
+  // 了页面写锁，然后加lock的锁，但是不会引起死锁。
+  // 为什么？
+  // lock_.lock();
+  // free_pages_.insert(current_page_num);
+  // lock_.unlock();
+  return RC::SUCCESS;
 }
 
 RC RecordFileHandler::recover_insert_record(const char *data, int record_size, const RID &rid)

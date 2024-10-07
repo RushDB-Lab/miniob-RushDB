@@ -110,6 +110,8 @@ public:
   int      length() const { return length_; }
   AttrType attr_type() const { return attr_type_; }
 
+  void own_text(char *s, int len);
+
 public:
   /**
    * 获取对应的值

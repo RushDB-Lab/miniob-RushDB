@@ -25,6 +25,8 @@ See the Mulan PSL v2 for more details. */
 #include "common/value.h"
 #include "storage/record/record.h"
 
+#include <storage/record/record_manager.h>
+
 class Table;
 
 /**
@@ -201,6 +203,11 @@ public:
       bool is_null = this->record_->data()[field_meta->offset() + field_meta->len() - 1] == '1';
       cell.set_data(this->record_->data() + field_meta->offset(), field_meta->len() - 1);
       cell.set_null(is_null);
+    } else if (field_meta->type() == AttrType::TEXTS) {
+      TextData text_data = TextData::deserialize(this->record_->data() + field_meta->offset());
+      table_->find_index()
+      cell.set_data(this->record_->data() + field_meta->offset(), field_meta->len());
+      cell.set_null(false);
     } else {
       cell.set_data(this->record_->data() + field_meta->offset(), field_meta->len());
       cell.set_null(false);

@@ -40,7 +40,7 @@ class Db;
 class Table
 {
 public:
-  Table() = default;
+   Table() = default;
   ~Table();
 
   /**
@@ -81,6 +81,8 @@ public:
    * @param record[in/out] 传入的数据包含具体的数据，插入成功会通过此字段返回RID
    */
   RC insert_record(Record &record);
+  RC insert_text_field(const Value &text_value, TextPointer &text_pointer);
+  RC read_text_field(Value &text_value, TextPointer &text_pointer, int total_size);
   RC delete_record(const Record &record);
   RC delete_record(const RID &rid);
   RC update_record(const Record &old_record, const Record &new_record);

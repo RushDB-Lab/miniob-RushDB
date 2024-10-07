@@ -110,7 +110,7 @@ public:
   };
 
 public:
-  TrxKit()          = default;
+           TrxKit() = default;
   virtual ~TrxKit() = default;
 
   virtual RC                       init()             = 0;
@@ -140,7 +140,7 @@ public:
 class Trx
 {
 public:
-  Trx()          = default;
+           Trx() = default;
   virtual ~Trx() = default;
 
   virtual RC insert_record(Table *table, Record &record)                         = 0;

@@ -26,8 +26,47 @@ See the Mulan PSL v2 for more details. */
 #include "storage/index/index_meta.h"
 
 #include <common/type/char_type.h>
+#include <storage/buffer/page.h>
 
 class Field;
+
+// 指向 text 类型数页据的指针
+// 实际在行上的字段是存了 6 字节的指针
+struct TextPointer
+{
+  // 在页头额外用 4 字节，无符号整型，最多存 LONGTEXT 4,294,967,295 字节（约 4 GB）
+  // 当前 page id 为 -1 时，说明到最后一个页面了
+  PageNum page_id;
+  // 一个页最多存 8192 字节，8192是 2 的 13 次，用 16 位的 shot 就能表示
+  unsigned short size;  // 当前页面存的数据大小，简化处理默认从一个 text 数据页不会被其他 text 数据页占用
+
+  static char *serialize(const TextPointer &text_pointer)
+  {
+    // 调用者释放内存
+    char *buffer = (char *)malloc(sizeof(TextPointer));
+    if (buffer == nullptr) {
+      throw std::bad_alloc();  // 处理内存分配失败
+    }
+    std::memcpy(buffer, &text_pointer, sizeof(TextPointer));
+    return buffer;
+  }
+
+  static TextPointer deserialize(const char *buffer)
+  {
+    TextPointer text_pointer;
+    std::memcpy(&text_pointer, buffer, sizeof(TextPointer));
+    return text_pointer;
+  }
+
+  bool valid() { return !page_id == BP_INVALID_PAGE_NUM && page_id > 0; }
+};
+
+// 存储 text 类型的数据结构，这里确保数据一定是在连续页面上存储的
+// 实际在行上的字段是存了 12 字节的指针
+// struct TextDataHead
+// {
+//   TextPointer next;
+// };
 
 /**
  * @brief 标识一个记录的位置
@@ -102,7 +141,7 @@ struct RIDHash
 class Record
 {
 public:
-  Record() = default;
+   Record() = default;
   ~Record()
   {
     if (owner_ && data_ != nullptr) {

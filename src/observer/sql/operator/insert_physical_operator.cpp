@@ -40,7 +40,7 @@ RC InsertPhysicalOperator::open(Trx *trx)
       // 要么都插入成功，要么都不插入
       LOG_INFO("Rolling back previously inserted records up to index %d", i - 1);
       while (--i >= 0) {
-        // 删除之前插入成功的
+        // 删除之前插入成功的，同时考虑释放页外存储的数据
         RC rc2 = trx->delete_record(table_, records[i]);
         if (rc2 != RC::SUCCESS) {
           LOG_WARN("failed to delete record by transaction. rc=%s", strrc(rc2));

@@ -293,14 +293,33 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
 
   const int normal_field_start_index = table_meta_.sys_field_num();
   // 复制所有字段的值
-  int   record_size = table_meta_.record_size();
+  int record_size = table_meta_.record_size();
+  // 注意 text 字段只有 2 + 6 字节的指针
   char *record_data = (char *)malloc(record_size);
   memset(record_data, 0, record_size);
 
   for (int i = 0; i < value_num && OB_SUCC(rc); i++) {
     const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
     const Value     &value = values[i];
-    if (field->type() != value.attr_type()) {
+    // 判断是否在 NOT NULL 字段设置 NULL 值
+    if (value.is_null()) {
+      if (!field->nullable()) {
+        return RC::NOT_NULLABLE_VALUE;
+      }
+      record_data[field->offset() + field->len() - 1] = '1';
+    } else if (field->type() == AttrType::TEXTS && value.attr_type() == AttrType::CHARS) {
+      // value 生命周期是在整个执行过程，可以直接取指针
+      // 直接在这里旁路写入数据
+      TextPointer text_pointer;
+      insert_text_field(value, text_pointer);
+      auto data = TextPointer::serialize(text_pointer);
+      unsigned short length = value.length();
+      // 2 字节
+      memcpy(record_data + field->offset(), &length, sizeof(unsigned short));
+      // 6 字节
+      memcpy(record_data + field->offset() + sizeof(unsigned short), data, sizeof(TextPointer));
+      free(data);
+    } else if (field->type() != value.attr_type()) {
       Value real_value;
       // 插入不允许非目标类型的类型提升
       rc = Value::cast_to(value, field->type(), real_value, false);
@@ -313,14 +332,6 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
     } else {
       rc = set_value_to_record(record_data, value, field);
     }
-
-    // 判断是否在 NOT NULL 字段设置 NULL 值
-    if (value.is_null()) {
-      if (!field->nullable()) {
-        return RC::NOT_NULLABLE_VALUE;
-      }
-      record_data[field->offset() + field->len() - 1] = '1';
-    }
   }
   if (OB_FAIL(rc)) {
     LOG_WARN("failed to make record. table name:%s", table_meta_.name());
@@ -332,11 +343,136 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
   return RC::SUCCESS;
 }
 
+// 插入 text value 数据形成数据指针
+RC Table::insert_text_field(const Value &text_value, TextPointer &text_pointer)
+{
+  RC     rc        = RC::SUCCESS;
+  Frame *cur_frame = nullptr;
+  rc               = data_buffer_pool_->allocate_page(&cur_frame);
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
+  // 先假设每次插入都会建立的页面，一个记录使用的页面不会被其他记录使用，即使跨页
+  text_pointer.page_id = cur_frame->page_num();
+
+  int         size              = text_value.length();
+  const char *src               = text_value.data();
+  char       *dist              = cur_frame->data();
+  int         offset            = 0;  // 偏移量
+  short       len               = 0;  // 实际写入的大小
+  TextPointer next_text_pointer = {-1, 0};
+
+  // 预留 6 字节存下一个页面的指针，如果没有下一个页面指针为无效，形成一个链表
+  int text_page_data_size = BP_PAGE_DATA_SIZE - sizeof(TextPointer);
+
+  len               = min(size, text_page_data_size);
+  text_pointer.size = len;
+
+  while (size > 0) {
+    memcpy(dist + sizeof(TextPointer), src + offset, len);
+    offset += len;
+    size -= len;
+    // 需要存数据到下一个页面
+    if (size > 0) {
+      Frame *frame = nullptr;
+      rc           = data_buffer_pool_->allocate_page(&frame);
+      if (rc != RC::SUCCESS) {
+        // 先简单处理
+        return rc;
+      }
+      // 下一个指针
+      len                       = min(size, text_page_data_size);
+      next_text_pointer.page_id = frame->page_num();
+      next_text_pointer.size    = len;
+      memcpy(dist, &next_text_pointer, sizeof(TextPointer));
+      cur_frame->mark_dirty();
+      cur_frame->unpin();
+      cur_frame = frame;
+      dist      = cur_frame->data();
+    }
+  }
+
+  // 最后一个页面标记为 -1
+  next_text_pointer.page_id = -1;
+  next_text_pointer.size    = 0;
+  memcpy(dist, &next_text_pointer, sizeof(TextPointer));
+
+  // 释放页框
+  cur_frame->mark_dirty();
+  cur_frame->unpin();
+
+  return RC::SUCCESS;
+}
+
+// 通过 text 数据指针读出 value 数据
+RC Table::read_text_field(Value &text_value, TextPointer &text_pointer, int total_size)
+{
+  RC     rc    = RC::SUCCESS;
+  Frame *frame = nullptr;
+
+  // 获取起始页
+  rc = data_buffer_pool_->get_this_page(text_pointer.page_id, &frame);
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
+
+  // text 字段总大小
+  // unsigned short 2 字节
+  char *dist                 = new char[total_size + 1];  // 为字符串分配内存
+  dist[total_size]           = '\0';                      // 终止字符
+  int         offset         = 0;                         // 偏移量
+  short       len            = 0;                         // 实际写入的大小
+  int         remaining_size = total_size;
+  TextPointer next_text_pointer;
+
+  // 预留 6 字节存下一个页面的页号，如果没有下一个页面就为 -1，形成一个链表
+  int text_page_data_size = BP_PAGE_DATA_SIZE - sizeof(TextPointer);
+
+  while (remaining_size > 0) {
+    // 读取至多一页的数据
+    len = std::min(remaining_size, text_page_data_size);
+    memcpy(dist + offset, frame->data() + sizeof(TextPointer), len);  // 跳过页号
+    offset += len;
+    remaining_size -= len;
+
+    if (remaining_size > 0) {
+      next_text_pointer = TextPointer::deserialize(frame->data());
+
+      // 如果没有下一个页面，就停止
+      if (!next_text_pointer.valid()) {
+        break;
+      }
+
+      // 释放当前页并获取下一个页
+      frame->unpin();
+
+      // 获取下一个页面
+      rc = data_buffer_pool_->get_this_page(next_text_pointer.page_id, &frame);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
+    }
+  }
+
+  // 释放最后一个帧
+  frame->unpin();
+
+  // 将读取到的字符数据存储到 text_value 中
+  text_value.own_text(dist, total_size);
+
+  return RC::SUCCESS;
+}
+
 RC Table::set_value_to_record(char *record_data, const Value &value, const FieldMeta *field)
 {
   size_t       copy_len = field->len();
   const size_t data_len = value.length();
-  if (field->type() == AttrType::CHARS || field->type() == AttrType::TEXTS) {
+  if (field->type() == AttrType::TEXTS) {
+    // 不做拷贝，真正需要插入时再写入表中
+    ASSERT(copy_len == 12, "error text length");
+    return RC::SUCCESS;
+  }
+  if (field->type() == AttrType::CHARS) {
     if (copy_len > data_len) {
       copy_len = data_len + 1;
     }

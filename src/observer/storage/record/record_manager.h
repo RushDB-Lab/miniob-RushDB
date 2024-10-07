@@ -83,7 +83,7 @@ struct PageHeader
 class RecordPageIterator
 {
 public:
-  RecordPageIterator();
+   RecordPageIterator();
   ~RecordPageIterator();
 
   /**
@@ -130,8 +130,8 @@ private:
 class RecordPageHandler
 {
 public:
-  RecordPageHandler(StorageFormat storage_format) : storage_format_(storage_format) {}
-  virtual ~RecordPageHandler();
+                            RecordPageHandler(StorageFormat storage_format) : storage_format_(storage_format) {}
+  virtual ~                 RecordPageHandler();
   static RecordPageHandler *create(StorageFormat format);
 
   /**
@@ -142,6 +142,8 @@ public:
    * @param mode        是否只读。在访问页面时，需要对页面加锁
    */
   RC init(DiskBufferPool &buffer_pool, LogHandler &log_handler, PageNum page_num, ReadWriteMode mode);
+
+  RC init_text(DiskBufferPool &buffer_pool, LogHandler &log_handler, PageNum page_num, ReadWriteMode mode);
 
   /**
    * @brief 数据库恢复时，与普通的运行场景有所不同，不做任何并发操作，也不需要加锁
@@ -362,7 +364,7 @@ private:
 class RecordFileHandler
 {
 public:
-  RecordFileHandler(StorageFormat storage_format) : storage_format_(storage_format) {};
+   RecordFileHandler(StorageFormat storage_format) : storage_format_(storage_format){};
   ~RecordFileHandler();
 
   /**
@@ -413,6 +415,8 @@ public:
   RC get_record(const RID &rid, Record &record);
 
   RC visit_record(const RID &rid, function<bool(Record &)> updater);
+
+  RC insert_text(const Value *data, TextData& text_data);
 
 private:
   /**
