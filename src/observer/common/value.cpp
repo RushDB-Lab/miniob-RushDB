@@ -148,6 +148,7 @@ void Value::set_data(char *data, int length)
   }
 }
 
+// 用于其他类型转成 null 值，但不是 null 类型
 void Value::set_null() { is_null_ = true; }
 
 void Value::set_int(int val)
@@ -417,4 +418,13 @@ bool Value::get_boolean() const
     }
   }
   return false;
+}
+
+int Value::get_date() const
+{
+  if (attr_type_ == AttrType::DATES) {
+    return value_.int_value_;
+  } else {
+    return 0;
+  }
 }

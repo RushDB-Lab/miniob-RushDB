@@ -24,12 +24,33 @@ using namespace common;
 
 Table *BinderContext::find_table(const char *table_name) const
 {
-  auto pred = [table_name](Table *table) { return 0 == strcasecmp(table_name, table->name()); };
-  auto iter = ranges::find_if(query_tables_, pred);
-  if (iter == query_tables_.end()) {
+  auto iter = this->tables_->find(table_name);
+  if (iter == tables_->end()) {
     return nullptr;
   }
-  return *iter;
+  return iter->second;
+}
+bool BinderContext::only_one_table()
+{
+  {
+    if (query_tables_.empty()) {
+      return false;  // 如果列表为空，返回false
+    } else if (query_tables_.size() == 1) {
+      return true;
+    }
+
+    // 获取第一个表指针作为基准
+    Table *first_table = query_tables_[0];
+
+    // 遍历整个向量，检查所有的表是否与第一个表相同
+    for (size_t i = 1; i < query_tables_.size(); ++i) {
+      if (query_tables_[i] != first_table) {
+        return false;  // 如果有不同的表，返回false
+      }
+    }
+
+    return true;  // 如果所有的表都是一样的，返回true
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -73,8 +94,8 @@ RC ExpressionBinder::bind_expression(unique_ptr<Expression> &expr, vector<unique
       return bind_unbound_field_expression(expr, bound_expressions);
     } break;
 
-    case ExprType::UNBOUND_AGGREGATION: {
-      return bind_aggregate_expression(expr, bound_expressions);
+    case ExprType::UNBOUND_FUNCTION: {
+      return bind_function_expression(expr, bound_expressions);
     } break;
 
     case ExprType::FIELD: {
@@ -102,9 +123,16 @@ RC ExpressionBinder::bind_expression(unique_ptr<Expression> &expr, vector<unique
     } break;
 
     case ExprType::AGGREGATION: {
-      return bind_aggregate_expression(expr, bound_expressions);
+      return bind_function_expression(expr, bound_expressions);
     } break;
 
+    case ExprType::SUBQUERY: {
+      return bind_subquery_expression(expr, bound_expressions);
+    } break;
+
+    case ExprType::EXPRLIST: {
+      return bind_exprlist_expression(expr, bound_expressions);
+    } break;
     default: {
       LOG_WARN("unknown expression type: %d", static_cast<int>(expr->type()));
       return RC::INTERNAL;
@@ -159,12 +187,7 @@ RC ExpressionBinder::bind_unbound_field_expression(
 
   Table *table = nullptr;
   if (is_blank(table_name)) {
-    if (context_.query_tables().size() != 1) {
-      LOG_INFO("cannot determine table for field: %s", field_name);
-      return RC::SCHEMA_TABLE_NOT_EXIST;
-    }
-
-    table = context_.query_tables()[0];
+    table = context_.default_table();
   } else {
     table = context_.find_table(table_name);
     if (nullptr == table) {
@@ -266,7 +289,7 @@ RC ExpressionBinder::bind_comparison_expression(
     return RC::SUCCESS;
   }
 
-  auto comparison_expr = static_cast<ComparisonExpr *>(expr.get());
+  auto comparison_expr = dynamic_cast<ComparisonExpr *>(expr.get());
 
   vector<unique_ptr<Expression>> child_bound_expressions;
   unique_ptr<Expression>        &left_expr  = comparison_expr->left();
@@ -284,7 +307,7 @@ RC ExpressionBinder::bind_comparison_expression(
 
   unique_ptr<Expression> &left = child_bound_expressions[0];
   if (left.get() != left_expr.get()) {
-    left_expr.reset(left.release());
+    left_expr = std::move(left);
   }
 
   child_bound_expressions.clear();
@@ -300,7 +323,7 @@ RC ExpressionBinder::bind_comparison_expression(
 
   unique_ptr<Expression> &right = child_bound_expressions[0];
   if (right.get() != right_expr.get()) {
-    right_expr.reset(right.release());
+    right_expr = std::move(right);
   }
 
   bound_expressions.emplace_back(std::move(expr));
@@ -334,7 +357,7 @@ RC ExpressionBinder::bind_conjunction_expression(
 
     unique_ptr<Expression> &child = child_bound_expressions[0];
     if (child.get() != child_expr.get()) {
-      child_expr.reset(child.release());
+      child_expr = std::move(child);
     }
   }
 
@@ -368,7 +391,7 @@ RC ExpressionBinder::bind_arithmetic_expression(
 
   unique_ptr<Expression> &left = child_bound_expressions[0];
   if (left.get() != left_expr.get()) {
-    left_expr.reset(left.release());
+    left_expr = std::move(left);
   }
 
   child_bound_expressions.clear();
@@ -384,14 +407,14 @@ RC ExpressionBinder::bind_arithmetic_expression(
 
   unique_ptr<Expression> &right = child_bound_expressions[0];
   if (right.get() != right_expr.get()) {
-    right_expr.reset(right.release());
+    right_expr = std::move(right);
   }
 
   bound_expressions.emplace_back(std::move(expr));
   return RC::SUCCESS;
 }
 
-RC check_aggregate_expression(AggregateExpr &expression)
+RC check_aggregate_expression(AggregateFunctionExpr &expression)
 {
   // 必须有一个子表达式
   Expression *child_expression = expression.child().get();
@@ -401,11 +424,11 @@ RC check_aggregate_expression(AggregateExpr &expression)
   }
 
   // 校验数据类型与聚合类型是否匹配
-  AggregateExpr::Type aggregate_type   = expression.aggregate_type();
-  AttrType            child_value_type = child_expression->value_type();
+  AggregateFunctionExpr::Type aggregate_type   = expression.aggregate_type();
+  AttrType                    child_value_type = child_expression->value_type();
   switch (aggregate_type) {
-    case AggregateExpr::Type::SUM:
-    case AggregateExpr::Type::AVG: {
+    case AggregateFunctionExpr::Type::SUM:
+    case AggregateFunctionExpr::Type::AVG: {
       // 仅支持数值类型
       if (child_value_type != AttrType::INTS && child_value_type != AttrType::FLOATS) {
         LOG_WARN("invalid child value type for aggregate expression: %d", static_cast<int>(child_value_type));
@@ -413,10 +436,10 @@ RC check_aggregate_expression(AggregateExpr &expression)
       }
     } break;
 
-    case AggregateExpr::Type::COUNT:
+    case AggregateFunctionExpr::Type::COUNT:
 
-    case AggregateExpr::Type::MAX:
-    case AggregateExpr::Type::MIN: {
+    case AggregateFunctionExpr::Type::MAX:
+    case AggregateFunctionExpr::Type::MIN: {
       // 任何类型都支持
     } break;
   }
@@ -437,68 +460,114 @@ RC check_aggregate_expression(AggregateExpr &expression)
   return rc;
 }
 
-RC ExpressionBinder::bind_aggregate_expression(
+RC ExpressionBinder::bind_function_expression(
     unique_ptr<Expression> &expr, vector<unique_ptr<Expression>> &bound_expressions)
 {
   if (nullptr == expr) {
     return RC::SUCCESS;
   }
 
-  auto                unbound_aggregate_expr = static_cast<UnboundAggregateExpr *>(expr.get());
-  const char         *aggregate_name         = unbound_aggregate_expr->aggregate_name();
-  AggregateExpr::Type aggregate_type;
-  RC                  rc = AggregateExpr::type_from_string(aggregate_name, aggregate_type);
-  if (OB_FAIL(rc)) {
-    LOG_WARN("invalid aggregate name: %s", aggregate_name);
-    return rc;
-  }
+  auto                        unbound_function_expr = static_cast<UnboundFunctionExpr *>(expr.get());
+  const char                 *function_name         = unbound_function_expr->function_name();
+  AggregateFunctionExpr::Type aggregate_type;
+  RC                          rc = AggregateFunctionExpr::type_from_string(function_name, aggregate_type);
+  if (OB_SUCC(rc)) {
+    if (unbound_function_expr->args().size() != 1) {
+      return RC::INVALID_ARGUMENT;
+    }
+    unique_ptr<Expression>        &child_expr = unbound_function_expr->args().front();
+    vector<unique_ptr<Expression>> child_bound_expressions;
 
-  unique_ptr<Expression>        &child_expr = unbound_aggregate_expr->child();
-  vector<unique_ptr<Expression>> child_bound_expressions;
+    if (child_expr->type() == ExprType::STAR && aggregate_type == AggregateFunctionExpr::Type::COUNT) {
+      ValueExpr *value_expr = new ValueExpr(Value(1));
+      child_expr.reset(value_expr);
+      // count(*) 输出星号
+      child_expr->set_name("*");
+      unbound_function_expr->set_name(unbound_function_expr->to_string());
+    } else {
+      rc = bind_expression(child_expr, child_bound_expressions);
+      if (OB_FAIL(rc)) {
+        return rc;
+      }
 
-  if (child_expr->type() == ExprType::STAR && aggregate_type == AggregateExpr::Type::COUNT) {
-    ValueExpr *value_expr = new ValueExpr(Value(1));
-    child_expr.reset(value_expr);
-    // count(*) 输出星号
-    child_expr->set_name("*");
-  } else {
-    rc = bind_expression(child_expr, child_bound_expressions);
+      if (child_bound_expressions.size() != 1) {
+        LOG_WARN("invalid children number of aggregate expression: %d", child_bound_expressions.size());
+        return RC::INVALID_ARGUMENT;
+      }
+
+      if (child_bound_expressions[0].get() != child_expr.get()) {
+        child_expr.reset(child_bound_expressions[0].release());
+      }
+    }
+
+    auto aggregate_expr = make_unique<AggregateFunctionExpr>(aggregate_type, std::move(child_expr));
+
+    // set name 阶段
+    aggregate_expr->set_name(unbound_function_expr->name());
+    rc = check_aggregate_expression(*aggregate_expr);
     if (OB_FAIL(rc)) {
       return rc;
     }
-
-    if (child_bound_expressions.size() != 1) {
-      LOG_WARN("invalid children number of aggregate expression: %d", child_bound_expressions.size());
-      return RC::INVALID_ARGUMENT;
-    }
-
-    if (child_bound_expressions[0].get() != child_expr.get()) {
-      child_expr.reset(child_bound_expressions[0].release());
-    }
+    bound_expressions.emplace_back(std::move(aggregate_expr));
+    return RC::SUCCESS;
   }
 
-  auto aggregate_expr = make_unique<AggregateExpr>(aggregate_type, std::move(child_expr));
-  // aggregate_expr->set_name(unbound_aggregate_expr->name());
-  // set name 阶段
-  if (unbound_aggregate_expr->name_empty()) {
-    string name;
-    switch (aggregate_type) {
-      case AggregateExpr::Type::COUNT: name = "COUNT(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-      case AggregateExpr::Type::SUM: name = "SUM(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-      case AggregateExpr::Type::AVG: name = "AVG(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-      case AggregateExpr::Type::MAX: name = "MAX(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-      case AggregateExpr::Type::MIN: name = "MIN(" + std::string(aggregate_expr->child()->name()) + ")"; break;
-      default: name = "UNKNOWN_AGGREGATE"; break;
+  NormalFunctionExpr::Type func_type;
+  rc = NormalFunctionExpr::type_from_string(function_name, func_type);
+  if (OB_SUCC(rc)) {
+    vector<unique_ptr<Expression>> child_bound_expressions;
+    for (auto &child_expr : unbound_function_expr->args()) {
+      rc = bind_expression(child_expr, child_bound_expressions);
+      if (OB_FAIL(rc)) {
+        return rc;
+      }
     }
-    aggregate_expr->set_name(name);
-  } else {
-    aggregate_expr->set_name(unbound_aggregate_expr->name());
+    unbound_function_expr->set_args(std::move(child_bound_expressions));
+
+    string name      = unbound_function_expr->name();
+    auto   func_expr = make_unique<NormalFunctionExpr>(
+        func_type, unbound_function_expr->function_name(), std::move(unbound_function_expr->args()));
+    func_expr->set_name(name);
+    bound_expressions.emplace_back(std::move(func_expr));
+    return RC::SUCCESS;
   }
-  rc = check_aggregate_expression(*aggregate_expr);
+
+  return RC::UNKNOWN_FUNCTION;
+}
+
+RC ExpressionBinder::bind_subquery_expression(
+    std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions)
+{
+  RC   rc            = RC::SUCCESS;
+  auto subquery_expr = dynamic_cast<SubQueryExpr *>(expr.get());
+
+  rc = subquery_expr->generate_select_stmt(context_.get_db(), context_.table_map());
   if (OB_FAIL(rc)) {
     return rc;
   }
+  rc = subquery_expr->generate_logical_oper();
+  if (OB_FAIL(rc)) {
+    return rc;
+  }
+  rc = subquery_expr->generate_physical_oper();
 
-  bound_expressions.emplace_back(std::move(aggregate_expr));
-  return RC::SUCCESS;
+  bound_expressions.emplace_back(std::move(expr));
+  return rc;
+}
+
+RC ExpressionBinder::bind_exprlist_expression(
+    std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions)
+{
+  RC                             rc        = RC::SUCCESS;
+  auto                           list_expr = dynamic_cast<ListExpr *>(expr.get());
+  vector<unique_ptr<Expression>> child_bound_expressions;
+  for (auto &child_expr : list_expr->get_list()) {
+    if (child_expr->type() != ExprType::VALUE) {
+      LOG_WARN("invalid children type of LIST expression: %d", child_bound_expressions.size());
+      return RC::INVALID_ARGUMENT;
+    }
+  }
+
+  bound_expressions.emplace_back(std::move(expr));
+  return rc;
 }

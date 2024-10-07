@@ -119,8 +119,17 @@ public:
   float       get_float() const;
   string      get_string() const;
   bool        get_boolean() const;
+  int         get_date() const;
   bool        is_null() const { return is_null_; }
   inline bool is_str() const { return attr_type_ == AttrType::CHARS; }
+
+  static int implicit_cast_cost(AttrType from, AttrType to)
+  {
+    if (from == to) {
+      return 0;
+    }
+    return DataType::type_instance(from)->cast_cost(to);
+  }
 
 private:
   void set_null();

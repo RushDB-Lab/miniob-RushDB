@@ -1,6 +1,8 @@
 -- echo initialization
 CREATE TABLE unique_table(id int, col1 int, col2 int);
+CREATE TABLE unique_table2(id1 int, id2 int, col1 int, col2 int);
 INSERT INTO unique_table VALUES (1,1,1);
+INSERT INTO unique_table2 VALUES (1,1,1,1);
 
 -- echo 1. unique test
 CREATE UNIQUE INDEX index_id on unique_table(id);
@@ -9,5 +11,13 @@ CREATE UNIQUE INDEX index_id on unique_table(id);
 INSERT INTO unique_table VALUES (3,2,1);
 INSERT INTO unique_table VALUES (1,2,1);
 
+CREATE UNIQUE INDEX index_id on unique_table2(id1, id2);
+INSERT INTO unique_table2 VALUES (1,1,2,1);
+INSERT INTO unique_table2 VALUES (1,2,1,1);
+INSERT INTO unique_table2 VALUES (1,2,2,1);
+INSERT INTO unique_table2 VALUES (1,3,4,2);
+INSERT INTO unique_table2 VALUES (2,1,1,1);
+
 -- echo 2. select
 -- sort SELECT * FROM unique_table;
+-- sort SELECT * FROM unique_table2;

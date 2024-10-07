@@ -135,7 +135,8 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
   ValueExpr *value_expr = nullptr;
   for (auto &expr : predicates) {
     if (expr->type() == ExprType::COMPARISON) {
-      auto comparison_expr = static_cast<ComparisonExpr *>(expr.get());
+      auto comparison_expr = dynamic_cast<ComparisonExpr *>(expr.get());
+
       // 简单处理，就找等值查询
       if (comparison_expr->comp() != EQUAL_TO) {
         continue;
@@ -151,12 +152,12 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
       FieldExpr *field_expr = nullptr;
       if (left_expr->type() == ExprType::FIELD) {
         ASSERT(right_expr->type() == ExprType::VALUE, "right expr should be a value expr while left is field expr");
-        field_expr = static_cast<FieldExpr *>(left_expr.get());
-        value_expr = static_cast<ValueExpr *>(right_expr.get());
+        field_expr = dynamic_cast<FieldExpr *>(left_expr.get());
+        value_expr = dynamic_cast<ValueExpr *>(right_expr.get());
       } else if (right_expr->type() == ExprType::FIELD) {
         ASSERT(left_expr->type() == ExprType::VALUE, "left expr should be a value expr while right is a field expr");
-        field_expr = static_cast<FieldExpr *>(right_expr.get());
-        value_expr = static_cast<ValueExpr *>(left_expr.get());
+        field_expr = dynamic_cast<FieldExpr *>(right_expr.get());
+        value_expr = dynamic_cast<ValueExpr *>(left_expr.get());
       }
 
       if (field_expr == nullptr) {
@@ -296,7 +297,8 @@ RC PhysicalPlanGenerator::create_plan(UpdateLogicalOperator &update_oper, std::u
     }
   }
 
-  oper = std::make_unique<UpdatePhysicalOperator>(update_oper.table(), update_oper.field_metas(), update_oper.values());
+  oper = std::make_unique<UpdatePhysicalOperator>(
+      update_oper.table(), std::move(update_oper.field_metas()), std::move(update_oper.values()));
 
   if (child_physical_oper) {
     oper->add_child(std::move(child_physical_oper));

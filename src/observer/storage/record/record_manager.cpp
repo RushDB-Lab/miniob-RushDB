@@ -91,6 +91,14 @@ RC RecordPageIterator::next(Record &record)
   return record.rid().slot_num != -1 ? RC::SUCCESS : RC::RECORD_EOF;
 }
 
+RC RecordPageIterator::cleanup()
+{
+  record_page_handler_ = nullptr;
+  page_num_            = BP_INVALID_PAGE_NUM;
+  next_slot_num_       = 0;
+  return RC::SUCCESS;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 RecordPageHandler::~RecordPageHandler() { cleanup(); }
@@ -853,6 +861,7 @@ RC RecordFileScanner::close_scan()
     record_page_handler_->cleanup();
     delete record_page_handler_;
     record_page_handler_ = nullptr;
+    record_page_iterator_.cleanup();
   }
 
   return RC::SUCCESS;

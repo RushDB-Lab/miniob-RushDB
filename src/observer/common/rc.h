@@ -28,6 +28,7 @@ See the Mulan PSL v2 for more details. */
   DEFINE_RC(NOMEM)                       \
   DEFINE_RC(NOTFOUND)                    \
   DEFINE_RC(EMPTY)                       \
+  DEFINE_RC(ERROR_DATE)                  \
   DEFINE_RC(FULL)                        \
   DEFINE_RC(EXIST)                       \
   DEFINE_RC(NOT_EXIST)                   \
@@ -78,8 +79,11 @@ See the Mulan PSL v2 for more details. */
   DEFINE_RC(LOG_ENTRY_INVALID)           \
   DEFINE_RC(UNSUPPORTED)                 \
   DEFINE_RC(VALUE_TOO_LONG)              \
+  DEFINE_RC(TO_LONG_SUBQUERY_EXPR)       \
   DEFINE_RC(NOT_NULLABLE_VALUE)          \
-  DEFINE_RC(NOT_NULL_AFTER_IS)
+  DEFINE_RC(NOT_NULL_AFTER_IS)           \
+  DEFINE_RC(UNKNOWN_FUNCTION)            \
+  DEFINE_RC(SUBQUERY_RETURNED_MULTIPLE_ROWS)
 
 enum class RC
 {
