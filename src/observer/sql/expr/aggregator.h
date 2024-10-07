@@ -31,10 +31,10 @@ class CountAggregator : public Aggregator
 public:
   RC accumulate(const Value &value) override
   {
-    // 只要传入的值类型不为未定义，就增加计数
-    if (value.attr_type() != AttrType::UNDEFINED && !value.is_null()) {
-      count_++;
+    if (value.is_null()) {
+      return RC::SUCCESS;
     }
+    count_++;
     return RC::SUCCESS;
   }
 
@@ -54,15 +54,12 @@ public:
   RC accumulate(const Value &value) override
   {
     if (value.is_null()) {
-      if (value_.attr_type() == AttrType::UNDEFINED || value_.attr_type() == AttrType::NULLS) {
-        value_ = Value(NullValue());
-      }
+      return RC::SUCCESS;
+    }
+    if (value_.is_null()) {
+      value_ = value;
     } else {
-      if (value_.attr_type() == AttrType::UNDEFINED || value_.attr_type() == AttrType::NULLS) {
-        value_ = value;
-      } else {
-        Value::add(value, value_, value_);
-      }
+      Value::add(value, value_, value_);
     }
     return RC::SUCCESS;
   }
@@ -74,7 +71,7 @@ public:
   }
 
 private:
-  Value value_;  // 累加的和
+  Value value_ = Value(NullValue());  // 累加的和
 };
 
 class AvgAggregator : public Aggregator
@@ -83,17 +80,14 @@ public:
   RC accumulate(const Value &value) override
   {
     if (value.is_null()) {
-      if (value_.attr_type() == AttrType::UNDEFINED || value_.attr_type() == AttrType::NULLS) {
-        value_ = Value(NullValue());
-      }
+      return RC::SUCCESS;
+    }
+    if (value_.is_null()) {
+      value_ = value;
+      count_ = 1;
     } else {
-      if (value_.attr_type() == AttrType::UNDEFINED || value_.attr_type() == AttrType::NULLS) {
-        value_ = value;
-        count_ = 1;
-      } else {
-        Value::add(value, value_, value_);
-        count_++;
-      }
+      Value::add(value, value_, value_);
+      count_++;
     }
     return RC::SUCCESS;
   }
@@ -117,8 +111,8 @@ public:
   }
 
 private:
-  Value value_;      // 累加的和
-  int   count_ = 0;  // 计数器
+  Value value_ = Value(NullValue());  // 累加的和
+  int   count_ = 0;                   // 计数器
 };
 
 class MaxAggregator : public Aggregator
@@ -127,17 +121,14 @@ public:
   RC accumulate(const Value &value) override
   {
     if (value.is_null()) {
-      if (value_.attr_type() == AttrType::UNDEFINED || value_.attr_type() == AttrType::NULLS) {
-        value_ = Value(NullValue());
-      }
+      return RC::SUCCESS;
+    }
+    if (value_.is_null()) {
+      value_ = value;
     } else {
-      if (value_.attr_type() == AttrType::UNDEFINED || value_.attr_type() == AttrType::NULLS) {
+      // 更新最大值
+      if (value.compare(value_) > 0) {
         value_ = value;
-      } else {
-        // 更新最大值
-        if (value.compare(value_) > 0) {
-          value_ = value;
-        }
       }
     }
     return RC::SUCCESS;
@@ -150,7 +141,7 @@ public:
   }
 
 private:
-  Value value_;  // 最大值
+  Value value_ = Value(NullValue());  // 最大值
 };
 
 class MinAggregator : public Aggregator
@@ -159,17 +150,14 @@ public:
   RC accumulate(const Value &value) override
   {
     if (value.is_null()) {
-      if (value_.attr_type() == AttrType::UNDEFINED || value_.attr_type() == AttrType::NULLS) {
-        value_ = Value(NullValue());
-      }
+      return RC::SUCCESS;
+    }
+    if (value_.is_null()) {
+      value_ = value;
     } else {
-      if (value_.attr_type() == AttrType::UNDEFINED || value_.attr_type() == AttrType::NULLS) {
+      // 更新最小值
+      if (value.compare(value_) < 0) {
         value_ = value;
-      } else {
-        // 更新最小值
-        if (value.compare(value_) < 0) {
-          value_ = value;
-        }
       }
     }
     return RC::SUCCESS;
@@ -182,5 +170,5 @@ public:
   }
 
 private:
-  Value value_;  // 最小值
+  Value value_ = Value(NullValue());  // 最小值
 };
