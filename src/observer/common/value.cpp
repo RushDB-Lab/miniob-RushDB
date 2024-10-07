@@ -428,3 +428,16 @@ int Value::get_date() const
     return 0;
   }
 }
+
+RC Value::borrow_text(const Value &v)
+{
+  ASSERT(v.attr_type() != AttrType::TEXTS, "Only text type can be borrowed! ");
+  if (v.length_ > 65535) {
+    return RC::VALUE_TOO_LONG;
+  }
+  reset();
+  attr_type_            = AttrType::TEXTS;
+  value_.pointer_value_ = v.value_.pointer_value_;
+  length_               = v.length_;
+  return RC::SUCCESS;
+}

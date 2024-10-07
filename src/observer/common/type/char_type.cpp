@@ -34,6 +34,9 @@ RC CharType::cast_to(const Value &val, AttrType type, Value &result, bool allow_
 {
   switch (type) {
     case AttrType::TEXTS: {
+      if (val.length() > 65535) {
+        return RC::VALUE_TOO_LONG;
+      }
       result.set_text(val.value_.pointer_value_, val.length_);
     } break;
     case AttrType::DATES: {

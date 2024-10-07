@@ -110,6 +110,8 @@ public:
   int      length() const { return length_; }
   AttrType attr_type() const { return attr_type_; }
 
+  RC borrow_text(const Value &v);
+
 public:
   /**
    * 获取对应的值

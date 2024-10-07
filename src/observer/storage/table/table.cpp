@@ -302,12 +302,22 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
     const Value     &value = values[i];
     if (field->type() != value.attr_type()) {
       Value real_value;
-      // 插入不允许非目标类型的类型提升
-      rc = Value::cast_to(value, field->type(), real_value, false);
-      if (OB_FAIL(rc)) {
-        LOG_WARN("failed to cast value. table name:%s, field name:%s, value:%s",
-            table_meta_.name(), field->name(), value.to_string().c_str());
-        break;
+      if (field->type() == AttrType::TEXTS && value.attr_type() == AttrType::CHARS) {
+        // 对于超长文本通过借用的方法减少拷贝
+        rc = real_value.borrow_text(value);
+        if (OB_FAIL(rc)) {
+          LOG_WARN("failed to borrow text value. table name:%s, field name:%s, value length:%d",
+              table_meta_.name(), field->name(), value.length());
+          break;
+        }
+      } else {
+        // 插入不允许非目标类型的类型提升
+        rc = Value::cast_to(value, field->type(), real_value, false);
+        if (OB_FAIL(rc)) {
+          LOG_WARN("failed to cast value. table name:%s, field name:%s, value:%s",
+              table_meta_.name(), field->name(), value.to_string().c_str());
+          break;
+        }
       }
       rc = set_value_to_record(record_data, real_value, field);
     } else {
@@ -341,7 +351,7 @@ RC Table::set_value_to_record(char *record_data, const Value &value, const Field
       copy_len = data_len + 1;
     }
   }
-  // text 类型的话最多存 4096 字节，剩下截断了
+  // text 类型的话最多存 65535 字节，超出则报错
   memcpy(record_data + field->offset(), value.data(), copy_len);
   return RC::SUCCESS;
 }

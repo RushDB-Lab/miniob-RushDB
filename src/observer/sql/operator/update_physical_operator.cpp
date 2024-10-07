@@ -83,10 +83,10 @@ RC UpdatePhysicalOperator::open(Trx *trx)
       // 更新不允许非目标类型的类型提升
       rc = Value::cast_to(value, field_meta.type(), to_value, false);
       if (rc != RC::SUCCESS) {
-        LOG_ERROR("Schema field type mismatch and cast to failed. Field: %s, Expected Type: %s, Provided Type: %s",
-                  field_meta.name(),
+        LOG_ERROR("Schema field type mismatch and cast to failed. Field: %s, Expected Type: %s, Provided Type: %s, Length: %d",
+        field_meta.name(),
                   attr_type_to_string(field_meta.type()),
-                  attr_type_to_string(value.attr_type()));
+                  attr_type_to_string(value.attr_type()), value.length());
         return RC::SCHEMA_FIELD_TYPE_MISMATCH;
       }
       // 转换成功
