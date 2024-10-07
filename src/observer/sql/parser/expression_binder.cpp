@@ -483,6 +483,7 @@ RC ExpressionBinder::bind_function_expression(
       child_expr.reset(value_expr);
       // count(*) 输出星号
       child_expr->set_name("*");
+      unbound_function_expr->set_name(unbound_function_expr->to_string());
     } else {
       rc = bind_expression(child_expr, child_bound_expressions);
       if (OB_FAIL(rc)) {

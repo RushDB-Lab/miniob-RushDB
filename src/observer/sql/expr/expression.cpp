@@ -906,6 +906,7 @@ RC NormalFunctionExpr::get_value(const Tuple &tuple, Value &result)
   }
   return RC::SUCCESS;
 }
+
 RC NormalFunctionExpr::try_get_value(Value &result) const
 {
   vector<Value> args_values_;
