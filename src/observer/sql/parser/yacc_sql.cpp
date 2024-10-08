@@ -3790,7 +3790,7 @@ yyreduce:
     case 48: /* nullable_constraint: %empty  */
 #line 462 "yacc_sql.y"
     {
-      (yyval.nullable_info) = false;  // 默认情况为 NOT NULL
+      (yyval.nullable_info) = true;  // 默认情况为 NULL
     }
 #line 2085 "yacc_sql.cpp"
     break;

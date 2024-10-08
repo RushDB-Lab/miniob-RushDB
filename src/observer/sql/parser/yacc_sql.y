@@ -460,7 +460,7 @@ nullable_constraint:
     }
     | /* empty */
     {
-      $$ = false;  // 默认情况为 NOT NULL
+      $$ = true;  // 默认情况为 NULL
     }
     ;
 
