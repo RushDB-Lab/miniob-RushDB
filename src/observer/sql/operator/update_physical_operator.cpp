@@ -13,6 +13,8 @@
 #include "update_physical_operator.h"
 #include "storage/trx/trx.h"
 
+#include <event/sql_debug.h>
+
 RC UpdatePhysicalOperator::open(Trx *trx)
 {
   if (children_.empty()) {
@@ -48,6 +50,7 @@ RC UpdatePhysicalOperator::open(Trx *trx)
     return RC::SUCCESS;
   }
 
+  bool empty_result = false;
   // 得到真正的 value，并做校验
   RowTuple           tuple;
   Value              value;
@@ -57,8 +60,12 @@ RC UpdatePhysicalOperator::open(Trx *trx)
     auto &value_expr = values_[i];
     auto &field_meta = field_metas_[i];
 
-    if ((sub_query_expr = dynamic_cast<SubQueryExpr *>(value_expr.get()))) {
-      sub_query_expr->open(trx_, tuple);
+    if (value_expr->type() == ExprType::SUBQUERY) {
+      sub_query_expr = dynamic_cast<SubQueryExpr *>(value_expr.get());
+      rc             = sub_query_expr->open(trx_, tuple);
+      if (OB_FAIL(rc)) {
+        return rc;
+      }
     }
 
     // 得到表达式的值
@@ -68,6 +75,11 @@ RC UpdatePhysicalOperator::open(Trx *trx)
                   field_meta.name());
       return rc;
     }
+
+    if (rc == RC::RECORD_EOF) {
+      sql_debug("empty subquery");
+    }
+    empty_result = rc == RC::RECORD_EOF;
 
     // 如果是子查询只能有一行一列
     if (sub_query_expr && sub_query_expr->has_more_row(tuple)) {
@@ -128,6 +140,7 @@ RC UpdatePhysicalOperator::open(Trx *trx)
       } else {
         if (real_values[i].is_null()) {
           rollback();
+          sql_debug("update: NOT_NULLABLE_VALUE");
           return RC::NOT_NULLABLE_VALUE;
         }
       }
