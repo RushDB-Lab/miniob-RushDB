@@ -35,10 +35,10 @@ public:
   static Session &default_session();
 
 public:
-  Session() = default;
+   Session() = default;
   ~Session();
 
-  Session(const Session &other);
+       Session(const Session &other);
   void operator=(Session &) = delete;
 
   const char *get_current_db_name() const;
@@ -106,7 +106,7 @@ private:
 
   bool trx_multi_operation_mode_ = false;  ///< 当前事务的模式，是否多语句模式. 单语句模式自动提交
 
-  bool sql_debug_ = false;  ///< 是否输出SQL调试信息
+  bool sql_debug_ = true;  ///< 是否输出SQL调试信息
 
   // 是否使用了 `chunk_iterator` 模式。 只有在设置了 `chunk_iterator`
   // 并且可以生成相关物理执行计划时才会使用 `chunk_iterator` 模式。
