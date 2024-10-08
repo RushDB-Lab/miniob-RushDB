@@ -222,6 +222,11 @@ RC PlainCommunicator::write_result_internal(SessionEvent *event, bool &need_disc
   }
 
   if (OB_FAIL(rc)) {
+    // 清空输出流，避免下次查询输出上次查询失败未输出的内容
+    title_stream.str("");       // 清空流内容
+    title_stream.clear();       // 重置流状态标志
+    sql_result_stream.str("");  // 清空流内容
+    sql_result_stream.clear();  // 重置流状态标志
     sql_result->close();
     sql_result->set_return_code(rc);
     return write_state(event, need_disconnect);

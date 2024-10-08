@@ -255,7 +255,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
 
   // Check if the left subquery has more rows (error if true)
   if (left_subquery_expr && left_subquery_expr->has_more_row(tuple)) {
-    return RC::INVALID_ARGUMENT;
+    return RC::SUBQUERY_RETURNED_MULTIPLE_ROWS;
   }
 
   // Handle IN and NOT IN operations
@@ -308,7 +308,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
 
   // Check if the right subquery has more rows (error if true)
   if (right_subquery_expr && right_subquery_expr->has_more_row(tuple)) {
-    return RC::INVALID_ARGUMENT;
+    return RC::SUBQUERY_RETURNED_MULTIPLE_ROWS;
   }
 
   // Compare the left and right values
