@@ -22,7 +22,7 @@ UPDATE Update_table_2 SET col1=2, col2=(select Update_table_3.col2 from Update_t
 -- echo 2. update-select rows
 UPDATE Update_table_2 SET col1=(select Update_table_3.col2 from Update_table_3) WHERE id=1;
 UPDATE Update_table_2 SET col1=(select Update_table_3.col2 from Update_table_3 where Update_table_3.id>1) WHERE id=1;
-UPDATE Update_table_2 SET col1=(select Update_table_3.col2 from Update_table_3 where Update_table_3.id<1) WHERE id=1;
+UPDATE Update_table_2 SET t_name=(select Update_table_3.col2 from Update_table_3 where Update_table_3.id<1) WHERE id=1;
 -- sort SELECT * FROM Update_table_2;
 
 -- echo 3. update rows-select rows
