@@ -57,8 +57,14 @@ RC UpdatePhysicalOperator::open(Trx *trx)
     auto &value_expr = values_[i];
     auto &field_meta = field_metas_[i];
 
-    if ((sub_query_expr = dynamic_cast<SubQueryExpr *>(value_expr.get()))) {
-      sub_query_expr->open(trx_, tuple);
+    if (value_expr->type() == ExprType::SUBQUERY) {
+      sub_query_expr = dynamic_cast<SubQueryExpr *>(value_expr.get());
+      rc             = sub_query_expr->open(trx_, tuple);
+      if (OB_FAIL(rc)) {
+        LOG_ERROR("Failed to open subquery for field: %s",
+                  field_meta.name());
+        return rc;
+      }
     }
 
     // 得到表达式的值
@@ -117,7 +123,6 @@ RC UpdatePhysicalOperator::open(Trx *trx)
     new_record.set_rid(old_record.rid());
     new_record.copy_data(old_record.data(), old_record.len());
     for (int i = 0; i < field_metas_.size(); ++i) {
-      new_record.set_field(field_metas_[i].offset(), field_metas_[i].len(), real_values[i]);
       if (field_metas_[i].nullable()) {
         auto null_offset = field_metas_[i].offset() + field_metas_[i].len() - 1;
         if (real_values[i].is_null()) {
@@ -125,10 +130,16 @@ RC UpdatePhysicalOperator::open(Trx *trx)
         } else {
           new_record.data()[null_offset] = 0;
         }
-      } else {
-        if (real_values[i].is_null()) {
-          rollback();
-          return RC::NOT_NULLABLE_VALUE;
+      } else if (real_values[i].is_null()) {
+        rollback();
+        return RC::NOT_NULLABLE_VALUE;
+      }
+      // 只有非 null 值才需要拷贝数据，防止读到垃圾数据
+      if (!real_values[i].is_null()) {
+        rc = new_record.set_field(field_metas_[i].offset(), field_metas_[i].len(), real_values[i]);
+        if (OB_FAIL(rc)) {
+          LOG_ERROR("failed to set field: %s", strrc(rc));
+          return rc;
         }
       }
     }
