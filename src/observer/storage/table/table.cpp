@@ -302,7 +302,13 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
   for (int i = 0; i < value_num && OB_SUCC(rc); i++) {
     const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
     const Value     &value = values[i];
-    if (field->type() != value.attr_type()) {
+    // 判断是否在 NOT NULL 字段设置 NULL 值
+    if (value.is_null()) {
+      if (!field->nullable()) {
+        return RC::NOT_NULLABLE_VALUE;
+      }
+      record_data[field->offset() + field->len() - 1] = '1';
+    } else if (field->type() != value.attr_type()) {
       Value real_value;
       if (field->type() == AttrType::TEXTS && value.attr_type() == AttrType::CHARS) {
         // 对于超长文本通过借用的方法减少拷贝
@@ -324,14 +330,6 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
       rc = set_value_to_record(record_data, real_value, field);
     } else {
       rc = set_value_to_record(record_data, value, field);
-    }
-
-    // 判断是否在 NOT NULL 字段设置 NULL 值
-    if (value.is_null()) {
-      if (!field->nullable()) {
-        return RC::NOT_NULLABLE_VALUE;
-      }
-      record_data[field->offset() + field->len() - 1] = '1';
     }
   }
   if (OB_FAIL(rc)) {
