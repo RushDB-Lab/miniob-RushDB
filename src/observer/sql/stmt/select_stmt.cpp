@@ -68,7 +68,7 @@ RC SelectStmt::create(
 
     binder_context.add_table(table);
     tables.push_back(table);
-    table_map.insert({table_name, table});
+    temp_map.insert({table_name, table});
   }
   // alias is all avaliable
   table_map.insert(temp_map.begin(), temp_map.end());
