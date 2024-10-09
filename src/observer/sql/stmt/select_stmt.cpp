@@ -94,6 +94,17 @@ RC SelectStmt::create(
     }
   }
 
+  vector<unique_ptr<Expression>> order_by_expressions;
+  std::vector<bool>              order_by_is_asc_;
+  for (auto &expression : select_sql.order_by) {
+    RC rc = expression_binder.bind_expression(expression.expr, order_by_expressions);
+    order_by_is_asc_.push_back(expression.is_asc);
+    if (OB_FAIL(rc)) {
+      LOG_INFO("bind expression failed. rc=%s", strrc(rc));
+      return rc;
+    }
+  }
+
   // create filter statement in `where` statement
   FilterStmt *filter_stmt = nullptr;
   RC          rc          = FilterStmt::create(db, default_table, &table_map, select_sql.conditions, filter_stmt);
@@ -109,6 +120,7 @@ RC SelectStmt::create(
   select_stmt->query_expressions_.swap(bound_expressions);
   select_stmt->filter_stmt_ = filter_stmt;
   select_stmt->group_by_.swap(group_by_expressions);
-  stmt = select_stmt;
+  select_stmt->order_by_.swap(order_by_expressions);
+  select_stmt->order_by_is_asc_.swap(order_by_is_asc_);
   return RC::SUCCESS;
 }
