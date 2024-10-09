@@ -72,6 +72,7 @@ UnboundFunctionExpr *create_aggregate_expression(const char *function_name,
         DROP
         EXISTS
         GROUP
+        HAVING
         ORDER
         TABLE
         TABLES
@@ -183,6 +184,7 @@ UnboundFunctionExpr *create_aggregate_expression(const char *function_name,
 %type <expression>          sub_query_expr
 %type <expression_list>     expression_list
 %type <expression_list>     group_by
+%type <expression>          opt_having
 %type <set_clause>          setClause
 %type <set_clauses>         setClauses
 %type <join_clauses>        joinClauses
@@ -604,7 +606,7 @@ setClause:
     ;
 
 select_stmt:
-    SELECT expression_list FROM rel_list where group_by opt_order_by
+    SELECT expression_list FROM rel_list where group_by opt_having opt_order_by
     {
       $$ = new ParsedSqlNode(SCF_SELECT);
       if ($2 != nullptr) {
@@ -629,8 +631,12 @@ select_stmt:
       }
 
       if ($7 != nullptr) {
-        $$->selection.order_by.swap(*$7);
-        delete $7;
+        $$->selection.having_conditions = std::unique_ptr<Expression>($7);
+      }
+
+      if ($8 != nullptr) {
+        $$->selection.order_by.swap(*$8);
+        delete $8;
       }
     }
     | SELECT expression_list FROM relation INNER JOIN joinClauses where group_by
@@ -955,6 +961,18 @@ group_by:
       $$ = $3;
     }
     ;
+
+opt_having:
+    /* empty */
+    {
+      $$ = nullptr;
+    }
+    | HAVING condition
+    {
+      $$ = $2;
+    }
+    ;
+
 load_data_stmt:
     LOAD DATA INFILE SSS INTO TABLE ID 
     {
