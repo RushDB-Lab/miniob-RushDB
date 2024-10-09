@@ -105,6 +105,12 @@ RC SelectStmt::create(
     }
   }
 
+  std::vector<OrderBySqlNode> order_by_;
+  order_by_.reserve(order_by_expressions.size());
+  for (size_t i = 0; i < order_by_expressions.size(); i++) {
+    order_by_.push_back({std::move(order_by_expressions[i]), order_by_is_asc_[i]});
+  }
+
   // create filter statement in `where` statement
   FilterStmt *filter_stmt = nullptr;
   RC          rc          = FilterStmt::create(db, default_table, &table_map, select_sql.conditions, filter_stmt);
@@ -120,7 +126,6 @@ RC SelectStmt::create(
   select_stmt->query_expressions_.swap(bound_expressions);
   select_stmt->filter_stmt_ = filter_stmt;
   select_stmt->group_by_.swap(group_by_expressions);
-  select_stmt->order_by_.swap(order_by_expressions);
-  select_stmt->order_by_is_asc_.swap(order_by_is_asc_);
+  select_stmt->order_by_.swap(order_by_);
   return RC::SUCCESS;
 }
