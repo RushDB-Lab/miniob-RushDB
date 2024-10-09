@@ -48,8 +48,8 @@ public:
   {
 
     AggregateHashTableBenchmark::SetUp(state);
-    AggregateExpr        aggregate_expr(AggregateExpr::Type::SUM, nullptr);
-    vector<Expression *> aggregate_exprs;
+    AggregateFunctionExpr aggregate_expr(AggregateFunctionExpr::Type::SUM, nullptr);
+    vector<Expression *>  aggregate_exprs;
     aggregate_exprs.push_back(&aggregate_expr);
     standard_hash_table_ = make_unique<StandardAggregateHashTable>(aggregate_exprs);
   }
@@ -75,7 +75,7 @@ public:
   {
 
     AggregateHashTableBenchmark::SetUp(state);
-    linear_probing_hash_table_ = make_unique<LinearProbingAggregateHashTable<int>>(AggregateExpr::Type::SUM);
+    linear_probing_hash_table_ = make_unique<LinearProbingAggregateHashTable<int>>(AggregateFunctionExpr::Type::SUM);
   }
 
 protected:

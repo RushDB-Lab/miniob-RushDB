@@ -103,8 +103,22 @@ public:
 
   int compare_key(const char *v1, const char *v2) const
   {
-    for (int i = 0; i < index_.fields().size(); i++) {
-      int result = attr_comparator_[i](v1, v2);
+    auto  field_number  = index_.fields().size();
+    auto &fields_offset = index_.fields_offset();
+    for (int i = 0; i < field_number; i++) {
+      int   offset = fields_offset[i];
+      auto &field  = index_.fields()[i];
+      if (field.nullable()) {
+        bool v1_is_null = v1[offset + field.len() - 1] == '1';
+        bool v2_is_null = v2[offset + field.len() - 1] == '1';
+        if (v1_is_null) {
+          return -1;
+        }
+        if (v2_is_null) {
+          return 1;
+        }
+      }
+      int result = attr_comparator_[i](v1 + offset, v2 + offset);
       if (result != 0) {
         return result;
       }

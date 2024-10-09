@@ -37,7 +37,7 @@ RC PlainCommunicator::read_event(SessionEvent *&event)
   int data_len = 0;
   int read_len = 0;
 
-  const int    max_packet_size = 8192;
+  const int    max_packet_size = 131072;
   vector<char> buf(max_packet_size);
 
   // 持续接收消息，直到遇到'\0'。将'\0'遇到的后续数据直接丢弃没有处理，因为目前仅支持一收一发的模式
@@ -222,6 +222,11 @@ RC PlainCommunicator::write_result_internal(SessionEvent *event, bool &need_disc
   }
 
   if (OB_FAIL(rc)) {
+    // 清空输出流，避免下次查询输出上次查询失败未输出的内容
+    title_stream.str("");       // 清空流内容
+    title_stream.clear();       // 重置流状态标志
+    sql_result_stream.str("");  // 清空流内容
+    sql_result_stream.clear();  // 重置流状态标志
     sql_result->close();
     sql_result->set_return_code(rc);
     return write_state(event, need_disconnect);

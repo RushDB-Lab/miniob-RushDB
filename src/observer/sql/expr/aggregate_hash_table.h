@@ -82,7 +82,7 @@ public:
   {
     for (auto &expr : aggregations) {
       ASSERT(expr->type() == ExprType::AGGREGATION, "expect aggregate expression");
-      auto *aggregation_expr = static_cast<AggregateExpr *>(expr);
+      auto *aggregation_expr = static_cast<AggregateFunctionExpr *>(expr);
       aggr_types_.push_back(aggregation_expr->aggregate_type());
     }
   }
@@ -96,8 +96,8 @@ public:
 
 private:
   /// group by values -> aggregate values
-  StandardHashTable                aggr_values_;
-  std::vector<AggregateExpr::Type> aggr_types_;
+  StandardHashTable                        aggr_values_;
+  std::vector<AggregateFunctionExpr::Type> aggr_types_;
 };
 
 /**
@@ -128,7 +128,7 @@ public:
     int scan_count_ = 0;
   };
 
-  LinearProbingAggregateHashTable(AggregateExpr::Type aggregate_type, int capacity = DEFAULT_CAPACITY)
+  LinearProbingAggregateHashTable(AggregateFunctionExpr::Type aggregate_type, int capacity = DEFAULT_CAPACITY)
       : keys_(capacity, EMPTY_KEY), values_(capacity, 0), capacity_(capacity), aggregate_type_(aggregate_type)
   {}
   virtual ~LinearProbingAggregateHashTable() {}
@@ -162,10 +162,10 @@ private:
   static const int EMPTY_KEY;
   static const int DEFAULT_CAPACITY;
 
-  std::vector<int>    keys_;
-  std::vector<V>      values_;
-  int                 size_     = 0;
-  int                 capacity_ = 0;
-  AggregateExpr::Type aggregate_type_;
+  std::vector<int>            keys_;
+  std::vector<V>              values_;
+  int                         size_     = 0;
+  int                         capacity_ = 0;
+  AggregateFunctionExpr::Type aggregate_type_;
 };
 #endif

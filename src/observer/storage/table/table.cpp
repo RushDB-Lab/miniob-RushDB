@@ -302,12 +302,22 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
     const Value     &value = values[i];
     if (field->type() != value.attr_type()) {
       Value real_value;
-      // 插入不允许非目标类型的类型提升
-      rc = Value::cast_to(value, field->type(), real_value, false);
-      if (OB_FAIL(rc)) {
-        LOG_WARN("failed to cast value. table name:%s, field name:%s, value:%s",
-            table_meta_.name(), field->name(), value.to_string().c_str());
-        break;
+      if (field->type() == AttrType::TEXTS && value.attr_type() == AttrType::CHARS) {
+        // 对于超长文本通过借用的方法减少拷贝
+        rc = real_value.borrow_text(value);
+        if (OB_FAIL(rc)) {
+          LOG_WARN("failed to borrow text value. table name:%s, field name:%s, value length:%d",
+              table_meta_.name(), field->name(), value.length());
+          break;
+        }
+      } else {
+        // 插入不允许非目标类型的类型提升
+        rc = Value::cast_to(value, field->type(), real_value, false);
+        if (OB_FAIL(rc)) {
+          LOG_WARN("failed to cast value. table name:%s, field name:%s, value:%s",
+              table_meta_.name(), field->name(), value.to_string().c_str());
+          break;
+        }
       }
       rc = set_value_to_record(record_data, real_value, field);
     } else {
@@ -336,11 +346,12 @@ RC Table::set_value_to_record(char *record_data, const Value &value, const Field
 {
   size_t       copy_len = field->len();
   const size_t data_len = value.length();
-  if (field->type() == AttrType::CHARS) {
+  if (field->type() == AttrType::CHARS || field->type() == AttrType::TEXTS) {
     if (copy_len > data_len) {
       copy_len = data_len + 1;
     }
   }
+  // text 类型的话最多存 65535 字节，超出则报错
   memcpy(record_data + field->offset(), value.data(), copy_len);
   return RC::SUCCESS;
 }
@@ -528,10 +539,12 @@ RC Table::update_record(const Record &old_record, const Record &new_record)
   // 出现重复键
   if (rc != RC::SUCCESS) {
     // 因为有些索引还没有插入，删除失败不应该报错
-    rc = delete_entry_of_indexes(new_record.data(), new_record.rid(), false);
-    ASSERT(RC::SUCCESS == rc,
-      "failed to rollback index data when insert index entries failed. table name=%s, rc=%s",
-                name(), strrc(rc));
+    RC delete_entry_of_indexes_rc = delete_entry_of_indexes(new_record.data(), new_record.rid(), false);
+    if (RC::SUCCESS != delete_entry_of_indexes_rc) {
+      LOG_WARN("failed to rollback index data when insert index entries failed. table name=%s, rc=%s", name(), strrc(delete_entry_of_indexes_rc));
+      return delete_entry_of_indexes_rc;
+    }
+    return rc;
   }
 
   // 最后更新记录
@@ -577,9 +590,11 @@ Index *Table::find_index(const char *index_name) const
 Index *Table::find_index_by_field(const char *field_name) const
 {
   for (const auto &index : indexes_) {
-    auto name = index->index_meta().fields().front().name();
-    if (0 == strcmp(name, field_name)) {
-      return index;
+    if (index->index_meta().fields().size() == 1) {
+      auto name = index->index_meta().fields().front().name();
+      if (0 == strcmp(name, field_name)) {
+        return index;
+      }
     }
   }
   return nullptr;

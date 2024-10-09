@@ -41,12 +41,12 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   return expr;
 }
 
-UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
-                                           Expression *child,
-                                           const char *sql_string,
-                                           YYLTYPE *llocp)
+UnboundFunctionExpr *create_aggregate_expression(const char *function_name,
+                                                 std::vector<std::unique_ptr<Expression>> child,
+                                                 const char *sql_string,
+                                                 YYLTYPE *llocp)
 {
-  UnboundAggregateExpr *expr = new UnboundAggregateExpr(aggregate_name, child);
+  UnboundFunctionExpr *expr = new UnboundFunctionExpr(function_name, std::move(child));
   expr->set_name(token_name(sql_string, llocp));
   return expr;
 }
@@ -95,6 +95,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
         STRING_T
         FLOAT_T
         DATE_T
+        TEXT_T
         NOT
         UNIQUE
         NULL_T
@@ -387,6 +388,14 @@ create_table_stmt:    /*create table 语句的语法解析树*/
         free($8);
       }
     }
+    | CREATE TABLE ID AS select_stmt
+    {
+      $$ = new ParsedSqlNode(SCF_CREATE_TABLE);
+      CreateTableSqlNode &create_table = $$->create_table;
+      create_table.relation_name = $3;
+      free($3);
+      create_table.create_table_select = std::move($5->selection);
+    }
     ;
 attr_def_list:
     /* empty */
@@ -431,6 +440,8 @@ attr_def:
         $$->length = 4;
       } else if ($$->type == AttrType::CHARS) {
         $$->length = 4;
+      } else if ($$->type == AttrType::TEXTS) {
+        $$->length = 65535;
       } else {
         ASSERT(false, "$$->type is invalid.");
       }
@@ -457,18 +468,20 @@ nullable_constraint:
     }
     | /* empty */
     {
-      $$ = false;  // 默认情况为 NOT NULL
+      $$ = true;  // 默认情况为 NULL
     }
     ;
 
 number:
     NUMBER {$$ = $1;}
     ;
+
 type:
-    INT_T      { $$ = static_cast<int>(AttrType::INTS); }
-    | STRING_T { $$ = static_cast<int>(AttrType::CHARS); }
+      INT_T    { $$ = static_cast<int>(AttrType::INTS);   }
+    | STRING_T { $$ = static_cast<int>(AttrType::CHARS);  }
     | FLOAT_T  { $$ = static_cast<int>(AttrType::FLOATS); }
     | DATE_T   { $$ = static_cast<int>(AttrType::DATES);  }
+    | TEXT_T   { $$ = static_cast<int>(AttrType::TEXTS);  }
     ;
 
 insert_stmt:        /*insert   语句的语法解析树*/
@@ -572,28 +585,26 @@ setClauses:
       setClause
     {
       $$ = new std::vector<SetClauseSqlNode>;
-      $$->emplace_back(*$1);
-      delete $1;
+      $$->emplace_back(std::move(*$1));
     }
     | setClauses COMMA setClause
     {
-      $$->emplace_back(*$3);
-      delete $3;
+      $$->emplace_back(std::move(*$3));
     }
     ;
 
 setClause:
-      ID EQ value
+      ID EQ expression
     {
       $$ = new SetClauseSqlNode;
       $$->field_name = $1;
-      $$->value = std::move(*$3);
+      $$->value = std::unique_ptr<Expression>($3);
       free($1);
     }
     ;
 
-select_stmt:        /*  select 语句的语法解析树*/
-      SELECT expression_list FROM rel_list where group_by opt_order_by
+select_stmt:
+    SELECT expression_list FROM rel_list where group_by opt_order_by
     {
       $$ = new ParsedSqlNode(SCF_SELECT);
       if ($2 != nullptr) {
@@ -661,10 +672,19 @@ calc_stmt:
       $$->calc.expressions.swap(*$2);
       delete $2;
     }
+    | SELECT expression_list
+    {
+      $$ = new ParsedSqlNode(SCF_CALC);
+      $$->calc.expressions.swap(*$2);
+      delete $2;
+    }
     ;
 
 expression_list:
-    expression alias
+    /* empty */ {
+      $$ = new std::vector<std::unique_ptr<Expression>>;
+    }
+    | expression alias
     {
       $$ = new std::vector<std::unique_ptr<Expression>>;
       if (nullptr != $2) {
@@ -753,16 +773,8 @@ alias:
 aggr_func_expr:
     ID LBRACE expression_list RBRACE
     {
-        if((*$3).size() != 1) {
-           $$ = new UnboundAggregateExpr("max",new StarExpr() );
-        } else {
-            $$ = new UnboundAggregateExpr($1, std::move((*$3)[0]));
-        }
+        $$ = new UnboundFunctionExpr($1, std::move(*$3));
     }
-    | ID LBRACE  RBRACE
-     {
-        $$ = new UnboundAggregateExpr("max",new StarExpr() );
-     }
     ;
 
 sub_query_expr:
@@ -877,8 +889,8 @@ comp_op:
     | LE { $$ = LESS_EQUAL; }
     | GE { $$ = GREAT_EQUAL; }
     | NE { $$ = NOT_EQUAL; }
-    | IS { $$ = OP_IS; }
-    | IS NOT { $$ = OP_IS_NOT; }
+    | IS { $$ = IS_OP; }
+    | IS NOT { $$ = IS_NOT_OP; }
     | LIKE { $$ = LIKE_OP;}
     | NOT LIKE {$$ = NOT_LIKE_OP;}
     | IN { $$ = IN_OP; }

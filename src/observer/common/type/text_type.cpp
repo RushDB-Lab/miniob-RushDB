@@ -1,42 +1,49 @@
-/* Copyright (c) 2021 OceanBase and/or its affiliates. All rights reserved.
-miniob is licensed under Mulan PSL v2.
-You can use this software according to the terms and conditions of the Mulan PSL v2.
-You may obtain a copy of Mulan PSL v2 at:
-         http://license.coscl.org.cn/MulanPSL2
-THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-See the Mulan PSL v2 for more details. */
-
-#include <cmath>
+/***************************************************************
+ *                                                             *
+ * @Author      : Koschei                                      *
+ * @Email       : nitianzero@gmail.com                         *
+ * @Date        : 2024/9/30                                    *
+ * @Description : TextType source file                         *
+ *                                                             *
+ * Copyright (c) 2024 Koschei                                  *
+ * All rights reserved.                                        *
+ *                                                             *
+ ***************************************************************/
 
 #include "common/utils.h"
-#include "common/lang/comparator.h"
-#include "common/log/log.h"
-#include "common/type/char_type.h"
+#include "common/type/text_type.h"
 #include "common/value.h"
-#include "common/type/attr_type.h"
+#include "common/log/log.h"
+#include "common/lang/comparator.h"
 
-int CharType::compare(const Value &left, const Value &right) const
+int TextType::compare(const Value &left, const Value &right) const
 {
-  ASSERT(left.attr_type() == AttrType::CHARS && right.attr_type() == AttrType::CHARS, "invalid type");
+  ASSERT(left.attr_type() == AttrType::TEXTS && right.attr_type() == AttrType::TEXTS, "invalid type");
   return common::compare_string(
       (void *)left.value_.pointer_value_, left.length_, (void *)right.value_.pointer_value_, right.length_);
 }
 
-RC CharType::set_value_from_str(Value &val, const string &data) const
+int TextType::cast_cost(AttrType type)
 {
-  val.set_string(data.c_str());
-  return RC::SUCCESS;
+  if (type == AttrType::CHARS || type == AttrType::TEXTS) {
+    return 0;
+  }
+  if (type == AttrType::DATES) {
+    return 1;
+  }
+  if (type == AttrType::INTS) {
+    return 1;
+  }
+  if (type == AttrType::FLOATS) {
+    return 1;
+  }
+  return INT32_MAX;
 }
 
-RC CharType::cast_to(const Value &val, AttrType type, Value &result, bool allow_type_promotion) const
+RC TextType::cast_to(const Value &val, AttrType type, Value &result, bool allow_type_promotion) const
 {
   switch (type) {
     case AttrType::TEXTS: {
-      if (val.length() > 65535) {
-        return RC::VALUE_TOO_LONG;
-      }
       result.set_text(val.value_.pointer_value_, val.length_);
     } break;
     case AttrType::DATES: {
@@ -83,27 +90,17 @@ RC CharType::cast_to(const Value &val, AttrType type, Value &result, bool allow_
   return RC::SUCCESS;
 }
 
-int CharType::cast_cost(AttrType type)
-{
-  if (type == AttrType::CHARS || type == AttrType::TEXTS) {
-    return 0;
-  }
-  if (type == AttrType::DATES) {
-    return 1;
-  }
-  if (type == AttrType::INTS) {
-    return 1;
-  }
-  if (type == AttrType::FLOATS) {
-    return 1;
-  }
-  return INT32_MAX;
-}
-
-RC CharType::to_string(const Value &val, string &result) const
+RC TextType::to_string(const Value &val, string &result) const
 {
   stringstream ss;
   ss << val.value_.pointer_value_;
   result = ss.str();
+  return RC::SUCCESS;
+}
+
+// 该函数会被 load 使用
+RC TextType::set_value_from_str(Value &val, const string &data) const
+{
+  val.set_string(data.c_str());
   return RC::SUCCESS;
 }

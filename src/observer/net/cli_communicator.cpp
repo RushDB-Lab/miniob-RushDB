@@ -28,7 +28,7 @@ See the Mulan PSL v2 for more details. */
 #include "readline/readline.h"
 #endif
 
-#define MAX_MEM_BUFFER_SIZE 8192
+#define MAX_MEM_BUFFER_SIZE 131072
 #define PORT_DEFAULT 6789
 
 using namespace common;

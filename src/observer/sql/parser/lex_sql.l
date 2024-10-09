@@ -112,6 +112,7 @@ INT                                     RETURN_TOKEN(INT_T);
 CHAR                                    RETURN_TOKEN(STRING_T);
 FLOAT                                   RETURN_TOKEN(FLOAT_T);
 DATE                                    RETURN_TOKEN(DATE_T); // 增加 DATE 的 token
+TEXT                                    RETURN_TOKEN(TEXT_T); // 增加 TEXT 的 token
 UNIQUE                                  RETURN_TOKEN(UNIQUE);
 NULL                                    RETURN_TOKEN(NULL_T);
 NULLABLE                                RETURN_TOKEN(NULLABLE);

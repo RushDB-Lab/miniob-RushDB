@@ -22,6 +22,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/field/field.h"
 #include "sql/expr/aggregator.h"
 #include "storage/common/chunk.h"
+#include "sql/expr/function.h"
 
 class Tuple;
 class SelectStmt;
@@ -40,19 +41,19 @@ class PhysicalOperator;
 enum class ExprType
 {
   NONE,
-  STAR,                 ///< 星号，表示所有字段
-  UNBOUND_FIELD,        ///< 未绑定的字段，需要在resolver阶段解析为FieldExpr
-  UNBOUND_AGGREGATION,  ///< 未绑定的聚合函数，需要在resolver阶段解析为AggregateExpr
-
-  FIELD,        ///< 字段。在实际执行时，根据行数据内容提取对应字段的值
-  VALUE,        ///< 常量值
-  CAST,         ///< 需要做类型转换的表达式
-  COMPARISON,   ///< 需要做比较的表达式
-  CONJUNCTION,  ///< 多个表达式使用同一种关系(AND或OR)来联结
-  ARITHMETIC,   ///< 算术运算
-  AGGREGATION,  ///< 聚合运算
-  SUBQUERY,     ///< 子查询
-  EXPRLIST      ///<  列表
+  STAR,              ///< 星号，表示所有字段
+  UNBOUND_FIELD,     ///< 未绑定的字段，需要在resolver阶段解析为FieldExpr
+  UNBOUND_FUNCTION,  ///< 未绑定的聚合函数，需要在resolver阶段解析为AggregateFunctionExpr
+  FIELD,             ///< 字段。在实际执行时，根据行数据内容提取对应字段的值
+  VALUE,             ///< 常量值
+  CAST,              ///< 需要做类型转换的表达式
+  COMPARISON,        ///< 需要做比较的表达式
+  CONJUNCTION,       ///< 多个表达式使用同一种关系(AND或OR)来联结
+  ARITHMETIC,        ///< 算术运算
+  AGGREGATION,       ///< 聚合运算
+  NORMAL_FUNCTION,   ///< 普通函数
+  SUBQUERY,          ///< 子查询
+  EXPRLIST           ///<  列表
 };
 
 /**
@@ -418,28 +419,87 @@ private:
   std::unique_ptr<Expression> right_;
 };
 
-class UnboundAggregateExpr : public Expression
+class UnboundFunctionExpr : public Expression
 {
 public:
-  UnboundAggregateExpr(const char *aggregate_name, Expression *child);
-  UnboundAggregateExpr(const char *aggregate_name, std::unique_ptr<Expression> child);
-  virtual ~UnboundAggregateExpr() = default;
+  UnboundFunctionExpr(const char *aggregate_name, std::vector<std::unique_ptr<Expression>> child);
+  virtual ~UnboundFunctionExpr() = default;
 
-  ExprType type() const override { return ExprType::UNBOUND_AGGREGATION; }
+  ExprType type() const override { return ExprType::UNBOUND_FUNCTION; }
 
-  const char *aggregate_name() const { return aggregate_name_.c_str(); }
+  const char *function_name() const { return function_name_.c_str(); }
 
-  std::unique_ptr<Expression> &child() { return child_; }
+  string to_string() const
+  {
+    string str = function_name_ + "(";
+    for (size_t i = 0; i < args_.size(); i++) {
+      str += args_[i]->name();
+      if (i < args_.size() - 1) {
+        str += ",";
+      }
+    }
+    str += ")";
+    return str;
+  }
 
-  RC       get_value(const Tuple &tuple, Value &value) override { return RC::INTERNAL; }
-  AttrType value_type() const override { return child_->value_type(); }
+  std::vector<std::unique_ptr<Expression>>       &args() { return args_; }
+  const std::vector<std::unique_ptr<Expression>> &args() const { return args_; }
+  void set_args(std::vector<std::unique_ptr<Expression>> args) { args_ = std::move(args); }
+
+  RC       get_value(const Tuple &, Value &) override { return RC::INTERNAL; }
+  AttrType value_type() const override { return {}; }
 
 private:
-  std::string                 aggregate_name_;
-  std::unique_ptr<Expression> child_;
+  std::string                              function_name_;
+  std::vector<std::unique_ptr<Expression>> args_;
 };
 
-class AggregateExpr : public Expression
+class NormalFunctionExpr : public UnboundFunctionExpr
+{
+public:
+  enum class Type
+  {
+    LENGTH,
+    ROUND,
+    DATE_FORMAT,
+  };
+
+  NormalFunctionExpr(Type type, const char *aggregate_name, std::vector<std::unique_ptr<Expression>> child)
+      : ::UnboundFunctionExpr(aggregate_name, std::move(child)), type_(type)
+  {}
+
+  static RC type_from_string(const char *type_str, Type &type);
+
+  ExprType type() const override { return ExprType::NORMAL_FUNCTION; }
+
+  Type function_type() const { return type_; }
+
+  AttrType value_type() const override
+  {
+    switch (type_) {
+      case Type::LENGTH: {
+        return AttrType::INTS;
+      }
+      case Type::ROUND: {
+        return AttrType::FLOATS;
+      }
+      case Type::DATE_FORMAT: {
+        return AttrType::CHARS;
+      }
+      default: {
+        return AttrType::UNDEFINED;
+      }
+    }
+  }
+
+  RC get_value(const Tuple &tuple, Value &value) override;
+  RC try_get_value(Value &value) const override;
+
+private:
+  Type type_;
+};
+
+class AggregateFunctionExpr : public Expression
 {
 public:
   enum class Type
@@ -452,9 +512,9 @@ public:
   };
 
 public:
-  AggregateExpr(Type type, Expression *child);
-  AggregateExpr(Type type, std::unique_ptr<Expression> child);
-  virtual ~AggregateExpr() = default;
+  AggregateFunctionExpr(Type type, Expression *child);
+  AggregateFunctionExpr(Type type, std::unique_ptr<Expression> child);
+  virtual ~AggregateFunctionExpr() = default;
 
   bool equal(const Expression &other) const override;
 

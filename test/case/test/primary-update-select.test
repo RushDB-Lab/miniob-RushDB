@@ -1,0 +1,49 @@
+-- echo init data
+CREATE TABLE Update_table_2(id int, t_name char(4), col1 int, col2 int);
+CREATE TABLE Update_table_3(id int, t_name char(4), col1 int, col2 int);
+INSERT INTO Update_table_2 VALUES (1,'N1',1,1);
+INSERT INTO Update_table_2 VALUES (2,'N2',1,1);
+INSERT INTO Update_table_2 VALUES (3,'N3',3,1);
+INSERT INTO Update_table_2 VALUES (4,'N3',4,2);
+INSERT INTO Update_table_2 VALUES (5,'N3',5,3);
+INSERT INTO Update_table_3 VALUES (1,'N1',1,1);
+INSERT INTO Update_table_3 VALUES (2,'N2',2,2);
+INSERT INTO Update_table_3 VALUES (3,'N3',3,3);
+INSERT INTO Update_table_3 VALUES (4,'N4',4,4);
+INSERT INTO Update_table_3 VALUES (5,'N5',5,5);
+INSERT INTO Update_table_3 VALUES (6,'N6',6,6);
+INSERT INTO Update_table_3 VALUES (6,'N6',6,6);
+
+-- echo 1. update-select
+UPDATE Update_table_2 SET t_name='N01', col2=2 WHERE id=1;
+UPDATE Update_table_2 SET col1=2, col2=(select Update_table_3.col2 from Update_table_3 where Update_table_3.id=1) WHERE id=1;
+-- sort SELECT * FROM Update_table_2;
+
+-- echo 2. update-select rows
+UPDATE Update_table_2 SET col1=(select Update_table_3.col2 from Update_table_3) WHERE id=1;
+UPDATE Update_table_2 SET col1=(select Update_table_3.col2 from Update_table_3 where Update_table_3.id>1) WHERE id=1;
+UPDATE Update_table_2 SET t_name=(select Update_table_3.col2 from Update_table_3 where Update_table_3.id<1) WHERE id=1;
+-- sort SELECT * FROM Update_table_2;
+
+-- echo 3. update rows-select rows
+UPDATE Update_table_3 SET col1=(select col2 from Update_table_2);
+-- sort SELECT * FROM Update_table_3;
+
+-- echo 3. update rows-select cols and rows
+UPDATE Update_table_3 SET col1=(select col1, col2 from Update_table_2);
+-- sort SELECT * FROM Update_table_3;
+
+-- echo 4. check typecast
+UPDATE Update_table_3 SET t_name=813,col1=547.82 WHERE id=2;
+UPDATE Update_table_3 SET t_name=(select Update_table_2.col1 from Update_table_2 where Update_table_2.id=3), col2=(select min(Update_table_3.col2) from Update_table_3 where Update_table_3.id=1) where id=5;
+-- sort SELECT * FROM Update_table_3;
+
+-- echo 5. subquery return null
+UPDATE Update_table_3 SET col1=2, col2=(select Update_table_2.col2 from Update_table_2 where Update_table_2.id=999) WHERE id=4;
+UPDATE Update_table_3 SET col1=2, col2=(select Update_table_2.col2 from Update_table_2 where Update_table_2.id=999) WHERE id=666;
+-- sort SELECT * FROM Update_table_3;
+
+-- echo 6. subquery return multiple rows
+UPDATE Update_table_2 SET t_name=(select Update_table_3.t_name from Update_table_3 where Update_table_3.id=6) WHERE col1=5 and col2=3;
+UPDATE Update_table_2 SET t_name=(select Update_table_3.t_name from Update_table_3 where Update_table_3.id=6) WHERE col1=5 and col2=6;
+-- sort SELECT * FROM Update_table_2;

@@ -83,7 +83,7 @@ struct PageHeader
 class RecordPageIterator
 {
 public:
-   RecordPageIterator();
+  RecordPageIterator();
   ~RecordPageIterator();
 
   /**
@@ -111,7 +111,10 @@ public:
    */
   bool is_valid() const { return record_page_handler_ != nullptr; }
 
-  inline void cleanup() { record_page_handler_ = nullptr; }
+  /**
+   * @brief 操作结束后做的清理工作，初始化成员变量为默认值
+   */
+  RC cleanup();
 
 private:
   RecordPageHandler *record_page_handler_ = nullptr;
@@ -127,8 +130,8 @@ private:
 class RecordPageHandler
 {
 public:
-                            RecordPageHandler(StorageFormat storage_format) : storage_format_(storage_format) {}
-  virtual ~                 RecordPageHandler();
+  RecordPageHandler(StorageFormat storage_format) : storage_format_(storage_format) {}
+  virtual ~RecordPageHandler();
   static RecordPageHandler *create(StorageFormat format);
 
   /**
@@ -359,7 +362,7 @@ private:
 class RecordFileHandler
 {
 public:
-   RecordFileHandler(StorageFormat storage_format) : storage_format_(storage_format){};
+  RecordFileHandler(StorageFormat storage_format) : storage_format_(storage_format) {};
   ~RecordFileHandler();
 
   /**

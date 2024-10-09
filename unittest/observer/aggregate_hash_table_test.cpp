@@ -32,7 +32,7 @@ TEST(AggregateHashTableTest, DISABLED_standard_hash_table)
     group_chunk.add_column(std::move(column1), 0);
     aggr_chunk.add_column(std::move(column2), 1);
 
-    AggregateExpr             aggregate_expr(AggregateExpr::Type::SUM, nullptr);
+    AggregateFunctionExpr     aggregate_expr(AggregateFunctionExpr::Type::SUM, nullptr);
     std::vector<Expression *> aggregate_exprs;
     aggregate_exprs.push_back(&aggregate_expr);
     auto standard_hash_table = std::make_unique<StandardAggregateHashTable>(aggregate_exprs);
@@ -75,7 +75,7 @@ TEST(AggregateHashTableTest, DISABLED_standard_hash_table)
     aggr_chunk.add_column(std::move(aggr1), 0);
     aggr_chunk.add_column(std::move(aggr2), 1);
 
-    AggregateExpr             aggregate_expr(AggregateExpr::Type::SUM, nullptr);
+    AggregateFunctionExpr     aggregate_expr(AggregateFunctionExpr::Type::SUM, nullptr);
     std::vector<Expression *> aggregate_exprs;
     aggregate_exprs.push_back(&aggregate_expr);
     aggregate_exprs.push_back(&aggregate_expr);
@@ -120,8 +120,9 @@ TEST(AggregateHashTableTest, DISABLED_linear_probing_hash_table)
     group_chunk.add_column(std::move(column1), 0);
     aggr_chunk.add_column(std::move(column2), 1);
 
-    auto linear_probing_hash_table = std::make_unique<LinearProbingAggregateHashTable<int>>(AggregateExpr::Type::SUM);
-    RC   rc                        = linear_probing_hash_table->add_chunk(group_chunk, aggr_chunk);
+    auto linear_probing_hash_table =
+        std::make_unique<LinearProbingAggregateHashTable<int>>(AggregateFunctionExpr::Type::SUM);
+    RC rc = linear_probing_hash_table->add_chunk(group_chunk, aggr_chunk);
     ASSERT_EQ(rc, RC::SUCCESS);
     Chunk output_chunk;
     output_chunk.add_column(
@@ -159,7 +160,7 @@ TEST(AggregateHashTableTest, DISABLED_linear_probing_hash_table)
     aggr_chunk.add_column(std::move(column2), 1);
 
     auto linear_probing_hash_table =
-        std::make_unique<LinearProbingAggregateHashTable<int>>(AggregateExpr::Type::SUM, 256);
+        std::make_unique<LinearProbingAggregateHashTable<int>>(AggregateFunctionExpr::Type::SUM, 256);
     RC rc = linear_probing_hash_table->add_chunk(group_chunk, aggr_chunk);
     ASSERT_EQ(rc, RC::SUCCESS);
     Chunk output_chunk;

@@ -31,13 +31,14 @@ class FieldMeta
 public:
   FieldMeta();
 
+  // 除非字段定义为 not null，否则默认是 nullable 的
   FieldMeta(const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id,
-      bool nullable = false);
+      bool nullable = true);
 
   ~FieldMeta() = default;
 
   RC init(const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id,
-      bool nullable = false);
+      bool nullable = true);
 
 public:
   const char *name() const;

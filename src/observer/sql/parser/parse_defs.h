@@ -52,8 +52,8 @@ enum CompOp
   LESS_THAN,      ///< "<"
   GREAT_EQUAL,    ///< ">="
   GREAT_THAN,     ///< ">"
-  OP_IS,          ///< "IS"
-  OP_IS_NOT,      ///< "IS NOT"
+  IS_OP,          ///< "is (null)"
+  IS_NOT_OP,      ///< "is not (null)"
   LIKE_OP,        ///< "like"
   NOT_LIKE_OP,    ///< "not like"
   IN_OP,          ///< "in (sub query)"
@@ -170,8 +170,8 @@ struct DeleteSqlNode
  */
 struct SetClauseSqlNode
 {
-  std::string field_name;  ///< 更新的字段
-  Value       value;       ///< 更新的值
+  std::string                 field_name;  ///< 更新的字段
+  std::unique_ptr<Expression> value;       ///< 更新的值
 };
 
 /**
@@ -205,9 +205,10 @@ struct AttrInfoSqlNode
  */
 struct CreateTableSqlNode
 {
-  std::string                  relation_name;   ///< Relation name
-  std::vector<AttrInfoSqlNode> attr_infos;      ///< attributes
-  std::string                  storage_format;  ///< storage format
+  std::string                  relation_name;        ///< Relation name
+  std::vector<AttrInfoSqlNode> attr_infos;           ///< attributes
+  std::string                  storage_format;       ///< storage format
+  SelectSqlNode                create_table_select;  ///< create table select
 };
 
 /**

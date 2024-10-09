@@ -67,6 +67,7 @@ public:
   [[nodiscard]] int                      fields_total_len() const { return fields_total_len_; }
   [[nodiscard]] const vector<FieldMeta> &fields() const { return fields_; }
   [[nodiscard]] bool                     unique() const { return unique_; }
+  [[nodiscard]] const vector<int>       &fields_offset() const { return fields_offset_; }
 
 private:
   string            name_;
