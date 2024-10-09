@@ -879,8 +879,8 @@ comp_op:
     | LE { $$ = LESS_EQUAL; }
     | GE { $$ = GREAT_EQUAL; }
     | NE { $$ = NOT_EQUAL; }
-    | IS { $$ = OP_IS; }
-    | IS NOT { $$ = OP_IS_NOT; }
+    | IS { $$ = IS_OP; }
+    | IS NOT { $$ = IS_NOT_OP; }
     | LIKE { $$ = LIKE_OP;}
     | NOT LIKE {$$ = NOT_LIKE_OP;}
     | IN { $$ = IN_OP; }

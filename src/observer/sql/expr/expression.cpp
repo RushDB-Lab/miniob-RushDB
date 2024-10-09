@@ -131,14 +131,14 @@ ComparisonExpr::~ComparisonExpr() = default;
 
 RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &result) const
 {
-  if (comp_ == OP_IS) {
+  if (comp_ == IS_OP) {
     if (right.attr_type() != AttrType::NULLS) {
       return RC::NOT_NULL_AFTER_IS;
     }
     result = left.is_null();
     return RC::SUCCESS;
   }
-  if (comp_ == OP_IS_NOT) {
+  if (comp_ == IS_NOT_OP) {
     if (right.attr_type() != AttrType::NULLS) {
       return RC::NOT_NULL_AFTER_IS;
     }
