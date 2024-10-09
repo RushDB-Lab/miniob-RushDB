@@ -412,7 +412,7 @@ public:
 
   RC get_record(const RID &rid, Record &record);
 
-  RC visit_record(const RID &rid, function<bool(Record &)> updater);
+  RC visit_record(const RID &rid, const function<bool(Record &)> &updater);
 
 private:
   /**

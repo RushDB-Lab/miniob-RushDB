@@ -30,28 +30,6 @@ Table *BinderContext::find_table(const char *table_name) const
   }
   return iter->second;
 }
-bool BinderContext::only_one_table()
-{
-  {
-    if (query_tables_.empty()) {
-      return false;  // 如果列表为空，返回false
-    } else if (query_tables_.size() == 1) {
-      return true;
-    }
-
-    // 获取第一个表指针作为基准
-    Table *first_table = query_tables_[0];
-
-    // 遍历整个向量，检查所有的表是否与第一个表相同
-    for (size_t i = 1; i < query_tables_.size(); ++i) {
-      if (query_tables_[i] != first_table) {
-        return false;  // 如果有不同的表，返回false
-      }
-    }
-
-    return true;  // 如果所有的表都是一样的，返回true
-  }
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 static void wildcard_fields(Table *table, vector<unique_ptr<Expression>> &expressions, bool multi_tables = false)
@@ -149,6 +127,10 @@ RC ExpressionBinder::bind_star_expression(
   }
 
   auto star_expr = static_cast<StarExpr *>(expr.get());
+
+  if (!is_blank(star_expr->name())) {
+    return RC::INVALID_ALIAS;
+  }
 
   vector<Table *> tables_to_wildcard;
 
@@ -285,8 +267,9 @@ RC ExpressionBinder::bind_cast_expression(
 RC ExpressionBinder::bind_comparison_expression(
     unique_ptr<Expression> &expr, vector<unique_ptr<Expression>> &bound_expressions)
 {
+  RC rc = RC::SUCCESS;
   if (nullptr == expr) {
-    return RC::SUCCESS;
+    return rc;
   }
 
   auto comparison_expr = dynamic_cast<ComparisonExpr *>(expr.get());
@@ -295,21 +278,22 @@ RC ExpressionBinder::bind_comparison_expression(
   unique_ptr<Expression>        &left_expr  = comparison_expr->left();
   unique_ptr<Expression>        &right_expr = comparison_expr->right();
 
-  RC rc = bind_expression(left_expr, child_bound_expressions);
-  if (rc != RC::SUCCESS) {
-    return rc;
-  }
+  if (nullptr != left_expr) {
+    rc = bind_expression(left_expr, child_bound_expressions);
+    if (rc != RC::SUCCESS) {
+      return rc;
+    }
 
-  if (child_bound_expressions.size() != 1) {
-    LOG_WARN("invalid left children number of comparison expression: %d", child_bound_expressions.size());
-    return RC::INVALID_ARGUMENT;
-  }
+    if (child_bound_expressions.size() != 1) {
+      LOG_WARN("invalid left children number of comparison expression: %d", child_bound_expressions.size());
+      return RC::INVALID_ARGUMENT;
+    }
 
-  unique_ptr<Expression> &left = child_bound_expressions[0];
-  if (left.get() != left_expr.get()) {
-    left_expr = std::move(left);
+    unique_ptr<Expression> &left = child_bound_expressions[0];
+    if (left.get() != left_expr.get()) {
+      left_expr = std::move(left);
+    }
   }
-
   child_bound_expressions.clear();
   rc = bind_expression(right_expr, child_bound_expressions);
   if (rc != RC::SUCCESS) {

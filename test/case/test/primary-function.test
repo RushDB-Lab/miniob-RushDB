@@ -1,0 +1,16 @@
+-- echo 1. init data
+CREATE TABLE function_table(id int, name char(20), score float, u_date date);
+CREATE TABLE function_table_2(id int, name char(30), score float, u_date date);
+insert into function_table VALUES (4, 'KI83C4RH0AGX9', 7.61, '2017-02-06');
+insert into function_table VALUES (4, 'FXMB2DOJ4', 8.35, '2021-10-07');
+insert into function_table VALUES (8, 'Q3NS46CJ', 8.66, '2023-06-19');
+insert into function_table VALUES (1, 'Q3NS4', 4.90, '2023-06-19');
+insert into function_table VALUES (3, 'Q3NS46CJ012311234561', 6.50, '2023-06-19');
+insert into function_table VALUES (2, 'Q3CJ', 9.00, '2023-06-19');
+
+-- echo 2. invalid date
+-- sort select id, date_format(name, '%y-%m-%d') from function_table;
+
+-- echo 3. round test
+-- sort select id, length(name), round(score) from function_table where id<8;
+-- sort select * from function_table;

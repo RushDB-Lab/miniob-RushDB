@@ -36,8 +36,6 @@ public:
   const std::vector<Table *>               &query_tables() const { return query_tables_; }
   std::unordered_map<std::string, Table *> &table_map() { return *tables_; }
 
-  bool only_one_table();
-
 private:
   Db *db_;
 

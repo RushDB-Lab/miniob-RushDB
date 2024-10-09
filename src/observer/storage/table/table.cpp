@@ -15,6 +15,8 @@ See the Mulan PSL v2 for more details. */
 #include <limits.h>
 #include <string.h>
 
+#include <utility>
+
 #include "common/defs.h"
 #include "common/lang/string.h"
 #include "common/lang/span.h"
@@ -237,7 +239,7 @@ RC Table::insert_record(Record &record)
   return rc;
 }
 
-RC Table::visit_record(const RID &rid, function<bool(Record &)> visitor)
+RC Table::visit_record(const RID &rid, const function<bool(Record &)> &visitor)
 {
   return record_handler_->visit_record(rid, visitor);
 }
