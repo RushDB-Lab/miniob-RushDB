@@ -44,6 +44,7 @@ RC SelectStmt::create(
   // collect tables in `from` statement
   vector<Table *>                tables;
   unordered_map<string, Table *> table_map = parent_table_map;
+  unordered_map<string, Table *> temp_map;
 
   for (size_t i = 0; i < select_sql.relations.size(); i++) {
     const char *table_name = select_sql.relations[i].relation.c_str();
@@ -60,13 +61,18 @@ RC SelectStmt::create(
     // 建立别名
     const string &table_alias = select_sql.relations[i].alias;
     if (!table_alias.empty()) {
-      table_map.insert({table_alias, table});
+      const auto &success = temp_map.insert({table_alias, table});
+      if (!success.second)
+        return RC::INVALID_ALIAS;
     }
 
     binder_context.add_table(table);
     tables.push_back(table);
-    table_map.insert({table_name, table});
+    temp_map.insert({table_name, table});
   }
+  // alias is all avaliable
+  table_map.insert(temp_map.begin(), temp_map.end());
+
   Table *default_table = nullptr;
   if (tables.size() == 1) {
     default_table = tables[0];
@@ -88,6 +94,15 @@ RC SelectStmt::create(
   vector<unique_ptr<Expression>> group_by_expressions;
   for (unique_ptr<Expression> &expression : select_sql.group_by) {
     RC rc = expression_binder.bind_expression(expression, group_by_expressions);
+    if (OB_FAIL(rc)) {
+      LOG_INFO("bind expression failed. rc=%s", strrc(rc));
+      return rc;
+    }
+  }
+
+  vector<unique_ptr<Expression>> order_by_expressions;
+  for (OrderBySqlNode &unit : select_sql.order_by) {
+    RC rc = expression_binder.bind_expression(unit.expr, group_by_expressions);
     if (OB_FAIL(rc)) {
       LOG_INFO("bind expression failed. rc=%s", strrc(rc));
       return rc;

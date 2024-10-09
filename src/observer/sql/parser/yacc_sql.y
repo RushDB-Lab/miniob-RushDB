@@ -747,6 +747,9 @@ expression:
     | '*' {
       $$ = new StarExpr();
     }
+    | ID DOT '*' {
+      $$ = new StarExpr($1);
+    }
     | aggr_func_expr {
       $$ = $1;      // AggrFuncExpr
     }
@@ -862,6 +865,13 @@ condition:
     {
       $$ = new ComparisonExpr($2, $1, $3);
     }
+    | comp_op expression
+    {
+      Value val;
+      val.set_null(true);
+      ValueExpr *temp_expr = new ValueExpr(val);
+      $$ = new ComparisonExpr($1,temp_expr, $2);
+    }
     | condition AND condition
     {
       $$ = new ConjunctionExpr(ConjunctionExpr::Type::AND, $1, $3);
@@ -885,6 +895,8 @@ comp_op:
     | NOT LIKE {$$ = NOT_LIKE_OP;}
     | IN { $$ = IN_OP; }
     | NOT IN { $$ = NOT_IN_OP; }
+    | EXISTS { $$ = EXISTS_OP; }
+    | NOT EXISTS { $$ = NOT_EXISTS_OP; }
     ;
 
 opt_order_by:
@@ -937,6 +949,10 @@ group_by:
     /* empty */
     {
       $$ = nullptr;
+    }
+    | GROUP BY expression_list
+    {
+      $$ = $3;
     }
     ;
 load_data_stmt:

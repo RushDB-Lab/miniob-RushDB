@@ -1,6 +1,6 @@
 -- echo 1. create table
-create table t_group_by (id int, score float, name char);
-create table t_group_by_2 (id int, age int);
+create table t_group_by (id int not null, score float not null, name char(1) null);
+create table t_group_by_2 (id int not null, age int not null);
 
 -- echo 2. insert records
 insert into t_group_by values(3, 1.0, 'a');
@@ -20,6 +20,8 @@ insert into t_group_by_2 values(4, 20);
 
 -- echo 3. primary group by
 -- sort select id, avg(score) from t_group_by group by id;
+
+-- sort select id, sum(score) from t_group_by group by id;
 
 -- sort select name, min(id), max(score) from t_group_by group by name;
 

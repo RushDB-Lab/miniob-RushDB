@@ -1,7 +1,7 @@
 1. CREATE TABLE
-create table t_group_by (id int, score float, name char);
+create table t_group_by (id int not null, score float not null, name char(1) null);
 SUCCESS
-create table t_group_by_2 (id int, age int);
+create table t_group_by_2 (id int not null, age int not null);
 SUCCESS
 
 2. INSERT RECORDS
@@ -39,6 +39,12 @@ select id, avg(score) from t_group_by group by id;
 3 | 2.4
 4 | 3
 ID | AVG(SCORE)
+
+select id, sum(score) from t_group_by group by id;
+1 | 2
+3 | 12
+4 | 3
+ID | SUM(SCORE)
 
 select name, min(id), max(score) from t_group_by group by name;
 A | 3 | 1
