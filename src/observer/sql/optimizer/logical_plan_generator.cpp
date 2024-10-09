@@ -280,8 +280,9 @@ RC LogicalPlanGenerator::create_group_by_plan(SelectStmt *select_stmt, unique_pt
   vector<unique_ptr<Expression>> &query_expressions = select_stmt->query_expressions();
 
   // 还要考虑having里面的
-  ExpressionIterator::having_condition_iterate_expr(
-      select_stmt->having_filter_stmt()->condition(), aggregate_expressions);
+  if (select_stmt->having_filter_stmt() != nullptr)
+    ExpressionIterator::having_condition_iterate_expr(
+        select_stmt->having_filter_stmt()->condition(), aggregate_expressions);
 
   function<RC(std::unique_ptr<Expression> &)> collector = [&](unique_ptr<Expression> &expr) -> RC {
     RC rc = RC::SUCCESS;
