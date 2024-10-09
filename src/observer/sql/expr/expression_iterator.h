@@ -26,4 +26,6 @@ class ExpressionIterator
 public:
   static RC iterate_child_expr(Expression &expr, const std::function<RC(std::unique_ptr<Expression> &)> &callback);
   static RC condition_iterate_expr(std::unique_ptr<Expression> &expr);
+  static RC having_condition_iterate_expr(
+      std::unique_ptr<Expression> &expr, std::vector<Expression *> &bound_expressions);
 };

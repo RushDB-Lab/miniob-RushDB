@@ -13,6 +13,8 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include "sql/expr/expression_iterator.h"
+
+#include <memory>
 #include "sql/expr/expression.h"
 #include "common/log/log.h"
 
@@ -166,6 +168,59 @@ RC ExpressionIterator::condition_iterate_expr(std::unique_ptr<Expression> &expr)
 
     case ExprType::ARITHMETIC:
     case ExprType::AGGREGATION:
+    case ExprType::NORMAL_FUNCTION:
+    case ExprType::NONE:
+    case ExprType::STAR:
+    case ExprType::UNBOUND_FIELD:
+    case ExprType::FIELD:
+    case ExprType::VALUE: {
+      // Do nothing
+    } break;
+
+    default: {
+      ASSERT(false, "Unknown expression type");
+    }
+  }
+
+  return rc;
+}
+
+RC ExpressionIterator::having_condition_iterate_expr(
+    std::unique_ptr<Expression> &expr, vector<Expression *> &bound_expressions)
+{
+  RC rc = RC::SUCCESS;
+
+  switch (expr->type()) {
+    case ExprType::COMPARISON: {
+      auto *comp_expr = dynamic_cast<ComparisonExpr *>(expr.get());
+      auto &left      = comp_expr->left();
+      auto &right     = comp_expr->right();
+      rc              = having_condition_iterate_expr(left, bound_expressions);
+      if (OB_FAIL(rc)) {
+        break;
+      }
+      rc = having_condition_iterate_expr(right, bound_expressions);
+      if (OB_FAIL(rc)) {
+        break;
+      }
+
+    } break;
+
+    case ExprType::CONJUNCTION: {
+      auto conjunction_expr = dynamic_cast<ConjunctionExpr *>(expr.get());
+      for (auto &child : conjunction_expr->children()) {
+        rc = having_condition_iterate_expr(child, bound_expressions);
+        if (OB_FAIL(rc)) {
+          break;
+        }
+      }
+    } break;
+    case ExprType::AGGREGATION: {
+      bound_expressions.push_back(expr.get());
+    } break;
+
+    case ExprType::CAST:
+    case ExprType::ARITHMETIC:
     case ExprType::NORMAL_FUNCTION:
     case ExprType::NONE:
     case ExprType::STAR:

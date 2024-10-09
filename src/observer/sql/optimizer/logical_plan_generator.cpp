@@ -275,10 +275,15 @@ RC LogicalPlanGenerator::create_plan(ExplainStmt *explain_stmt, unique_ptr<Logic
 
 RC LogicalPlanGenerator::create_group_by_plan(SelectStmt *select_stmt, unique_ptr<LogicalOperator> &logical_operator)
 {
-  vector<unique_ptr<Expression>>             &group_by_expressions = select_stmt->group_by();
-  vector<Expression *>                        aggregate_expressions;
-  vector<unique_ptr<Expression>>             &query_expressions = select_stmt->query_expressions();
-  function<RC(std::unique_ptr<Expression> &)> collector         = [&](unique_ptr<Expression> &expr) -> RC {
+  vector<unique_ptr<Expression>> &group_by_expressions = select_stmt->group_by();
+  vector<Expression *>            aggregate_expressions;
+  vector<unique_ptr<Expression>> &query_expressions = select_stmt->query_expressions();
+
+  // 还要考虑having里面的
+  ExpressionIterator::having_condition_iterate_expr(
+      select_stmt->having_filter_stmt()->condition(), aggregate_expressions);
+
+  function<RC(std::unique_ptr<Expression> &)> collector = [&](unique_ptr<Expression> &expr) -> RC {
     RC rc = RC::SUCCESS;
     if (expr->type() == ExprType::AGGREGATION) {
       expr->set_pos(aggregate_expressions.size() + group_by_expressions.size());
