@@ -61,16 +61,17 @@ RC SelectStmt::create(
     // 建立别名
     const string &table_alias = select_sql.relations[i].alias;
     if (!table_alias.empty()) {
-      const auto &success=temp_map.insert({table_alias, table});
-      if (!success.second) return RC::INVALID_ALIAS;
+      const auto &success = temp_map.insert({table_alias, table});
+      if (!success.second)
+        return RC::INVALID_ALIAS;
     }
 
     binder_context.add_table(table);
     tables.push_back(table);
     temp_map.insert({table_name, table});
   }
-  //alias is all avaliable
-  table_map.insert(temp_map.begin(),temp_map.end());
+  // alias is all avaliable
+  table_map.insert(temp_map.begin(), temp_map.end());
 
   Table *default_table = nullptr;
   if (tables.size() == 1) {

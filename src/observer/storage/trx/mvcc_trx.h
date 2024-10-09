@@ -74,7 +74,7 @@ public:
    */
   MvccTrx(MvccTrxKit &trx_kit, LogHandler &log_handler);
   MvccTrx(MvccTrxKit &trx_kit, LogHandler &log_handler, int32_t trx_id);  // used for recover
-  virtual ~MvccTrx();
+  ~MvccTrx() override;
 
   RC insert_record(Table *table, Record &record) override;
   RC delete_record(Table *table, Record &record) override;

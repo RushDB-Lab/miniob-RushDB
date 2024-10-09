@@ -50,7 +50,6 @@ python3 miniob_test.py --test-cases=basic
 python3 miniob_test.py --test-cases=primary-date
 python3 miniob_test.py --test-cases=primary-complex-sub-query
 python3 miniob_test.py --test-cases=primary-simple-sub-query
-python3 miniob_test.py --test-cases=primary-group-by
 如果要运行多个测试用例，则在 --test-cases 参数中使用 ',' 分隔写多个即可
 """
 
@@ -1059,7 +1058,7 @@ def compile(work_dir: str, build_dir: str, cmake_args: str, make_args: str, rebu
     make_command = ["make", "--silent", "-C", build_path]
     if isinstance(make_args, str):
         if not make_args:
-            make_command.append('-j24')
+            make_command.append('-j4')
         else:
             args = make_args.split(';')
             for arg in args:

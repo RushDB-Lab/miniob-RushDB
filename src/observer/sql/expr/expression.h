@@ -618,7 +618,5 @@ private:
 class order_unit_expr : public Expression
 {
 
-
 private:
-
 };

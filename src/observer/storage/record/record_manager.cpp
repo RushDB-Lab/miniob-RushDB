@@ -68,7 +68,7 @@ string PageHeader::to_string() const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-RecordPageIterator:: RecordPageIterator() {}
+RecordPageIterator::RecordPageIterator() {}
 RecordPageIterator::~RecordPageIterator() {}
 
 void RecordPageIterator::init(RecordPageHandler *record_page_handler, SlotNum start_slot_num /*=0*/)
@@ -703,7 +703,7 @@ RC RecordFileHandler::get_record(const RID &rid, Record &record)
   return rc;
 }
 
-RC RecordFileHandler::visit_record(const RID &rid, function<bool(Record &)> updater)
+RC RecordFileHandler::visit_record(const RID &rid, const function<bool(Record &)> &updater)
 {
   unique_ptr<RecordPageHandler> page_handler(RecordPageHandler::create(storage_format_));
 
