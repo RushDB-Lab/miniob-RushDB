@@ -450,3 +450,65 @@ private:
   Tuple *left_  = nullptr;
   Tuple *right_ = nullptr;
 };
+
+/**
+ * @brief 一些常量值组成的Tuple,用于 orderby 算子中
+ * @ingroup Tuple
+ */
+class SplicedTuple : public Tuple
+{
+public:
+  SplicedTuple()          = default;
+  virtual ~SplicedTuple() = default;
+
+  void set_cells(const std::vector<Value> *cells) { cells_ = cells; }
+
+  virtual int cell_num() const override { return static_cast<int>((*cells_).size()); }
+
+  virtual RC cell_at(int index, Value &cell) const override
+  {
+    if (index < 0 || index >= cell_num()) {
+      return RC::NOTFOUND;
+    }
+
+    cell = (*cells_)[index];
+    return RC::SUCCESS;
+  }
+
+  RC find_cell(const TupleCellSpec &spec, Value &cell) const override
+  {
+    for (size_t i = 0; i < exprs_.size(); ++i) {
+      if (exprs_[i]->type() == ExprType::FIELD) {
+        const FieldExpr *expr = static_cast<FieldExpr *>(exprs_[i].get());
+        if (std::string(expr->field_name()) == std::string(spec.field_name()) &&
+            std::string(expr->table_name()) == std::string(spec.table_name())) {
+          cell = (*cells_)[i];
+          return RC::SUCCESS;
+        }
+      } else if (exprs_[i]->type() == ExprType::AGGREGATION) {
+        if (spec.alias() == exprs_[i]->name()) {
+          cell = (*cells_)[i];
+          return RC::SUCCESS;
+        }
+      } else {
+        return RC::INTERNAL;
+      }
+    }
+    return RC::NOTFOUND;
+  }
+
+  RC init(std::vector<std::unique_ptr<Expression>> &&exprs)
+  {
+    exprs_ = std::move(exprs);
+    return RC::SUCCESS;
+  }
+
+  std::vector<std::unique_ptr<Expression>> &exprs() { return exprs_; }
+
+  RC spec_at(int index, TupleCellSpec &spec) const override { return RC::INTERNAL; }
+
+private:
+  const std::vector<Value> *cells_ = nullptr;
+
+  std::vector<std::unique_ptr<Expression>> exprs_;
+};
