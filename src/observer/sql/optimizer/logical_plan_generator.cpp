@@ -358,8 +358,13 @@ RC LogicalPlanGenerator::create_order_by_plan(SelectStmt *select_stmt, unique_pt
     return RC::SUCCESS;
   }
 
+  std::vector<Expression *> query_expressions;
+  for (auto &expr : select_stmt->query_expressions()) {
+    query_expressions.push_back(expr.get());
+  }
+
   unique_ptr<LogicalOperator> orderby_oper(
-      new OrderByLogicalOperator(std::move(select_stmt->order_by()), std::move(select_stmt->query_expressions())));
+      new OrderByLogicalOperator(std::move(select_stmt->order_by()), query_expressions));
   logical_operator = std::move(orderby_oper);
   return RC::SUCCESS;
 }

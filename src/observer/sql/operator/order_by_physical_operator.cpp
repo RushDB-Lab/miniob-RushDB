@@ -14,11 +14,15 @@ See the Mulan PSL v2 for more details. */
 
 #include "order_by_physical_operator.h"
 
-OrderByPhysicalOperator::OrderByPhysicalOperator(
-    std::vector<OrderBySqlNode> order_by, std::vector<std::unique_ptr<Expression>> exprs)
+OrderByPhysicalOperator::OrderByPhysicalOperator(vector<OrderBySqlNode> order_by, vector<Expression *> exprs)
     : order_by_(std::move(order_by)), exprs_(std::move(exprs))
 {
-  tuple_.init(std::move(exprs));
+  vector<Expression *> expressions;
+  expressions.reserve(exprs_.size());
+  for (auto &expr : exprs_) {
+    expressions.push_back(expr);
+  }
+  tuple_.init(expressions);
 }
 
 RC OrderByPhysicalOperator::fetch_and_sort_tables()
@@ -29,7 +33,7 @@ RC OrderByPhysicalOperator::fetch_and_sort_tables()
 
   while (RC::SUCCESS == (rc = children_[0]->next())) {
     // 获取 order by 字段的 values
-    std::vector<Value> order_by_line;
+    vector<Value> order_by_line;
     for (auto &[expr, asc] : order_by_) {
       Value cell;
       rc = expr->get_value(*children_[0]->current_tuple(), cell);
@@ -40,7 +44,7 @@ RC OrderByPhysicalOperator::fetch_and_sort_tables()
     }
 
     // 获取 select 字段的 values
-    std::vector<Value> field_line;
+    vector<Value> field_line;
     for (auto &expr : tuple_.exprs()) {
       Value cell;
       rc = expr->get_value(*children_[0]->current_tuple(), cell);
@@ -52,6 +56,8 @@ RC OrderByPhysicalOperator::fetch_and_sort_tables()
 
     order_and_field_line.emplace_back(order_by_line, field_line);
   }
+
+  rc = RC::SUCCESS;
 
   // consider null
   auto cmp = [this](const pair<vector<Value>, vector<Value>> &cells_a,
@@ -81,7 +87,7 @@ RC OrderByPhysicalOperator::fetch_and_sort_tables()
     return false;
   };
 
-  std::sort(order_and_field_line.begin(), order_and_field_line.end(), cmp);
+  sort(order_and_field_line.begin(), order_and_field_line.end(), cmp);
   for (auto &[_, value] : order_and_field_line) {
     values_.push_back(value);
   }
@@ -111,8 +117,8 @@ RC OrderByPhysicalOperator::next()
     return RC::RECORD_EOF;
   }
 
-  const std::vector<Value> &value = *it_;
-  tuple_.set_cells(&value);
+  const vector<Value> &value = *it_;
+  tuple_.set_cells(value);
   it_++;
   return rc;
 }

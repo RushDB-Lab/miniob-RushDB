@@ -23,7 +23,7 @@ See the Mulan PSL v2 for more details. */
 class OrderByLogicalOperator : public LogicalOperator
 {
 public:
-  OrderByLogicalOperator(std::vector<OrderBySqlNode> order_by, std::vector<std::unique_ptr<Expression>> exprs)
+  OrderByLogicalOperator(std::vector<OrderBySqlNode> order_by, const std::vector<Expression*> exprs)
       : order_by_(std::move(order_by)), exprs_(std::move(exprs))
   {}
 
@@ -31,11 +31,11 @@ public:
 
   std::vector<OrderBySqlNode> &order_by() { return order_by_; }
 
-  std::vector<std::unique_ptr<Expression>> &exprs() { return exprs_; }
+  std::vector<Expression*> &exprs() { return exprs_; }
 
 private:
   std::vector<OrderBySqlNode> order_by_;
 
   /// 在 create order by stmt 之前提取 select clause 后的 field_expr (非agg_expr 中的) 和 agg_expr
-  std::vector<std::unique_ptr<Expression>> exprs_;
+  std::vector<Expression*> exprs_;
 };

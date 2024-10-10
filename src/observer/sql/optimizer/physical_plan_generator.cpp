@@ -123,9 +123,6 @@ RC PhysicalPlanGenerator::create_vec(LogicalOperator &logical_operator, unique_p
     case LogicalOperatorType::EXPLAIN: {
       return create_vec_plan(static_cast<ExplainLogicalOperator &>(logical_operator), oper);
     } break;
-    case LogicalOperatorType::ORDER_BY: {
-      return create_vec_plan(static_cast<OrderByLogicalOperator &>(logical_operator), oper);
-    } break;
     default: {
       return RC::INVALID_ARGUMENT;
     }
@@ -521,9 +518,4 @@ RC PhysicalPlanGenerator::create_vec_plan(ExplainLogicalOperator &explain_oper, 
 
   oper = std::move(explain_physical_oper);
   return rc;
-}
-
-RC PhysicalPlanGenerator::create_vec_plan(OrderByLogicalOperator &order_by_oper, unique_ptr<PhysicalOperator> &oper)
-{
-  return create_plan(order_by_oper, oper);
 }
