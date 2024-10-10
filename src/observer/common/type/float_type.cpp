@@ -90,8 +90,8 @@ int FloatType::cast_cost(AttrType type)
 {
   if (type == AttrType::FLOATS)
     return 0;  // FLOAT -> FLOAT
-  if (type == AttrType::INTS)
-    return 1;  // FLOAT -> INT (可能丢失精度)
+  // if (type == AttrType::INTS)
+  //   return 1;  // FLOAT -> INT (可能丢失精度，也不支持转换)
   if (type == AttrType::BOOLEANS)
     return 1;        // FLOAT -> BOOL (非严格转换)
   return INT32_MAX;  // 不支持转换
