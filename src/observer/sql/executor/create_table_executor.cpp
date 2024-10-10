@@ -44,9 +44,17 @@ RC CreateTableExecutor::execute(SQLStageEvent *sql_event)
     if (attr_infos.empty()) {
       for (auto &expr : select_stmt->query_expressions()) {
         AttrInfoSqlNode attr_info;
-        attr_info.name     = expr->name();
-        attr_info.length   = expr->value_length();
-        attr_info.type     = expr->value_type();
+        if (FieldExpr *field_expr = dynamic_cast<FieldExpr *>(expr.get())) {
+          auto field_meta    = field_expr->field().meta();
+          attr_info.name     = field_meta->name();
+          attr_info.type     = field_meta->type();
+          attr_info.length   = field_meta->len();
+          attr_info.nullable = field_meta->nullable();
+        } else {
+          attr_info.name   = expr->name();
+          attr_info.length = expr->value_length();
+          attr_info.type   = expr->value_type();
+        }
         attr_infos.push_back(attr_info);
       }
     }
