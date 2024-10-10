@@ -38,33 +38,15 @@ RC CreateTableExecutor::execute(SQLStageEvent *sql_event)
   CreateTableStmt *create_table_stmt = static_cast<CreateTableStmt *>(stmt);
   const char      *table_name        = create_table_stmt->table_name().c_str();
   if (create_table_stmt->create_table_select_stmt()) {
-    std::vector<FieldExpr *>   field_exprs;
-    std::unordered_set<string> table_names;
-    for (auto &expr : create_table_stmt->create_table_select_stmt()->query_expressions()) {
-      auto field_expr = dynamic_cast<FieldExpr *>(expr.get());
-      if (field_expr) {
-        table_names.emplace(field_expr->table_name());
-        field_exprs.push_back(field_expr);
-      } else {
-        return RC::INTERNAL;
-      }
-    }
+    SelectStmt *select_stmt = create_table_stmt->create_table_select_stmt();
 
     std::vector<AttrInfoSqlNode> attr_infos = create_table_stmt->attr_infos();
     if (attr_infos.empty()) {
-      for (auto &expr : field_exprs) {
+      for (auto &expr : select_stmt->query_expressions()) {
         AttrInfoSqlNode attr_info;
-        if (table_names.size() == 1) {
-          attr_info.name = expr->field_name();
-        } else {
-          attr_info.name = expr->table_name();
-          attr_info.name += ".";
-          attr_info.name += expr->field_name();
-        }
-        attr_info.length   = expr->field().meta()->len();
-        attr_info.type     = expr->field().meta()->type();
-        attr_info.nullable = expr->field().meta()->nullable();
-
+        attr_info.name     = expr->name();
+        attr_info.length   = expr->value_length();
+        attr_info.type     = expr->value_type();
         attr_infos.push_back(attr_info);
       }
     }
