@@ -199,8 +199,13 @@ public:
     cell.set_type(field_meta->type());
     if (field_meta->nullable()) {
       bool is_null = this->record_->data()[field_meta->offset() + field_meta->len() - 1] == '1';
-      cell.set_data(this->record_->data() + field_meta->offset(), field_meta->len() - 1);
-      cell.set_null(is_null);
+      if (is_null) {
+        cell.set_null(is_null);
+      } else {
+        // 如果是字符型 null 值，这里虽然安全拷贝了 0 个数据，但因为 own_data，在发生拷贝构造时又由 length 0
+        // 而没有初始化指针，导致内存越界
+        cell.set_data(this->record_->data() + field_meta->offset(), field_meta->len() - 1);
+      }
     } else {
       cell.set_data(this->record_->data() + field_meta->offset(), field_meta->len());
       cell.set_null(false);

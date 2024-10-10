@@ -38,14 +38,17 @@ Value::Value(const Value &other)
   this->length_    = other.length_;
   this->own_data_  = other.own_data_;
   this->is_null_   = other.is_null_;
-  switch (this->attr_type_) {
-    case AttrType::CHARS:
-    case AttrType::TEXTS: {
-      set_string_from_other(other);
-    } break;
-    default: {
-      this->value_ = other.value_;
-    } break;
+  // 如果是 null 值没必要拷贝 value，因为此时 value 是垃圾值
+  if (!this->is_null_) {
+    switch (this->attr_type_) {
+      case AttrType::CHARS:
+      case AttrType::TEXTS: {
+        set_string_from_other(other);
+      } break;
+      default: {
+        this->value_ = other.value_;
+      } break;
+    }
   }
 }
 
@@ -54,10 +57,12 @@ Value::Value(Value &&other)
   this->attr_type_ = other.attr_type_;
   this->length_    = other.length_;
   this->own_data_  = other.own_data_;
-  this->value_     = other.value_;
   this->is_null_   = other.is_null_;
-  other.own_data_  = false;
-  other.length_    = 0;
+  if (!this->is_null_) {
+    this->value_ = other.value_;
+  }
+  other.own_data_ = false;
+  other.length_   = 0;
 }
 
 Value &Value::operator=(const Value &other)
@@ -70,14 +75,16 @@ Value &Value::operator=(const Value &other)
   this->length_    = other.length_;
   this->own_data_  = other.own_data_;
   this->is_null_   = other.is_null_;
-  switch (this->attr_type_) {
-    case AttrType::CHARS:
-    case AttrType::TEXTS: {
-      set_string_from_other(other);
-    } break;
-    default: {
-      this->value_ = other.value_;
-    } break;
+  if (!this->is_null_) {
+    switch (this->attr_type_) {
+      case AttrType::CHARS:
+      case AttrType::TEXTS: {
+        set_string_from_other(other);
+      } break;
+      default: {
+        this->value_ = other.value_;
+      } break;
+    }
   }
   return *this;
 }
@@ -91,10 +98,12 @@ Value &Value::operator=(Value &&other)
   this->attr_type_ = other.attr_type_;
   this->length_    = other.length_;
   this->own_data_  = other.own_data_;
-  this->value_     = other.value_;
   this->is_null_   = other.is_null_;
-  other.own_data_  = false;
-  other.length_    = 0;
+  if (!this->is_null_) {
+    this->value_ = other.value_;
+  }
+  other.own_data_ = false;
+  other.length_   = 0;
   return *this;
 }
 
