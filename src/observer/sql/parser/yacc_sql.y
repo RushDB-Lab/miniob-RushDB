@@ -51,6 +51,36 @@ UnboundFunctionExpr *create_aggregate_expression(const char *function_name,
   return expr;
 }
 
+ParsedSqlNode *create_table_sql_node(char *table_name,
+                                     AttrInfoSqlNode* attr_def,
+                                     std::vector<AttrInfoSqlNode> *attrinfos,
+                                     char* storage_format,
+                                     ParsedSqlNode *create_table_select)
+{
+    ParsedSqlNode *parsed_sql_node = new ParsedSqlNode(SCF_CREATE_TABLE);
+    CreateTableSqlNode &create_table = parsed_sql_node->create_table;
+    create_table.relation_name = table_name;
+
+    if (attrinfos) {
+        create_table.attr_infos.swap(*attrinfos);
+        delete attrinfos;
+    }
+    if (attr_def) {
+        create_table.attr_infos.emplace_back(*attr_def);
+        std::reverse(create_table.attr_infos.begin(), create_table.attr_infos.end());
+        delete attr_def;
+    }
+    if (storage_format != nullptr) {
+        create_table.storage_format = storage_format;
+        free(storage_format);
+    }
+
+    if (create_table_select) {
+        create_table.create_table_select = std::move(create_table_select->selection);
+    }
+
+    return parsed_sql_node;
+}
 %}
 
 %define api.pure full
@@ -371,40 +401,15 @@ drop_index_stmt:      /*drop index 语句的语法解析树*/
 create_table_stmt:    /*create table 语句的语法解析树*/
     CREATE TABLE ID LBRACE attr_def attr_def_list RBRACE storage_format
     {
-      $$ = new ParsedSqlNode(SCF_CREATE_TABLE);
-      CreateTableSqlNode &create_table = $$->create_table;
-      create_table.relation_name = $3;
-      free($3);
-
-      std::vector<AttrInfoSqlNode> *src_attrs = $6;
-
-      if (src_attrs != nullptr) {
-        create_table.attr_infos.swap(*src_attrs);
-        delete src_attrs;
-      }
-      create_table.attr_infos.emplace_back(*$5);
-      std::reverse(create_table.attr_infos.begin(), create_table.attr_infos.end());
-      delete $5;
-      if ($8 != nullptr) {
-        create_table.storage_format = $8;
-        free($8);
-      }
+        $$ = create_table_sql_node($3, $5, $6, $8, nullptr);
     }
-    | CREATE TABLE ID AS select_stmt
+    | CREATE TABLE ID storage_format AS select_stmt
     {
-      $$ = new ParsedSqlNode(SCF_CREATE_TABLE);
-      CreateTableSqlNode &create_table = $$->create_table;
-      create_table.relation_name = $3;
-      free($3);
-      create_table.create_table_select = std::move($5->selection);
+        $$ = create_table_sql_node($3, nullptr, nullptr, $4, $6);
     }
-    | CREATE TABLE ID select_stmt
+    | CREATE TABLE ID storage_format select_stmt
     {
-      $$ = new ParsedSqlNode(SCF_CREATE_TABLE);
-      CreateTableSqlNode &create_table = $$->create_table;
-      create_table.relation_name = $3;
-      free($3);
-      create_table.create_table_select = std::move($4->selection);
+      $$ = create_table_sql_node($3, nullptr, nullptr, $4, $5);
     }
     ;
 attr_def_list:
