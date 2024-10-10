@@ -614,9 +614,3 @@ private:
   size_t                                   cur_idx_ = 0;
   std::vector<std::unique_ptr<Expression>> exprs_;
 };
-
-class order_unit_expr : public Expression
-{
-
-private:
-};

@@ -50,11 +50,13 @@ public:
 
   std::vector<std::unique_ptr<Expression>> &query_expressions() { return query_expressions_; }
   std::vector<std::unique_ptr<Expression>> &group_by() { return group_by_; }
+  std::vector<OrderBySqlNode>              &order_by() { return order_by_; }
 
 private:
   std::vector<std::unique_ptr<Expression>> query_expressions_;
   std::vector<Table *>                     tables_;
   FilterStmt                              *filter_stmt_ = nullptr;
   std::vector<std::unique_ptr<Expression>> group_by_;
+  std::vector<OrderBySqlNode>              order_by_;
   FilterStmt                              *having_filter_stmt_ = nullptr;
 };

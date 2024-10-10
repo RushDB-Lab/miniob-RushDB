@@ -102,11 +102,17 @@ RC SelectStmt::create(
 
   vector<unique_ptr<Expression>> order_by_expressions;
   for (OrderBySqlNode &unit : select_sql.order_by) {
-    RC rc = expression_binder.bind_expression(unit.expr, group_by_expressions);
+    RC rc = expression_binder.bind_expression(unit.expr, order_by_expressions);
     if (OB_FAIL(rc)) {
       LOG_INFO("bind expression failed. rc=%s", strrc(rc));
       return rc;
     }
+  }
+
+  std::vector<OrderBySqlNode> order_by_;
+  order_by_.reserve(order_by_expressions.size());
+  for (size_t i = 0; i < order_by_expressions.size(); i++) {
+    order_by_.push_back({std::move(order_by_expressions[i]), select_sql.order_by[i].is_asc});
   }
 
   // create filter statement in `where` statement
@@ -132,6 +138,7 @@ RC SelectStmt::create(
   select_stmt->query_expressions_.swap(bound_expressions);
   select_stmt->filter_stmt_ = filter_stmt;
   select_stmt->group_by_.swap(group_by_expressions);
+  select_stmt->order_by_.swap(order_by_);
   select_stmt->having_filter_stmt_ = having_filter_stmt;
   stmt                             = select_stmt;
   return RC::SUCCESS;

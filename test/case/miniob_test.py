@@ -47,6 +47,7 @@ python3 miniob_test.py
 
 运行 basic 测试用例
 python3 miniob_test.py --test-cases=basic
+python3 miniob_test.py --test-cases=primary-order-by
 python3 miniob_test.py --test-cases=primary-date
 python3 miniob_test.py --test-cases=primary-complex-sub-query
 python3 miniob_test.py --test-cases=primary-simple-sub-query

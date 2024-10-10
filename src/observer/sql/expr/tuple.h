@@ -455,3 +455,55 @@ private:
   Tuple *left_  = nullptr;
   Tuple *right_ = nullptr;
 };
+
+/**
+ * @brief 一些常量值组成的Tuple,用于 orderby 算子中
+ * @ingroup Tuple
+ */
+class SplicedTuple : public Tuple
+{
+public:
+  SplicedTuple()          = default;
+  virtual ~SplicedTuple() = default;
+
+  void set_cells(const std::vector<Value> &cells) { cells_ = cells; }
+
+  int cell_num() const override
+  {
+    return cells_.size();
+  }
+
+  RC cell_at(int index, Value &cell) const override
+  {
+    if (index < 0 || index >= cell_num()) {
+      return RC::NOTFOUND;
+    }
+
+    cell = cells_[index];
+    return RC::SUCCESS;
+  }
+
+  RC find_cell(const TupleCellSpec &spec, Value &cell) const override
+  {
+    assert(false);
+    return RC::INTERNAL;
+  }
+
+  RC init(const std::vector<Expression *> &exprs)
+  {
+    exprs_ = exprs;
+    return RC::SUCCESS;
+  }
+
+  RC spec_at(int index, TupleCellSpec &spec) const override
+  {
+    assert(false);
+    return RC::INTERNAL;
+  }
+
+  std::vector<Expression *> &exprs() { return exprs_; }
+
+private:
+  std::vector<Value>        cells_;
+  std::vector<Expression *> exprs_;
+};

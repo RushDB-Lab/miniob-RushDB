@@ -55,6 +55,7 @@ enum class PhysicalOperatorType
   HASH_GROUP_BY,
   GROUP_BY_VEC,
   AGGREGATE_VEC,
+  ORDER_BY,
   EXPR_VEC,
 };
 
