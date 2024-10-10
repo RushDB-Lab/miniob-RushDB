@@ -90,3 +90,9 @@ select t_group_by.id, t_group_by.name, avg(t_group_by.score), avg(t_group_by_2.a
 4 | NULL | 3 | 20
 4 | C | 3 | 20
 T_GROUP_BY.ID | T_GROUP_BY.NAME | AVG(T_GROUP_BY.SCORE) | AVG(T_GROUP_BY_2.AGE)
+
+6. HAVING TYPECAST
+SELECT ID, AVG(SCORE) FROM T_GROUP_BY GROUP BY ID HAVING AVG(SCORE)>2;
+3 | 2.4
+4 | 3
+ID | AVG(SCORE)

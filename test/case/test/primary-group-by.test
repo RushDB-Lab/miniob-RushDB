@@ -35,3 +35,6 @@ insert into t_group_by_2 values(4, 20);
 
 -- echo 5. multi table
 -- sort select t_group_by.id, t_group_by.name, avg(t_group_by.score), avg(t_group_by_2.age) from t_group_by, t_group_by_2 where t_group_by.id=t_group_by_2.id group by t_group_by.id, t_group_by.name;
+
+-- echo 6. having typecast
+-- sort select id, avg(score) from t_group_by group by id having avg(score)>2;
