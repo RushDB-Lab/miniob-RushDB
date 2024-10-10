@@ -145,7 +145,7 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
     }
 
     if (create_table_select) {
-        create_table.create_table_select = std::move(create_table_select->selection);
+        create_table.create_table_select = std::make_unique<SelectSqlNode>(std::move(create_table_select->selection));
     }
 
     return parsed_sql_node;

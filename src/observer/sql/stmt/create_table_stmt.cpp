@@ -29,9 +29,9 @@ RC CreateTableStmt::create(Db *db, CreateTableSqlNode &create_table, Stmt *&stmt
     return RC::INVALID_ARGUMENT;
   }
   SelectStmt *select_stmt = nullptr;
-  if (create_table.attr_infos.empty()) {
+  if (create_table.create_table_select) {
     Stmt *create_table_select_stmt;
-    RC    rc = SelectStmt::create(db, create_table.create_table_select, create_table_select_stmt);
+    RC    rc = SelectStmt::create(db, *create_table.create_table_select, create_table_select_stmt);
     if (OB_FAIL(rc)) {
       return rc;
     }
