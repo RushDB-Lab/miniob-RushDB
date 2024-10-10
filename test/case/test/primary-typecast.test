@@ -42,3 +42,9 @@ UPDATE Typecast_table_1 SET id = -8.8, name = -8.8, age = '-8.8' where id = 666;
 -- sort SELECT * FROM Typecast_table_1 WHERE '1.5a' = 2.0;
 -- sort SELECT * FROM Typecast_table_1 WHERE '2a' = 2.0;
 -- sort SELECT * FROM Typecast_table_1 WHERE '2.0-a' = 2.0;
+
+-- echo 5. type promotion
+-- sort SELECT * FROM Typecast_table_1 WHERE age >= 7.0;
+-- sort SELECT * FROM Typecast_table_1 WHERE age >= 7;
+-- sort SELECT * FROM Typecast_table_1 WHERE id >= 6;
+-- sort SELECT * FROM Typecast_table_1 WHERE id >= 6.25;
