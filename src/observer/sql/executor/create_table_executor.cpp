@@ -20,6 +20,11 @@ See the Mulan PSL v2 for more details. */
 #include "session/session.h"
 #include "sql/stmt/create_table_stmt.h"
 #include "storage/db/db.h"
+#include "sql/optimizer/logical_plan_generator.h"
+#include "sql/operator/logical_operator.h"
+#include "sql/operator/project_logical_operator.h"
+#include "sql/optimizer/physical_plan_generator.h"
+#include "storage/trx/trx.h"
 
 RC CreateTableExecutor::execute(SQLStageEvent *sql_event)
 {
@@ -40,6 +45,8 @@ RC CreateTableExecutor::execute(SQLStageEvent *sql_event)
       if (field_expr) {
         table_names.emplace(field_expr->table_name());
         field_exprs.push_back(field_expr);
+      } else {
+        return RC::INTERNAL;
       }
     }
 
@@ -66,6 +73,51 @@ RC CreateTableExecutor::execute(SQLStageEvent *sql_event)
     }
 
     // TODO: insert records
+    unique_ptr<LogicalOperator> logical_oper = nullptr;
+    LogicalPlanGenerator::create(create_table_stmt->create_table_select_stmt(), logical_oper);
+    if (!logical_oper) {
+      return RC::INTERNAL;
+    }
+
+    unique_ptr<PhysicalOperator> physical_oper = nullptr;
+    PhysicalPlanGenerator::create(*logical_oper, physical_oper);
+    auto table_ = session->get_current_db()->find_table(table_name);
+    if (!physical_oper) {
+      return RC::INTERNAL;
+    }
+
+    physical_oper->open(session->current_trx());
+    while (RC::SUCCESS == (rc = physical_oper->next())) {
+      auto          tuple = physical_oper->current_tuple();
+      int           num   = tuple->cell_num();
+      vector<Value> values;
+      for (int i = 0; i < num; i++) {
+        Value cell;
+        rc = tuple->cell_at(i, cell);
+        if (OB_FAIL(rc)) {
+          return rc;
+        }
+        values.push_back(cell);
+      }
+
+      Record record;
+      rc = table_->make_record(static_cast<int>(values.size()), values.data(), record);
+      if (OB_FAIL(rc)) {
+        return rc;
+      }
+
+      rc = session->current_trx()->insert_record(table_, record);
+      if (OB_FAIL(rc)) {
+        return rc;
+      }
+    }
+
+    rc = physical_oper->close();
+    if (OB_FAIL(rc)) {
+      return rc;
+    }
+
+    rc = RC::SUCCESS;
   } else {
     rc = session->get_current_db()->create_table(
         table_name, create_table_stmt->attr_infos(), create_table_stmt->storage_format());
