@@ -399,7 +399,15 @@ drop_index_stmt:      /*drop index 语句的语法解析树*/
     }
     ;
 create_table_stmt:    /*create table 语句的语法解析树*/
-    CREATE TABLE ID LBRACE attr_def attr_def_list RBRACE storage_format
+    CREATE TABLE ID LBRACE attr_def attr_def_list RBRACE storage_format AS select_stmt
+    {
+        $$ = create_table_sql_node($3, $5, $6, $8, $10);
+    }
+    | CREATE TABLE ID LBRACE attr_def attr_def_list RBRACE storage_format select_stmt
+    {
+        $$ = create_table_sql_node($3, $5, $6, $8, $9);
+    }
+    | CREATE TABLE ID LBRACE attr_def attr_def_list RBRACE storage_format
     {
         $$ = create_table_sql_node($3, $5, $6, $8, nullptr);
     }

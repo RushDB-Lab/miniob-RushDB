@@ -50,21 +50,23 @@ RC CreateTableExecutor::execute(SQLStageEvent *sql_event)
       }
     }
 
-    std::vector<AttrInfoSqlNode> attr_infos;
-    for (auto &expr : field_exprs) {
-      AttrInfoSqlNode attr_info;
-      if (table_names.size() == 1) {
-        attr_info.name = expr->field_name();
-      } else {
-        attr_info.name = expr->table_name();
-        attr_info.name += ".";
-        attr_info.name += expr->field_name();
-      }
-      attr_info.length   = expr->field().meta()->len();
-      attr_info.type     = expr->field().meta()->type();
-      attr_info.nullable = expr->field().meta()->nullable();
+    std::vector<AttrInfoSqlNode> attr_infos = create_table_stmt->attr_infos();
+    if (attr_infos.empty()) {
+      for (auto &expr : field_exprs) {
+        AttrInfoSqlNode attr_info;
+        if (table_names.size() == 1) {
+          attr_info.name = expr->field_name();
+        } else {
+          attr_info.name = expr->table_name();
+          attr_info.name += ".";
+          attr_info.name += expr->field_name();
+        }
+        attr_info.length   = expr->field().meta()->len();
+        attr_info.type     = expr->field().meta()->type();
+        attr_info.nullable = expr->field().meta()->nullable();
 
-      attr_infos.push_back(attr_info);
+        attr_infos.push_back(attr_info);
+      }
     }
 
     rc = session->get_current_db()->create_table(table_name, attr_infos, create_table_stmt->storage_format());
