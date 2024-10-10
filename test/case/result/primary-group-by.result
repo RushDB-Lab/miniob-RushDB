@@ -19,6 +19,8 @@ insert into t_group_by values(3, 3.0, 'd');
 SUCCESS
 insert into t_group_by values(3, 2.0, 'f');
 SUCCESS
+INSERT INTO T_GROUP_BY VALUES(4, 3.0, NULL);
+SUCCESS
 
 insert into t_group_by_2 values(1, 10);
 SUCCESS
@@ -43,10 +45,11 @@ ID | AVG(SCORE)
 select id, sum(score) from t_group_by group by id;
 1 | 2
 3 | 12
-4 | 3
+4 | 6
 ID | SUM(SCORE)
 
 select name, min(id), max(score) from t_group_by group by name;
+NULL | 4 | 3
 A | 3 | 1
 B | 1 | 2
 C | 3 | 4
@@ -60,6 +63,7 @@ select id, name, avg(score) from t_group_by group by id, name;
 3 | C | 3
 3 | D | 3
 3 | F | 2
+4 | NULL | 3
 4 | C | 3
 ID | NAME | AVG(SCORE)
 
@@ -83,5 +87,6 @@ select t_group_by.id, t_group_by.name, avg(t_group_by.score), avg(t_group_by_2.a
 3 | C | 3 | 23.33
 3 | D | 3 | 23.33
 3 | F | 2 | 23.33
+4 | NULL | 3 | 20
 4 | C | 3 | 20
 T_GROUP_BY.ID | T_GROUP_BY.NAME | AVG(T_GROUP_BY.SCORE) | AVG(T_GROUP_BY_2.AGE)

@@ -10,6 +10,7 @@ insert into t_group_by values(3, 2.0, 'c');
 insert into t_group_by values(3, 4.0, 'c');
 insert into t_group_by values(3, 3.0, 'd');
 insert into t_group_by values(3, 2.0, 'f');
+insert into t_group_by values(4, 3.0, null);
 
 insert into t_group_by_2 values(1, 10);
 insert into t_group_by_2 values(2, 20);
