@@ -74,7 +74,6 @@ RC CreateTableExecutor::execute(SQLStageEvent *sql_event)
       return rc;
     }
 
-    // TODO: insert records
     unique_ptr<LogicalOperator> logical_oper = nullptr;
     LogicalPlanGenerator::create(create_table_stmt->create_table_select_stmt(), logical_oper);
     if (!logical_oper) {
