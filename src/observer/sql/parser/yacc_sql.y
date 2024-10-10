@@ -755,7 +755,6 @@ expression:
         $$ = new ListExpr(std::move(*$2));
       }
       $$->set_name(token_name(sql_string, &@$));
-      delete $2;
     }
     | '-' expression %prec UMINUS {
       $$ = create_arithmetic_expression(ArithmeticExpr::Type::NEGATIVE, $2, nullptr, sql_string, &@$);
