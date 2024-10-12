@@ -195,7 +195,7 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
 /** type 定义了各种解析后的结果输出的是什么类型。类型对应了 union 中的定义的成员变量名称 **/
 %type <number>              type
 %type <value>               value
-%type <number>              number
+%type <value>               nonnegative_value
 %type <string>              relation
 %type <string>              alias
 %type <comp>                comp_op
@@ -438,7 +438,7 @@ attr_def_list:
     ;
     
 attr_def:
-    ID type LBRACE number RBRACE nullable_constraint
+    ID type LBRACE NUMBER RBRACE nullable_constraint
     {
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
@@ -495,10 +495,6 @@ nullable_constraint:
     }
     ;
 
-number:
-    NUMBER {$$ = $1;}
-    ;
-
 type:
       INT_T    { $$ = static_cast<int>(AttrType::INTS);   }
     | STRING_T { $$ = static_cast<int>(AttrType::CHARS);  }
@@ -548,21 +544,35 @@ value_list:
     ;
 
 value:
+    nonnegative_value {
+      $$ = $1;
+    }
+    | '-' NUMBER {
+      $$ = new Value(-$2);
+      @$ = @1;
+    }
+    | '-' FLOAT {
+      $$ = new Value(-$2);
+      @$ = @1;
+    }
+    ;
+
+nonnegative_value:
     NUMBER {
-      $$ = new Value((int)$1);
+      $$ = new Value($1);
       @$ = @1;
     }
-    |FLOAT {
-      $$ = new Value((float)$1);
+    | FLOAT {
+      $$ = new Value($1);
       @$ = @1;
     }
-    |SSS {
+    | SSS {
       char *tmp = common::substr($1,1,strlen($1)-2);
       $$ = new Value(tmp);
       free(tmp);
       free($1);
     }
-    |NULL_T {
+    | NULL_T {
       $$ = new Value(NullValue());
     }
     ;
@@ -759,7 +769,7 @@ expression:
     | '-' expression %prec UMINUS {
       $$ = create_arithmetic_expression(ArithmeticExpr::Type::NEGATIVE, $2, nullptr, sql_string, &@$);
     }
-    | value {
+    | nonnegative_value {
       $$ = new ValueExpr(*$1);
       $$->set_name(token_name(sql_string, &@$));
       delete $1;
