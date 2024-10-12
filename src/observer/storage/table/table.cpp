@@ -308,30 +308,41 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
         return RC::NOT_NULLABLE_VALUE;
       }
       record_data[field->offset() + field->len() - 1] = '1';
-    } else if (field->type() != value.attr_type()) {
-      Value real_value;
-      if (field->type() == AttrType::TEXTS && value.attr_type() == AttrType::CHARS) {
-        // 对于超长文本通过借用的方法减少拷贝
-        rc = real_value.borrow_text(value);
-        if (OB_FAIL(rc)) {
-          LOG_WARN("failed to borrow text value. table name:%s, field name:%s, value length:%d",
-              table_meta_.name(), field->name(), value.length());
-          break;
-        }
-      } else {
-        // 插入不允许非目标类型的类型提升
-        rc = Value::cast_to(value, field->type(), real_value, false);
-        if (OB_FAIL(rc)) {
-          LOG_WARN("failed to cast value. table name:%s, field name:%s, value:%s",
-              table_meta_.name(), field->name(), value.to_string().c_str());
-          break;
+    } else {
+      Value real_value = value;
+      if (field->type() != value.attr_type()) {
+        if (field->type() == AttrType::TEXTS && value.attr_type() == AttrType::CHARS) {
+          // 对于超长文本通过借用的方法减少拷贝
+          rc = real_value.borrow_text(value);
+          if (OB_FAIL(rc)) {
+            LOG_WARN("failed to borrow text value. table name:%s, field name:%s, value length:%d",
+                table_meta_.name(), field->name(), value.length());
+            break;
+          }
+        } else {
+          // 插入不允许非目标类型的类型提升
+          rc = Value::cast_to(value, field->type(), real_value, false);
+          if (OB_FAIL(rc)) {
+            LOG_WARN("failed to cast value. table name:%s, field name:%s, value:%s",
+                table_meta_.name(), field->name(), value.to_string().c_str());
+            break;
+          }
         }
       }
+      // 进行长度校验
+      if (real_value.length() > field->len() - field->nullable()) {
+        LOG_ERROR("Value length exceeds maximum allowed length for field. Field: %s, Type: %s, Offset: %d, Length: %d, Max Length: %d",
+                  field->name(),
+                  attr_type_to_string(field->type()),
+                  field->offset(),
+                  value.length(),
+                  field->len());
+        return RC::VALUE_TOO_LONG;
+      }
       rc = set_value_to_record(record_data, real_value, field);
-    } else {
-      rc = set_value_to_record(record_data, value, field);
     }
   }
+
   if (OB_FAIL(rc)) {
     LOG_WARN("failed to make record. table name:%s", table_meta_.name());
     free(record_data);
