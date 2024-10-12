@@ -32,9 +32,9 @@ public:
 
 public:
   DoubleWritePageKey key;
-  int32_t            page_index = -1;  /// 页面在double write buffer文件中的页索引
-  bool valid = true;  /// 表示页面是否有效，在页面被删除时，需要同时标记磁盘上的值。
-  Page page;
+  int32_t            page_index = -1;    /// 页面在double write buffer文件中的页索引
+  bool               valid      = true;  /// 表示页面是否有效，在页面被删除时，需要同时标记磁盘上的值。
+  Page               page;
 
   static const int32_t SIZE;
 };

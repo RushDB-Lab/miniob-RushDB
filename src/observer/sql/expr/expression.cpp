@@ -244,7 +244,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
     return rc;
   }
   DEFER(if (nullptr != left_subquery_expr) left_subquery_expr->close();
-        if (nullptr != right_subquery_expr) right_subquery_expr->close(););
+      if (nullptr != right_subquery_expr) right_subquery_expr->close(););
 
   // Get the value of the left expression
   rc = left_->get_value(tuple, left_value);
@@ -452,34 +452,37 @@ AttrType ArithmeticExpr::value_type() const
 RC ArithmeticExpr::calc_value(const Value &left_value, const Value &right_value, Value &value) const
 {
   RC rc = RC::SUCCESS;
+  if (left_value.is_null() || right_value.is_null()) {
+    value.set_null(true);
+    return RC::SUCCESS;
+  }
 
   const AttrType target_type = value_type();
   value.set_type(target_type);
 
   switch (arithmetic_type_) {
     case Type::ADD: {
-      Value::add(left_value, right_value, value);
+      return Value::add(left_value, right_value, value);
     } break;
 
     case Type::SUB: {
-      Value::subtract(left_value, right_value, value);
+      return Value::subtract(left_value, right_value, value);
     } break;
 
     case Type::MUL: {
-      Value::multiply(left_value, right_value, value);
+      return Value::multiply(left_value, right_value, value);
     } break;
 
     case Type::DIV: {
-      Value::divide(left_value, right_value, value);
+      return Value::divide(left_value, right_value, value);
     } break;
 
     case Type::NEGATIVE: {
-      Value::negative(left_value, value);
+      return Value::negative(left_value, value);
     } break;
 
     default: {
-      rc = RC::INTERNAL;
-      LOG_WARN("unsupported arithmetic type. %d", arithmetic_type_);
+      return RC::INTERNAL;
     } break;
   }
   return rc;
@@ -560,15 +563,19 @@ RC ArithmeticExpr::get_value(const Tuple &tuple, Value &value)
   Value left_value;
   Value right_value;
 
-  rc = left_->get_value(tuple, left_value);
-  if (rc != RC::SUCCESS) {
-    LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
-    return rc;
+  if (left_) {
+    rc = left_->get_value(tuple, left_value);
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
+      return rc;
+    }
   }
-  rc = right_->get_value(tuple, right_value);
-  if (rc != RC::SUCCESS) {
-    LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
-    return rc;
+  if (right_) {
+    rc = right_->get_value(tuple, right_value);
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
+      return rc;
+    }
   }
   return calc_value(left_value, right_value, value);
 }

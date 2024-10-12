@@ -29,6 +29,7 @@ See the Mulan PSL v2 for more details. */
   DEFINE_RC(INTERNAL)                    \
   DEFINE_RC(NOMEM)                       \
   DEFINE_RC(NOTFOUND)                    \
+  DEFINE_RC(NUMBER_DIV_ZERO)             \
   DEFINE_RC(EMPTY)                       \
   DEFINE_RC(ERROR_DATE)                  \
   DEFINE_RC(FULL)                        \

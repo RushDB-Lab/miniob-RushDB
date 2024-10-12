@@ -300,14 +300,11 @@ RC ExpressionBinder::bind_comparison_expression(
     return rc;
   }
 
-  if (child_bound_expressions.size() != 1) {
-    LOG_WARN("invalid right children number of comparison expression: %d", child_bound_expressions.size());
-    return RC::INVALID_ARGUMENT;
-  }
-
-  unique_ptr<Expression> &right = child_bound_expressions[0];
-  if (right.get() != right_expr.get()) {
-    right_expr = std::move(right);
+  if (child_bound_expressions.size() == 1) {
+    unique_ptr<Expression> &right = child_bound_expressions[0];
+    if (right.get() != right_expr.get()) {
+      right_expr = std::move(right);
+    }
   }
 
   bound_expressions.emplace_back(std::move(expr));
@@ -384,14 +381,11 @@ RC ExpressionBinder::bind_arithmetic_expression(
     return rc;
   }
 
-  if (child_bound_expressions.size() != 1) {
-    LOG_WARN("invalid right children number of comparison expression: %d", child_bound_expressions.size());
-    return RC::INVALID_ARGUMENT;
-  }
-
-  unique_ptr<Expression> &right = child_bound_expressions[0];
-  if (right.get() != right_expr.get()) {
-    right_expr = std::move(right);
+  if (child_bound_expressions.size() == 1) {
+    unique_ptr<Expression> &right = child_bound_expressions[0];
+    if (right.get() != right_expr.get()) {
+      right_expr = std::move(right);
+    }
   }
 
   bound_expressions.emplace_back(std::move(expr));
