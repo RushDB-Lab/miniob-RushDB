@@ -213,6 +213,27 @@ struct CreateTableSqlNode
 };
 
 /**
+ * @brief 描述一个create view语句
+ * @ingroup SQLParser
+ * @details 这里也做了很多简化。
+ */
+struct CreateViewSqlNode
+{
+  std::string                    relation_name;       ///< Relation name
+  std::unique_ptr<SelectSqlNode> create_view_select;  ///< create table select
+};
+
+/**
+ * @brief 描述一个drop view语句
+ * @ingroup SQLParser
+ * @details 这里也做了很多简化。
+ */
+struct DropViewSqlNode
+{
+  std::string relation_name;  ///< Relation name
+};
+
+/**
  * @brief 描述一个drop table语句
  * @ingroup SQLParser
  */
@@ -332,6 +353,8 @@ enum SqlCommandFlag
   SCF_SYNC,
   SCF_SHOW_TABLES,
   SCF_DESC_TABLE,
+  SCF_CREATE_VIEW,
+  SCF_DROP_VIEW,
   SCF_BEGIN,  ///< 事务开始语句，可以在这里扩展只读事务
   SCF_COMMIT,
   SCF_CLOG_SYNC,
@@ -362,6 +385,8 @@ public:
   DropIndexSqlNode    drop_index;
   ShowIndexSqlNode    show_index;
   DescTableSqlNode    desc_table;
+  CreateViewSqlNode   create_view;
+  DropViewSqlNode     drop_view;
   LoadDataSqlNode     load_data;
   ExplainSqlNode      explain;
   SetVariableSqlNode  set_variable;

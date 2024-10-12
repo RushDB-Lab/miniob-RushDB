@@ -150,6 +150,7 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
         FORMAT
         INNER
         JOIN
+        VIEW
         EQ
         LT
         GT
@@ -235,6 +236,8 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
 %type <sql_node>            create_index_stmt
 %type <sql_node>            drop_index_stmt
 %type <sql_node>            show_index_stmt
+%type <sql_node>            create_view_stmt
+%type <sql_node>            drop_view_stmt
 %type <sql_node>            sync_stmt
 %type <sql_node>            begin_stmt
 %type <sql_node>            commit_stmt
@@ -276,6 +279,8 @@ command_wrapper:
   | create_index_stmt
   | drop_index_stmt
   | show_index_stmt
+  | create_view_stmt
+  | drop_view_stmt
   | sync_stmt
   | begin_stmt
   | commit_stmt
@@ -420,6 +425,27 @@ create_table_stmt:    /*create table 语句的语法解析树*/
       $$ = create_table_sql_node($3, nullptr, nullptr, $4, $5);
     }
     ;
+
+create_view_stmt:
+      CREATE VIEW ID AS select_stmt
+    {
+      $$ = new ParsedSqlNode(SCF_CREATE_VIEW);
+      CreateViewSqlNode &create_view = $$->create_view;
+      create_view.relation_name = $3;
+      create_view.create_view_select = std::make_unique<SelectSqlNode>(std::move($5->selection));
+      free($3);
+    }
+    ;
+
+drop_view_stmt:
+      DROP VIEW ID
+    {
+      $$ = new ParsedSqlNode(SCF_DROP_VIEW);
+      $$->drop_view.relation_name = $3;
+      free($3);
+    }
+    ;
+
 attr_def_list:
     /* empty */
     {
