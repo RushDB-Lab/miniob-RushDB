@@ -45,6 +45,10 @@ RC FloatType::multiply(const Value &left, const Value &right, Value &result) con
 
 RC FloatType::divide(const Value &left, const Value &right, Value &result) const
 {
+  cout << right.get_float() << endl;
+  if (right.get_float() < 0.001 && right.get_float() > -0.001) {
+    return RC::NUMBER_DIV_ZERO;
+  }
   if (right.get_float() > -EPSILON && right.get_float() < EPSILON) {
     // NOTE:
     // 设置为浮点数最大值是不正确的。通常的做法是设置为NULL，但是当前的miniob没有NULL概念，所以这里设置为浮点数最大值。

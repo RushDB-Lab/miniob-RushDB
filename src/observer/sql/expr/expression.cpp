@@ -458,28 +458,27 @@ RC ArithmeticExpr::calc_value(const Value &left_value, const Value &right_value,
 
   switch (arithmetic_type_) {
     case Type::ADD: {
-      Value::add(left_value, right_value, value);
+      return Value::add(left_value, right_value, value);
     } break;
 
     case Type::SUB: {
-      Value::subtract(left_value, right_value, value);
+      return Value::subtract(left_value, right_value, value);
     } break;
 
     case Type::MUL: {
-      Value::multiply(left_value, right_value, value);
+      return Value::multiply(left_value, right_value, value);
     } break;
 
     case Type::DIV: {
-      Value::divide(left_value, right_value, value);
+      return Value::divide(left_value, right_value, value);
     } break;
 
     case Type::NEGATIVE: {
-      Value::negative(left_value, value);
+      return Value::negative(left_value, value);
     } break;
 
     default: {
-      rc = RC::INTERNAL;
-      LOG_WARN("unsupported arithmetic type. %d", arithmetic_type_);
+      return RC::INTERNAL;
     } break;
   }
   return rc;
