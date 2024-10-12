@@ -157,9 +157,6 @@ void Value::set_data(char *data, int length)
   }
 }
 
-// 用于其他类型转成 null 值，但不是 null 类型
-void Value::set_null() { is_null_ = true; }
-
 void Value::set_int(int val)
 {
   reset();
