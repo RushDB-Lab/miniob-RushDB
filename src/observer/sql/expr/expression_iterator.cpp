@@ -53,7 +53,7 @@ RC ExpressionIterator::iterate_child_expr(Expression &expr, const function<RC(un
     case ExprType::ARITHMETIC: {
       auto &arithmetic_expr = dynamic_cast<ArithmeticExpr &>(expr);
       rc                    = callback(arithmetic_expr.left());
-      if (OB_SUCC(rc)) {
+      if (OB_SUCC(rc) && arithmetic_expr.right()) {
         rc = callback(arithmetic_expr.right());
       }
     } break;
