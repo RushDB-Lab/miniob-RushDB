@@ -751,7 +751,7 @@ SubQueryExpr::SubQueryExpr(SelectSqlNode &select_node) : sql_node_(select_node) 
 
 SubQueryExpr::~SubQueryExpr() = default;
 
-RC SubQueryExpr::generate_select_stmt(Db *db, const std::unordered_map<std::string, Table *> &tables)
+RC SubQueryExpr::generate_select_stmt(Db *db, const std::unordered_map<std::string, BaseTable *> &tables)
 {
   // 仿照普通 select 的执行流程，tables 用来传递别名
   Stmt *stmt = nullptr;

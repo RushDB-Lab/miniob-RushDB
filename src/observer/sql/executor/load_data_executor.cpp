@@ -26,7 +26,7 @@ RC LoadDataExecutor::execute(SQLStageEvent *sql_event)
   RC            rc         = RC::SUCCESS;
   SqlResult    *sql_result = sql_event->session_event()->sql_result();
   LoadDataStmt *stmt       = static_cast<LoadDataStmt *>(sql_event->stmt());
-  Table        *table      = stmt->table();
+  auto          table      = stmt->table();
   const char   *file_name  = stmt->filename();
   load_data(table, file_name, sql_result);
   return rc;
@@ -40,8 +40,8 @@ RC LoadDataExecutor::execute(SQLStageEvent *sql_event)
  * @param errmsg 如果出现错误，通过这个参数返回错误信息
  * @return 成功返回RC::SUCCESS
  */
-RC insert_record_from_file(
-    Table *table, std::vector<std::string> &file_values, std::vector<Value> &record_values, std::stringstream &errmsg)
+RC insert_record_from_file(BaseTable *table, std::vector<std::string> &file_values, std::vector<Value> &record_values,
+    std::stringstream &errmsg)
 {
 
   const int field_num     = record_values.size();
@@ -76,7 +76,7 @@ RC insert_record_from_file(
   return rc;
 }
 
-void LoadDataExecutor::load_data(Table *table, const char *file_name, SqlResult *sql_result)
+void LoadDataExecutor::load_data(BaseTable *table, const char *file_name, SqlResult *sql_result)
 {
   std::stringstream result_string;
 

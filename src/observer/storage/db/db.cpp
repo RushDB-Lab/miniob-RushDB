@@ -29,6 +29,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/trx/trx.h"
 #include "storage/clog/disk_log_handler.h"
 #include "storage/clog/integrated_log_replayer.h"
+#include "storage/table/view.h"
 
 using namespace common;
 
@@ -161,6 +162,39 @@ RC Db::create_table(const char *table_name, span<const AttrInfoSqlNode> attribut
   return RC::SUCCESS;
 }
 
+RC Db::create_table(const char *table_name, span<const AttrInfoSqlNode> attributes,
+    unique_ptr<PhysicalOperator> select_oper, const StorageFormat storage_format)
+{
+  RC rc = RC::SUCCESS;
+  // check table_name
+  if (opened_tables_.count(table_name) != 0) {
+    LOG_WARN("%s has been opened before.", table_name);
+    return RC::SCHEMA_TABLE_EXIST;
+  }
+
+  // 文件路径可以移到Table模块
+  string  table_file_path = table_meta_file(path_.c_str(), table_name);
+  View   *table           = new View;
+  int32_t table_id        = next_table_id_++;
+  rc                      = table->create(this,
+      table_id,
+      table_file_path.c_str(),
+      table_name,
+      path_.c_str(),
+      attributes,
+      std::move(select_oper),
+      storage_format);
+  if (rc != RC::SUCCESS) {
+    LOG_ERROR("Failed to create table %s.", table_name);
+    delete table;
+    return rc;
+  }
+
+  opened_tables_[table_name] = table;
+  LOG_INFO("Create table success. table name=%s, table_id:%d", table_name, table_id);
+  return RC::SUCCESS;
+}
+
 RC Db::drop_table(const char *table_name)
 {
   // check table_name
@@ -185,16 +219,16 @@ RC Db::drop_table(const char *table_name)
   return RC::SUCCESS;
 }
 
-Table *Db::find_table(const char *table_name) const
+BaseTable *Db::find_table(const char *table_name) const
 {
-  unordered_map<string, Table *>::const_iterator iter = opened_tables_.find(table_name);
+  unordered_map<string, BaseTable *>::const_iterator iter = opened_tables_.find(table_name);
   if (iter != opened_tables_.end()) {
     return iter->second;
   }
   return nullptr;
 }
 
-Table *Db::find_table(int32_t table_id) const
+BaseTable *Db::find_table(int32_t table_id) const
 {
   for (auto pair : opened_tables_) {
     if (pair.second->table_id() == table_id) {
@@ -257,8 +291,8 @@ RC Db::sync()
   RC rc = RC::SUCCESS;
   // 调用所有表的sync函数刷新数据到磁盘
   for (const auto &table_pair : opened_tables_) {
-    Table *table = table_pair.second;
-    rc           = table->sync();
+    BaseTable *table = table_pair.second;
+    rc               = table->sync();
     if (rc != RC::SUCCESS) {
       LOG_ERROR("Failed to flush table. table=%s.%s, rc=%d:%s", name_.c_str(), table->name(), rc, strrc(rc));
       return rc;

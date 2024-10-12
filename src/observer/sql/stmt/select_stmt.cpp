@@ -31,8 +31,8 @@ SelectStmt::~SelectStmt()
   }
 }
 
-RC SelectStmt::create(
-    Db *db, SelectSqlNode &select_sql, Stmt *&stmt, const std::unordered_map<std::string, Table *> &parent_table_map)
+RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt,
+    const std::unordered_map<std::string, BaseTable *> &parent_table_map)
 {
   if (nullptr == db) {
     LOG_WARN("invalid argument. db is null");
@@ -42,9 +42,9 @@ RC SelectStmt::create(
   BinderContext binder_context;
 
   // collect tables in `from` statement
-  vector<Table *>                tables;
-  unordered_map<string, Table *> table_map = parent_table_map;
-  unordered_map<string, Table *> temp_map;
+  vector<BaseTable *>                tables;
+  unordered_map<string, BaseTable *> table_map = parent_table_map;
+  unordered_map<string, BaseTable *> temp_map;
 
   for (size_t i = 0; i < select_sql.relations.size(); i++) {
     const char *table_name = select_sql.relations[i].relation.c_str();
@@ -53,7 +53,7 @@ RC SelectStmt::create(
       return RC::INVALID_ARGUMENT;
     }
 
-    Table *table = db->find_table(table_name);
+    BaseTable *table = db->find_table(table_name);
     if (nullptr == table) {
       LOG_WARN("no such table. db=%s, table_name=%s", db->name(), table_name);
       return RC::SCHEMA_TABLE_NOT_EXIST;
@@ -73,7 +73,7 @@ RC SelectStmt::create(
   // alias is all avaliable
   table_map.insert(temp_map.begin(), temp_map.end());
 
-  Table *default_table = nullptr;
+  BaseTable *default_table = nullptr;
   if (tables.size() == 1) {
     default_table = tables[0];
   }

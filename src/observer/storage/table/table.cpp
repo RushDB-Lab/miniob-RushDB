@@ -125,6 +125,9 @@ RC Table::create(Db *db, int32_t table_id, const char *path, const char *name, c
     return rc;
   }
 
+  // 表类型
+  type_ = TableType::Table;
+
   LOG_INFO("Successfully create table %s:%s", base_dir, name);
   return rc;
 }
@@ -279,10 +282,6 @@ RC Table::recover_insert_record(Record &record)
   }
   return rc;
 }
-
-const char *Table::name() const { return table_meta_.name(); }
-
-const TableMeta &Table::table_meta() const { return table_meta_; }
 
 RC Table::make_record(int value_num, const Value *values, Record &record)
 {

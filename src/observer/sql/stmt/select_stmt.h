@@ -41,12 +41,12 @@ public:
 
 public:
   static RC create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt,
-      const std::unordered_map<std::string, Table *> &parent_table_map = {});
+      const std::unordered_map<std::string, BaseTable *> &parent_table_map = {});
 
 public:
-  const std::vector<Table *> &tables() const { return tables_; }
-  FilterStmt                 *filter_stmt() const { return filter_stmt_; }
-  FilterStmt                 *having_filter_stmt() const { return having_filter_stmt_; }
+  const std::vector<BaseTable *> &tables() const { return tables_; }
+  FilterStmt                     *filter_stmt() const { return filter_stmt_; }
+  FilterStmt                     *having_filter_stmt() const { return having_filter_stmt_; }
 
   std::vector<std::unique_ptr<Expression>> &query_expressions() { return query_expressions_; }
   std::vector<std::unique_ptr<Expression>> &group_by() { return group_by_; }
@@ -54,7 +54,7 @@ public:
 
 private:
   std::vector<std::unique_ptr<Expression>> query_expressions_;
-  std::vector<Table *>                     tables_;
+  std::vector<BaseTable *>                 tables_;
   FilterStmt                              *filter_stmt_ = nullptr;
   std::vector<std::unique_ptr<Expression>> group_by_;
   std::vector<OrderBySqlNode>              order_by_;

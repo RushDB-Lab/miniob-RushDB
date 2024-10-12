@@ -36,8 +36,8 @@ RC ShowIndexExecutor::execute(SQLStageEvent *sql_event)
   SqlResult     *sql_result      = session_event->sql_result();
   const char    *table_name      = show_index_stmt->table_name().c_str();
 
-  Db    *db    = session->get_current_db();
-  Table *table = db->find_table(table_name);
+  Db        *db    = session->get_current_db();
+  BaseTable *table = db->find_table(table_name);
   if (table != nullptr) {
     TupleSchema tuple_schema;
     tuple_schema.append_cell(TupleCellSpec("", "Table", "Table"));

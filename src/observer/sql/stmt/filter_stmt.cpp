@@ -21,7 +21,7 @@ See the Mulan PSL v2 for more details. */
 
 FilterStmt::~FilterStmt() = default;
 
-RC FilterStmt::create(Db *db, Table *default_table, std::unordered_map<std::string, Table *> *tables,
+RC FilterStmt::create(Db *db, BaseTable *default_table, std::unordered_map<std::string, BaseTable *> *tables,
     std::unique_ptr<Expression> &condition, FilterStmt *&stmt)
 {
   RC rc = RC::SUCCESS;

@@ -2,17 +2,20 @@
  *                                                             *
  * @Author      : Koschei                                      *
  * @Email       : nitianzero@gmail.com                         *
- * @Date        : 2024/9/20                                    *
- * @Description : UpdateLogicalOperator source file            *
+ * @Date        : 2024/10/12                                   *
+ * @Description : Brief description of the file's purpose      *
  *                                                             *
  * Copyright (c) 2024 Koschei                                  *
  * All rights reserved.                                        *
  *                                                             *
  ***************************************************************/
 
-#include "update_logical_operator.h"
+#include "drop_view_stmt.h"
+#include "event/sql_debug.h"
 
-UpdateLogicalOperator::UpdateLogicalOperator(
-    BaseTable *table, std::vector<FieldMeta> field_metas, std::vector<std::unique_ptr<Expression>> values)
-    : table_(table), field_metas_(std::move(field_metas)), values_(std::move(values))
-{}
+RC DropViewStmt::create(Db *db, const DropViewSqlNode &drop_view, Stmt *&stmt)
+{
+  stmt = new DropViewStmt(drop_view.relation_name);
+  sql_debug("drop view statement: view name %s", drop_view.relation_name.c_str());
+  return RC::SUCCESS;
+}

@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details. */
 using namespace std;
 using namespace common;
 
-Table *BinderContext::find_table(const char *table_name) const
+BaseTable *BinderContext::find_table(const char *table_name) const
 {
   auto iter = this->tables_->find(table_name);
   if (iter == tables_->end()) {
@@ -32,7 +32,7 @@ Table *BinderContext::find_table(const char *table_name) const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-static void wildcard_fields(Table *table, vector<unique_ptr<Expression>> &expressions, bool multi_tables = false)
+static void wildcard_fields(BaseTable *table, vector<unique_ptr<Expression>> &expressions, bool multi_tables = false)
 {
   const TableMeta &table_meta = table->table_meta();
   const int        field_num  = table_meta.field_num();
@@ -132,11 +132,11 @@ RC ExpressionBinder::bind_star_expression(
     return RC::INVALID_ALIAS;
   }
 
-  vector<Table *> tables_to_wildcard;
+  vector<BaseTable *> tables_to_wildcard;
 
   const char *table_name = star_expr->table_name();
   if (!is_blank(table_name) && 0 != strcmp(table_name, "*")) {
-    Table *table = context_.find_table(table_name);
+    BaseTable *table = context_.find_table(table_name);
     if (nullptr == table) {
       LOG_INFO("no such table in from list: %s", table_name);
       return RC::SCHEMA_TABLE_NOT_EXIST;
@@ -144,11 +144,11 @@ RC ExpressionBinder::bind_star_expression(
 
     tables_to_wildcard.push_back(table);
   } else {
-    const vector<Table *> &all_tables = context_.query_tables();
+    const vector<BaseTable *> &all_tables = context_.query_tables();
     tables_to_wildcard.insert(tables_to_wildcard.end(), all_tables.begin(), all_tables.end());
   }
 
-  for (Table *table : tables_to_wildcard) {
+  for (BaseTable *table : tables_to_wildcard) {
     wildcard_fields(table, bound_expressions, multi_tables_);
   }
 
@@ -167,7 +167,7 @@ RC ExpressionBinder::bind_unbound_field_expression(
   const char *table_name = unbound_field_expr->table_name();
   const char *field_name = unbound_field_expr->field_name();
 
-  Table *table = nullptr;
+  BaseTable *table = nullptr;
   if (is_blank(table_name)) {
     table = context_.default_table();
   } else {

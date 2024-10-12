@@ -24,6 +24,8 @@ See the Mulan PSL v2 for more details. */
 #include "storage/buffer/disk_buffer_pool.h"
 #include "storage/clog/disk_log_handler.h"
 #include "storage/buffer/double_write_buffer.h"
+#include "storage/table/base_table.h"
+#include "sql/operator/physical_operator.h"
 
 class Table;
 class LogHandler;
@@ -64,18 +66,21 @@ public:
    * @param storage_format 表的存储格式
    */
   RC create_table(const char *table_name, span<const AttrInfoSqlNode> attributes,
-      const StorageFormat storage_format = StorageFormat::ROW_FORMAT);
+      StorageFormat storage_format = StorageFormat::ROW_FORMAT);
+
+  RC create_table(const char *table_name, span<const AttrInfoSqlNode> attributes,
+      unique_ptr<PhysicalOperator> select_oper, StorageFormat storage_format);
 
   RC drop_table(const char *table_name);
 
   /**
    * @brief 根据表名查找表
    */
-  Table *find_table(const char *table_name) const;
+  BaseTable *find_table(const char *table_name) const;
   /**
    * @brief 根据表ID查找表
    */
-  Table *find_table(int32_t table_id) const;
+  BaseTable *find_table(int32_t table_id) const;
 
   /// @brief 当前数据库的名称
   const char *name() const;
@@ -113,12 +118,12 @@ private:
   RC init_dblwr_buffer();
 
 private:
-  string                         name_;                 ///< 数据库名称
-  string                         path_;                 ///< 数据库文件存放的目录
-  unordered_map<string, Table *> opened_tables_;        ///< 当前所有打开的表
-  unique_ptr<BufferPoolManager>  buffer_pool_manager_;  ///< 当前数据库的buffer pool管理器
-  unique_ptr<LogHandler>         log_handler_;          ///< 当前数据库的日志处理器
-  unique_ptr<TrxKit>             trx_kit_;              ///< 当前数据库的事务管理器
+  string                             name_;                 ///< 数据库名称
+  string                             path_;                 ///< 数据库文件存放的目录
+  unordered_map<string, BaseTable *> opened_tables_;        ///< 当前所有打开的表
+  unique_ptr<BufferPoolManager>      buffer_pool_manager_;  ///< 当前数据库的buffer pool管理器
+  unique_ptr<LogHandler>             log_handler_;          ///< 当前数据库的日志处理器
+  unique_ptr<TrxKit>                 trx_kit_;              ///< 当前数据库的事务管理器
 
   /// 给每个table都分配一个ID，用来记录日志。这里假设所有的DDL都不会并发操作，所以相关的数据都不上锁
   int32_t next_table_id_ = 0;

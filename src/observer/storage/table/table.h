@@ -14,6 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
+#include "storage/table/base_table.h"
 #include "storage/table/table_meta.h"
 #include "common/types.h"
 #include "common/lang/span.h"
@@ -37,11 +38,11 @@ class Db;
  * @brief 表
  *
  */
-class Table
+class Table : public BaseTable
 {
 public:
   Table() = default;
-  ~Table();
+  ~Table() override;
 
   /**
    * 创建一个表
@@ -57,7 +58,7 @@ public:
   /**
    * 删除一个表
    */
-  RC drop();
+  RC drop() override;
 
   /**
    * 打开一个表
@@ -73,18 +74,18 @@ public:
    * @param values    每个字段的值
    * @param record    生成的记录数据
    */
-  RC make_record(int value_num, const Value *values, Record &record);
+  RC make_record(int value_num, const Value *values, Record &record) override;
 
   /**
    * @brief 在当前的表中插入一条记录
    * @details 在表文件和索引中插入关联数据。这里只管在表中插入数据，不关心事务相关操作。
    * @param record[in/out] 传入的数据包含具体的数据，插入成功会通过此字段返回RID
    */
-  RC insert_record(Record &record);
-  RC delete_record(const Record &record);
-  RC delete_record(const RID &rid);
-  RC update_record(const Record &old_record, const Record &new_record);
-  RC get_record(const RID &rid, Record &record);
+  RC insert_record(Record &record) override;
+  RC delete_record(const Record &record) override;
+  RC delete_record(const RID &rid) override;
+  RC update_record(const Record &old_record, const Record &new_record) override;
+  RC get_record(const RID &rid, Record &record) override;
 
   RC recover_insert_record(Record &record);
 
@@ -104,17 +105,12 @@ public:
    * @param visitor
    * @return RC
    */
-  RC visit_record(const RID &rid, const function<bool(Record &)> &visitor);
+  RC visit_record(const RID &rid, const function<bool(Record &)> &visitor) override;
 
 public:
-  int32_t     table_id() const { return table_meta_.table_id(); }
-  const char *name() const;
-
   Db *db() const { return db_; }
 
-  const TableMeta &table_meta() const;
-
-  RC sync();
+  RC sync() override;
 
 private:
   RC insert_entry_of_indexes(const char *record, const RID &rid);
@@ -131,8 +127,6 @@ public:
 private:
   Db                *db_ = nullptr;
   string             base_dir_;
-  TableMeta          table_meta_;
-  DiskBufferPool    *data_buffer_pool_ = nullptr;  /// 数据文件关联的buffer pool
-  RecordFileHandler *record_handler_   = nullptr;  /// 记录操作
+  RecordFileHandler *record_handler_ = nullptr;  /// 记录操作
   vector<Index *>    indexes_;
 };

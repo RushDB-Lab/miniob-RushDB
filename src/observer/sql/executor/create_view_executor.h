@@ -2,17 +2,29 @@
  *                                                             *
  * @Author      : Koschei                                      *
  * @Email       : nitianzero@gmail.com                         *
- * @Date        : 2024/9/20                                    *
- * @Description : UpdateLogicalOperator source file            *
+ * @Date        : 2024/10/12                                   *
+ * @Description : create view executor header file             *
  *                                                             *
  * Copyright (c) 2024 Koschei                                  *
  * All rights reserved.                                        *
  *                                                             *
  ***************************************************************/
 
-#include "update_logical_operator.h"
+#pragma once
 
-UpdateLogicalOperator::UpdateLogicalOperator(
-    BaseTable *table, std::vector<FieldMeta> field_metas, std::vector<std::unique_ptr<Expression>> values)
-    : table_(table), field_metas_(std::move(field_metas)), values_(std::move(values))
-{}
+#include "common/rc.h"
+
+class SQLStageEvent;
+
+/**
+ * @brief 创建视图的执行器
+ * @ingroup Executor
+ */
+class CreateViewExecutor
+{
+public:
+  CreateViewExecutor()          = default;
+  virtual ~CreateViewExecutor() = default;
+
+  RC execute(SQLStageEvent *sql_event);
+};

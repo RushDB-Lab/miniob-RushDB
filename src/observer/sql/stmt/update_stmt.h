@@ -18,7 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/stmt.h"
 #include "storage/field/field_meta.h"
 
-class Table;
+class BaseTable;
 class FilterStmt;
 
 /**
@@ -29,12 +29,12 @@ class UpdateStmt : public Stmt
 {
 public:
   UpdateStmt() = default;
-  UpdateStmt(Table *table, std::vector<FieldMeta> field_metas, std::vector<std::unique_ptr<Expression>> values,
+  UpdateStmt(BaseTable *table, std::vector<FieldMeta> field_metas, std::vector<std::unique_ptr<Expression>> values,
       FilterStmt *filter_stmt);
 
   StmtType type() const override { return StmtType::UPDATE; }
 
-  Table                                    *table() const { return table_; }
+  BaseTable                                *table() const { return table_; }
   std::vector<FieldMeta>                   &field_metas() { return field_metas_; }
   std::vector<std::unique_ptr<Expression>> &values() { return values_; }
   FilterStmt                               *filter_stmt() const { return filter_stmt_; }
@@ -42,7 +42,7 @@ public:
   static RC create(Db *db, UpdateSqlNode &update_sql, Stmt *&stmt);
 
 private:
-  Table                                   *table_ = nullptr;
+  BaseTable                               *table_ = nullptr;
   std::vector<FieldMeta>                   field_metas_;
   std::vector<std::unique_ptr<Expression>> values_;
   FilterStmt                              *filter_stmt_ = nullptr;
