@@ -471,10 +471,7 @@ public:
 
   void set_cells(const std::vector<Value> &cells) { cells_ = cells; }
 
-  int cell_num() const override
-  {
-    return cells_.size();
-  }
+  int cell_num() const override { return cells_.size(); }
 
   RC cell_at(int index, Value &cell) const override
   {

@@ -51,6 +51,36 @@ UnboundFunctionExpr *create_aggregate_expression(const char *function_name,
   return expr;
 }
 
+ParsedSqlNode *create_table_sql_node(char *table_name,
+                                     AttrInfoSqlNode* attr_def,
+                                     std::vector<AttrInfoSqlNode> *attrinfos,
+                                     char* storage_format,
+                                     ParsedSqlNode *create_table_select)
+{
+    ParsedSqlNode *parsed_sql_node = new ParsedSqlNode(SCF_CREATE_TABLE);
+    CreateTableSqlNode &create_table = parsed_sql_node->create_table;
+    create_table.relation_name = table_name;
+
+    if (attrinfos) {
+        create_table.attr_infos.swap(*attrinfos);
+        delete attrinfos;
+    }
+    if (attr_def) {
+        create_table.attr_infos.emplace_back(*attr_def);
+        std::reverse(create_table.attr_infos.begin(), create_table.attr_infos.end());
+        delete attr_def;
+    }
+    if (storage_format != nullptr) {
+        create_table.storage_format = storage_format;
+        free(storage_format);
+    }
+
+    if (create_table_select) {
+        create_table.create_table_select = std::make_unique<SelectSqlNode>(std::move(create_table_select->selection));
+    }
+
+    return parsed_sql_node;
+}
 %}
 
 %define api.pure full
@@ -165,7 +195,7 @@ UnboundFunctionExpr *create_aggregate_expression(const char *function_name,
 /** type 定义了各种解析后的结果输出的是什么类型。类型对应了 union 中的定义的成员变量名称 **/
 %type <number>              type
 %type <value>               value
-%type <number>              number
+%type <value>               nonnegative_value
 %type <string>              relation
 %type <string>              alias
 %type <comp>                comp_op
@@ -369,34 +399,25 @@ drop_index_stmt:      /*drop index 语句的语法解析树*/
     }
     ;
 create_table_stmt:    /*create table 语句的语法解析树*/
-    CREATE TABLE ID LBRACE attr_def attr_def_list RBRACE storage_format
+    CREATE TABLE ID LBRACE attr_def attr_def_list RBRACE storage_format AS select_stmt
     {
-      $$ = new ParsedSqlNode(SCF_CREATE_TABLE);
-      CreateTableSqlNode &create_table = $$->create_table;
-      create_table.relation_name = $3;
-      free($3);
-
-      std::vector<AttrInfoSqlNode> *src_attrs = $6;
-
-      if (src_attrs != nullptr) {
-        create_table.attr_infos.swap(*src_attrs);
-        delete src_attrs;
-      }
-      create_table.attr_infos.emplace_back(*$5);
-      std::reverse(create_table.attr_infos.begin(), create_table.attr_infos.end());
-      delete $5;
-      if ($8 != nullptr) {
-        create_table.storage_format = $8;
-        free($8);
-      }
+        $$ = create_table_sql_node($3, $5, $6, $8, $10);
     }
-    | CREATE TABLE ID AS select_stmt
+    | CREATE TABLE ID LBRACE attr_def attr_def_list RBRACE storage_format select_stmt
     {
-      $$ = new ParsedSqlNode(SCF_CREATE_TABLE);
-      CreateTableSqlNode &create_table = $$->create_table;
-      create_table.relation_name = $3;
-      free($3);
-      create_table.create_table_select = std::move($5->selection);
+        $$ = create_table_sql_node($3, $5, $6, $8, $9);
+    }
+    | CREATE TABLE ID LBRACE attr_def attr_def_list RBRACE storage_format
+    {
+        $$ = create_table_sql_node($3, $5, $6, $8, nullptr);
+    }
+    | CREATE TABLE ID storage_format AS select_stmt
+    {
+        $$ = create_table_sql_node($3, nullptr, nullptr, $4, $6);
+    }
+    | CREATE TABLE ID storage_format select_stmt
+    {
+      $$ = create_table_sql_node($3, nullptr, nullptr, $4, $5);
     }
     ;
 attr_def_list:
@@ -417,7 +438,7 @@ attr_def_list:
     ;
     
 attr_def:
-    ID type LBRACE number RBRACE nullable_constraint
+    ID type LBRACE NUMBER RBRACE nullable_constraint
     {
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
@@ -474,10 +495,6 @@ nullable_constraint:
     }
     ;
 
-number:
-    NUMBER {$$ = $1;}
-    ;
-
 type:
       INT_T    { $$ = static_cast<int>(AttrType::INTS);   }
     | STRING_T { $$ = static_cast<int>(AttrType::CHARS);  }
@@ -527,21 +544,35 @@ value_list:
     ;
 
 value:
+    nonnegative_value {
+      $$ = $1;
+    }
+    | '-' NUMBER {
+      $$ = new Value(-$2);
+      @$ = @1;
+    }
+    | '-' FLOAT {
+      $$ = new Value(-$2);
+      @$ = @1;
+    }
+    ;
+
+nonnegative_value:
     NUMBER {
-      $$ = new Value((int)$1);
+      $$ = new Value($1);
       @$ = @1;
     }
-    |FLOAT {
-      $$ = new Value((float)$1);
+    | FLOAT {
+      $$ = new Value($1);
       @$ = @1;
     }
-    |SSS {
+    | SSS {
       char *tmp = common::substr($1,1,strlen($1)-2);
       $$ = new Value(tmp);
       free(tmp);
       free($1);
     }
-    |NULL_T {
+    | NULL_T {
       $$ = new Value(NullValue());
     }
     ;
@@ -734,12 +765,11 @@ expression:
         $$ = new ListExpr(std::move(*$2));
       }
       $$->set_name(token_name(sql_string, &@$));
-      delete $2;
     }
     | '-' expression %prec UMINUS {
       $$ = create_arithmetic_expression(ArithmeticExpr::Type::NEGATIVE, $2, nullptr, sql_string, &@$);
     }
-    | value {
+    | nonnegative_value {
       $$ = new ValueExpr(*$1);
       $$->set_name(token_name(sql_string, &@$));
       delete $1;

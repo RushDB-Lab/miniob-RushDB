@@ -206,10 +206,10 @@ struct AttrInfoSqlNode
  */
 struct CreateTableSqlNode
 {
-  std::string                  relation_name;        ///< Relation name
-  std::vector<AttrInfoSqlNode> attr_infos;           ///< attributes
-  std::string                  storage_format;       ///< storage format
-  SelectSqlNode                create_table_select;  ///< create table select
+  std::string                    relation_name;        ///< Relation name
+  std::vector<AttrInfoSqlNode>   attr_infos;           ///< attributes
+  std::string                    storage_format;       ///< storage format
+  std::unique_ptr<SelectSqlNode> create_table_select;  ///< create table select
 };
 
 /**

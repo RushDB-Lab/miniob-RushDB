@@ -157,9 +157,6 @@ void Value::set_data(char *data, int length)
   }
 }
 
-// 用于其他类型转成 null 值，但不是 null 类型
-void Value::set_null() { is_null_ = true; }
-
 void Value::set_int(int val)
 {
   reset();
@@ -264,7 +261,7 @@ void Value::set_value(const Value &value)
 void Value::set_string_from_other(const Value &other)
 {
   ASSERT(attr_type_ == AttrType::CHARS || attr_type() == AttrType::TEXTS, "attr type is not CHARS or TEXTS");
-  if (own_data_ && other.value_.pointer_value_ != nullptr && length_ != 0) {
+  if (own_data_ && other.value_.pointer_value_ != nullptr) {
     this->value_.pointer_value_ = new char[this->length_ + 1];
     memcpy(this->value_.pointer_value_, other.value_.pointer_value_, this->length_);
     this->value_.pointer_value_[this->length_] = '\0';
