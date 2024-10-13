@@ -173,7 +173,7 @@ public:
 
   void set_record(Record *record) { this->record_ = record; }
 
-  void set_schema(const Table *table, const std::vector<FieldMeta> *fields)
+  void set_schema(const BaseTable *table, const std::vector<FieldMeta> *fields)
   {
     table_ = table;
     // fix:join当中会多次调用右表的open,open当中会调用set_scheme，从而导致tuple当中会存储
@@ -256,7 +256,7 @@ public:
 
 private:
   Record                  *record_ = nullptr;
-  const Table             *table_  = nullptr;
+  const BaseTable         *table_  = nullptr;
   std::vector<FieldExpr *> speces_;
 };
 

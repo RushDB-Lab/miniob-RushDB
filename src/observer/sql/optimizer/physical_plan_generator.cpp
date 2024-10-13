@@ -46,6 +46,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/optimizer/physical_plan_generator.h"
 #include "sql/operator/update_logical_operator.h"
 #include "sql/operator/update_physical_operator.h"
+#include "sql/operator/view_scan_physical_operator.h"
 
 using namespace std;
 
@@ -139,8 +140,9 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
   Index     *index      = nullptr;
   ValueExpr *value_expr = nullptr;
   Table     *table      = nullptr;
+
   if (base_table->type() == TableType::Table) {
-    table = static_cast<Table *>(base_table);
+    table = dynamic_cast<Table *>(base_table);
     for (auto &expr : predicates) {
       if (expr->type() == ExprType::COMPARISON) {
         auto comparison_expr = dynamic_cast<ComparisonExpr *>(expr.get());
@@ -195,12 +197,23 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
 
     index_scan_oper->set_predicates(std::move(predicates));
     oper = unique_ptr<PhysicalOperator>(index_scan_oper);
-    LOG_TRACE("use index scan");
+    LOG_TRACE("Index scan used on table: {}", table->name());
   } else {
-    auto table_scan_oper = new TableScanPhysicalOperator(table, table_get_oper.read_write_mode());
-    table_scan_oper->set_predicates(std::move(predicates));
-    oper = unique_ptr<PhysicalOperator>(table_scan_oper);
-    LOG_TRACE("use table scan");
+    if (base_table->type() == TableType::Table) {
+      auto table_scan_oper = std::make_unique<TableScanPhysicalOperator>(table, table_get_oper.read_write_mode());
+      table_scan_oper->set_predicates(std::move(predicates));
+      oper = std::move(table_scan_oper);
+      LOG_TRACE("Table scan used on table: {}", table->name());
+    } else if (base_table->type() == TableType::View) {
+      auto view            = static_cast<View *>(base_table);
+      auto table_scan_oper = std::make_unique<ViewScanPhysicalOperator>(view, table_get_oper.read_write_mode());
+      table_scan_oper->set_predicates(std::move(predicates));
+      oper = std::move(table_scan_oper);
+      LOG_TRACE("View scan used on view: {}", view->name());
+    } else {
+      LOG_ERROR("Unsupported table type: {}", base_table->type());
+      return RC::UNKNOWN_TABLE_TYPE;
+    }
   }
 
   return RC::SUCCESS;

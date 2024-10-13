@@ -80,8 +80,6 @@ RC View::create(Db *db, int32_t table_id, const char *path, const char *name, co
   return rc;
 }
 
-RC View::make_record(int value_num, const Value *values, Record &record) { return RC::SUCCESS; }
-
 RC View::insert_record(Record &record) { return RC::SUCCESS; }
 
 RC View::delete_record(const Record &record) { return RC::SUCCESS; }

@@ -35,15 +35,6 @@ public:
 
   RC drop() override;
 
-  /**
-   * @brief 根据给定的字段生成一个记录/行
-   * @details 通常是由用户传过来的字段，按照schema信息组装成一个record。
-   * @param value_num 字段的个数
-   * @param values    每个字段的值
-   * @param record    生成的记录数据
-   */
-  RC make_record(int value_num, const Value *values, Record &record) override;
-
   RC insert_record(Record &record) override;
   RC delete_record(const Record &record) override;
   RC delete_record(const RID &rid) override;
@@ -54,6 +45,8 @@ public:
   RC sync() override;
 
   bool is_mutable() const { return mutable_; }
+
+  std::unique_ptr<PhysicalOperator> &select_oper() { return select_oper_; }
 
 private:
   Db    *db_ = nullptr;

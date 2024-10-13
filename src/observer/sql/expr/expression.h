@@ -193,7 +193,7 @@ class FieldExpr : public Expression
 {
 public:
   FieldExpr() = default;
-  FieldExpr(const Table *table, const FieldMeta *field) : field_(table, field) {}
+  FieldExpr(const BaseTable *table, const FieldMeta *field) : field_(table, field) {}
   explicit FieldExpr(const Field &field) : field_(field) {}
 
   virtual ~FieldExpr() = default;
