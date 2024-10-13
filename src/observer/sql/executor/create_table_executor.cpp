@@ -52,7 +52,7 @@ RC CreateTableExecutor::execute(SQLStageEvent *sql_event)
           attr_info.nullable = field_meta->nullable();
         } else {
           attr_info.name     = expr->name();
-          attr_info.length   = expr->value_length();
+          attr_info.length   = expr->value_length() + 1;
           attr_info.type     = expr->value_type();
           attr_info.nullable = true;
         }
