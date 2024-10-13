@@ -97,7 +97,10 @@ RC UpdatePhysicalOperator::open(Trx *trx)
       }
       // 转换成功
       value = std::move(to_value);
-    } else if (value.length() > field_meta.len()) {
+    }
+
+    // 进行长度校验
+    if (value.length() > field_meta.len() - field_meta.nullable()) {
       LOG_ERROR("Value length exceeds maximum allowed length for field. Field: %s, Type: %s, Offset: %d, Length: %d, Max Length: %d",
                 field_meta.name(),
                 attr_type_to_string(field_meta.type()),
