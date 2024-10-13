@@ -102,6 +102,7 @@ RC ViewScanPhysicalOperator::next_record()
   }
 
   auto tuple = select_expr_->current_tuple();
+  tuple_.set_base_rids(tuple->base_rids());
   // 构造一个 view 的 record
   int                cell_num = tuple->cell_num();
   std::vector<Value> values(cell_num);

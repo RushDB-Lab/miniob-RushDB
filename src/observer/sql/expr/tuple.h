@@ -152,6 +152,17 @@ public:
     result = 0;
     return rc;
   }
+
+  void reset() { base_rids_.clear(); }
+
+  void set_base_rids(std::vector<std::pair<BaseTable *, RID>> &base_rids) { base_rids_ = std::move(base_rids); }
+
+  std::vector<std::pair<BaseTable *, RID>> &base_rids() { return base_rids_; }
+
+  void append_base_rids(BaseTable *base_table, RID rid) { base_rids_.emplace_back(base_table, rid); }
+
+private:
+  std::vector<std::pair<BaseTable *, RID>> base_rids_;
 };
 
 /**
@@ -163,7 +174,7 @@ class RowTuple : public Tuple
 {
 public:
   RowTuple() = default;
-  virtual ~RowTuple()
+  ~RowTuple() override
   {
     for (FieldExpr *spec : speces_) {
       delete spec;

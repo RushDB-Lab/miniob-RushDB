@@ -29,6 +29,8 @@ public:
 
   void set_tuple(const Tuple *tuple) { child_tuple_ = tuple; }
 
+  const Tuple *child_tuple() { return child_tuple_; }
+
   int cell_num() const override { return static_cast<int>(expressions_.size()); }
 
   RC cell_at(int index, Value &cell) const override

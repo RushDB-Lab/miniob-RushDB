@@ -150,7 +150,17 @@ RC View::insert_record(Record &record)
   return RC::SUCCESS;
 }
 
-RC View::delete_record(const Record &record) { return RC::SUCCESS; }
+RC View::delete_record(const Record &record)
+{
+  RC rc = RC::SUCCESS;
+  for (auto &[table, rid] : record.base_rids()) {
+    rc = table->delete_record(rid);
+    if (OB_FAIL(rc)) {
+      return rc;
+    }
+  }
+  return rc;
+}
 
 RC View::delete_record(const RID &rid) { return RC::SUCCESS; }
 
