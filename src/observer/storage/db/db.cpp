@@ -16,6 +16,7 @@ See the Mulan PSL v2 for more details. */
 
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <utility>
 #include <vector>
 #include <filesystem>
 
@@ -162,7 +163,7 @@ RC Db::create_table(const char *table_name, span<const AttrInfoSqlNode> attribut
   return RC::SUCCESS;
 }
 
-RC Db::create_table(const char *table_name, span<const AttrInfoSqlNode> attributes,
+RC Db::create_table(const char *table_name, span<const AttrInfoSqlNode> attributes, std::vector<BaseTable *> tables,
     unique_ptr<PhysicalOperator> select_oper, const StorageFormat storage_format)
 {
   RC rc = RC::SUCCESS;
@@ -182,6 +183,7 @@ RC Db::create_table(const char *table_name, span<const AttrInfoSqlNode> attribut
       table_name,
       path_.c_str(),
       attributes,
+      std::move(tables),
       std::move(select_oper),
       storage_format);
   if (rc != RC::SUCCESS) {

@@ -248,6 +248,35 @@ public:
     return RC::SUCCESS;
   }
 
+  RC get_field(const FieldMeta &field_meta, Value &value)
+  {
+    int field_offset = field_meta.offset();
+    int data_len     = field_meta.len() - field_meta.nullable();
+
+    if (field_offset + field_meta.len() > len_) {
+      LOG_ERROR("invalid offset or length. offset=%d, length=%d, total length=%d", field_offset, field_meta.len(), len_);
+      return RC::INVALID_ARGUMENT;
+    }
+
+    value.set_type(field_meta.type());
+
+    if (field_meta.nullable()) {
+      // 只有字段是可为空的，取标记位才有意义
+      bool is_null = data_[field_offset + field_meta.len() - 1] == '1';
+      if (is_null) {
+        value.set_null();
+        return RC::SUCCESS;
+      }
+    }
+
+    char *data = new char[data_len];
+    memcpy(data, data_ + field_offset, data_len);
+    value.set_data(data, data_len);
+    delete[] data;
+
+    return RC::SUCCESS;
+  }
+
   char       *data() { return this->data_; }
   const char *data() const { return this->data_; }
   int         len() const { return this->len_; }

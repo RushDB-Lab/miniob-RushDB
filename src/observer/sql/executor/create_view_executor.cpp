@@ -58,7 +58,7 @@ RC CreateViewExecutor::execute(SQLStageEvent *sql_event)
   }
 
   unique_ptr<LogicalOperator> logical_oper = nullptr;
-  LogicalPlanGenerator::create(create_view_stmt->select_stmt(), logical_oper);
+  LogicalPlanGenerator::create(select_stmt, logical_oper);
   if (!logical_oper) {
     return RC::INTERNAL;
   }
@@ -69,42 +69,12 @@ RC CreateViewExecutor::execute(SQLStageEvent *sql_event)
     return RC::INTERNAL;
   }
 
-  rc = session->get_current_db()->create_table(
-      table_name, attr_infos, std::move(physical_oper), StorageFormat::ROW_FORMAT);
+  auto tables = select_stmt->tables();
+  rc          = session->get_current_db()->create_table(
+      table_name, attr_infos, tables, std::move(physical_oper), StorageFormat::ROW_FORMAT);
   if (OB_FAIL(rc)) {
     return rc;
   }
-
-  // physical_oper->open(session->current_trx());
-  // while (RC::SUCCESS == (rc = physical_oper->next())) {
-  //   auto          tuple = physical_oper->current_tuple();
-  //   int           num   = tuple->cell_num();
-  //   vector<Value> values;
-  //   for (int i = 0; i < num; i++) {
-  //     Value cell;
-  //     rc = tuple->cell_at(i, cell);
-  //     if (OB_FAIL(rc)) {
-  //       return rc;
-  //     }
-  //     values.push_back(cell);
-  //   }
-  //
-  //   Record record;
-  //   rc = table_->make_record(static_cast<int>(values.size()), values.data(), record);
-  //   if (OB_FAIL(rc)) {
-  //     return rc;
-  //   }
-  //
-  //   rc = session->current_trx()->insert_record(table_, record);
-  //   if (OB_FAIL(rc)) {
-  //     return rc;
-  //   }
-  // }
-  //
-  // rc = physical_oper->close();
-  // if (OB_FAIL(rc)) {
-  //   return rc;
-  // }
 
   return rc;
 }

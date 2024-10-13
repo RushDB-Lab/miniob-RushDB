@@ -30,8 +30,8 @@ public:
    * @param attributes 字段
    */
   RC create(Db *db, int32_t table_id, const char *path, const char *name, const char *base_dir,
-      span<const AttrInfoSqlNode> attributes, std::unique_ptr<PhysicalOperator> select_oper,
-      StorageFormat storage_format);
+      span<const AttrInfoSqlNode> attributes, std::vector<BaseTable *> tables,
+      std::unique_ptr<PhysicalOperator> select_oper, StorageFormat storage_format);
 
   RC drop() override;
 
@@ -51,7 +51,9 @@ public:
 private:
   Db    *db_ = nullptr;
   string base_dir_;
-  // std::unordered_map<Field>
-  std::unique_ptr<PhysicalOperator> select_oper_;  // 存储了 select 的物理算子
-  bool                              mutable_;      // 是否是只读视图
+  // 视图的 field 对应 哪个物理表和对应的 field idx
+  std::vector<std::pair<BaseTable *, int>> field_index_;
+  std::vector<BaseTable *>                 tables_;
+  std::unique_ptr<PhysicalOperator>        select_oper_;  // 存储了 select 的物理算子
+  bool                                     mutable_;      // 是否是只读视图
 };

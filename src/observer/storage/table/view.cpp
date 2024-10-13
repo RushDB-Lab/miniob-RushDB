@@ -15,7 +15,8 @@
 #include "storage/common/meta_util.h"
 
 RC View::create(Db *db, int32_t table_id, const char *path, const char *name, const char *base_dir,
-    span<const AttrInfoSqlNode> attributes, std::unique_ptr<PhysicalOperator> select_oper, StorageFormat storage_format)
+    span<const AttrInfoSqlNode> attributes, std::vector<BaseTable *> tables,
+    std::unique_ptr<PhysicalOperator> select_oper, StorageFormat storage_format)
 {
   if (table_id < 0) {
     LOG_WARN("invalid table id. table_id=%d, table_name=%s", table_id, name);
@@ -71,16 +72,83 @@ RC View::create(Db *db, int32_t table_id, const char *path, const char *name, co
   db_       = db;
   base_dir_ = base_dir;
 
+  tables_ = std::move(tables);
+
   // 查询物理算子
   select_oper_ = std::move(select_oper);
   // 视图类型
   type_ = TableType::View;
 
+  auto field_metas = *table_meta_.field_metas();
+  field_index_.resize(field_metas.size());
+  for (int i = 0; i < field_metas.size(); ++i) {
+    auto &view_field_meta = field_metas[i];
+    bool  find            = false;
+    for (auto &table : tables_) {
+      auto table_field_meta = table->table_meta().field(view_field_meta.name());
+      // 当前视图字段在这个表
+      if (table_field_meta != nullptr) {
+        field_index_[i] = {table, table_field_meta->field_id()};
+        find            = true;
+        break;
+      }
+    }
+    if (!find) {
+      return RC::SCHEMA_FIELD_MISSING;
+    }
+  }
+
   LOG_INFO("Successfully create table %s:%s", base_dir, name);
   return rc;
 }
 
-RC View::insert_record(Record &record) { return RC::SUCCESS; }
+RC View::insert_record(Record &record)
+{
+  RC rc = RC::SUCCESS;
+
+  for (auto &table : tables_) {
+    auto               value_num = table->table_meta().field_num();
+    std::vector<Value> values(value_num);
+
+    // 不涉及的字段默认为 null
+    for (auto &value : values) {
+      value.set_null();
+    }
+
+    auto field_metas = *table_meta_.field_metas();
+    // 遍历视图的字段找到基表的字段
+    for (int i = 0; i < field_metas.size(); ++i) {
+      // 基表字段所在索引
+      auto [base_table, idx] = field_index_[i];
+      // 是一个表则写入 value
+      if (strcmp(base_table->name(), table->name()) == 0) {
+        // 插入值
+        Value value;
+        rc = record.get_field(field_metas[i], value);
+        if (OB_FAIL(rc)) {
+          return rc;
+        }
+        values[idx] = std::move(value);
+      }
+    }
+
+    // 生成真正的 record 并插入基表
+    Record real_record;
+    rc = table->make_record(value_num, values.data(), real_record);
+    if (OB_FAIL(rc)) {
+      LOG_WARN("failed to make record. rc=%s", strrc(rc));
+      return rc;
+    }
+
+    rc = table->insert_record(real_record);
+    if (OB_FAIL(rc)) {
+      LOG_WARN("failed to insert record into table. rc=%s", strrc(rc));
+      return rc;
+    }
+  }
+
+  return RC::SUCCESS;
+}
 
 RC View::delete_record(const Record &record) { return RC::SUCCESS; }
 

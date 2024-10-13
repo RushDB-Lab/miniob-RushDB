@@ -44,6 +44,12 @@ public:
 
   const char *get_data(const Record &record);
 
+  bool operator==(const Field &other) const
+  {
+    return std::string(table_name()) == std::string(other.table_name()) &&
+           std::string(field_name()) == std::string(other.field_name());
+  }
+
 private:
   const BaseTable *table_ = nullptr;
   const FieldMeta *field_ = nullptr;

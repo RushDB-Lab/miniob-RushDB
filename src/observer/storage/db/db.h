@@ -68,7 +68,7 @@ public:
   RC create_table(const char *table_name, span<const AttrInfoSqlNode> attributes,
       StorageFormat storage_format = StorageFormat::ROW_FORMAT);
 
-  RC create_table(const char *table_name, span<const AttrInfoSqlNode> attributes,
+  RC create_table(const char *table_name, span<const AttrInfoSqlNode> attributes, std::vector<BaseTable *> tables,
       unique_ptr<PhysicalOperator> select_oper, StorageFormat storage_format);
 
   RC drop_table(const char *table_name);
