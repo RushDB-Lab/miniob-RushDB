@@ -40,7 +40,8 @@ RC CreateViewExecutor::execute(SQLStageEvent *sql_event)
     "create view executor can not run this command: %d",
     static_cast<int>(stmt->type()));
 
-  rc = session->get_current_db()->create_table(table_name, select_stmt, StorageFormat::ROW_FORMAT);
+  rc = session->get_current_db()->create_table(
+      table_name, std::move(create_view_stmt->attr_names()), select_stmt, StorageFormat::ROW_FORMAT);
   if (OB_FAIL(rc)) {
     return rc;
   }

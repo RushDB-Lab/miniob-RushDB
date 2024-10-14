@@ -29,21 +29,21 @@ class Db;
 class CreateViewStmt : public Stmt
 {
 public:
-  CreateViewStmt(std::string table_name, SelectStmt *select_stmt)
-      : table_name_(std::move(table_name)), select_stmt_(select_stmt)
+  CreateViewStmt(std::string &table_name, std::vector<std::string> &attr_names, SelectStmt *select_stmt)
+      : table_name_(std::move(table_name)), attr_names_(std::move(attr_names)), select_stmt_(select_stmt)
   {}
   ~CreateViewStmt() override = default;
 
   StmtType type() const override { return StmtType::CREATE_VIEW; }
 
-  const std::string                  &table_name() const { return table_name_; }
-  const std::vector<AttrInfoSqlNode> &attr_infos() const { return attr_infos_; }
-  SelectStmt                         *select_stmt() { return select_stmt_; }
+  std::string              &table_name() { return table_name_; }
+  std::vector<std::string> &attr_names() { return attr_names_; }
+  SelectStmt               *select_stmt() { return select_stmt_; }
 
   static RC create(Db *db, CreateViewSqlNode &create_view, Stmt *&stmt);
 
 private:
-  std::string                  table_name_;
-  std::vector<AttrInfoSqlNode> attr_infos_;
-  SelectStmt                  *select_stmt_;
+  std::string              table_name_;
+  std::vector<std::string> attr_names_;  // 是否指定了属性名
+  SelectStmt              *select_stmt_;
 };

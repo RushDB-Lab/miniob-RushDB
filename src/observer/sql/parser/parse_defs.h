@@ -221,6 +221,7 @@ struct CreateTableSqlNode
 struct CreateViewSqlNode
 {
   std::string                    relation_name;       ///< Relation name
+  std::vector<std::string>       attribute_names;     ///< attribute names
   std::unique_ptr<SelectSqlNode> create_view_select;  ///< create table select
 };
 

@@ -27,9 +27,17 @@ RC CreateViewStmt::create(Db *db, CreateViewSqlNode &create_view, Stmt *&stmt)
     if (select_stmt == nullptr) {
       return RC::INTERNAL;
     }
+  } else {
+    return RC::INTERNAL;
   }
 
-  stmt = new CreateViewStmt(create_view.relation_name, select_stmt);
+  if (!create_view.attribute_names.empty() &&
+      create_view.attribute_names.size() != select_stmt->query_expressions_size()) {
+    LOG_ERROR("In definition of view, derived table or common table expression, SELECT list and column names list have different column counts");
+    return RC::INVALID_ARGUMENT;
+  }
+
+  stmt = new CreateViewStmt(create_view.relation_name, create_view.attribute_names, select_stmt);
   sql_debug("create view statement: view name %s", create_view.relation_name.c_str());
   return RC::SUCCESS;
 }

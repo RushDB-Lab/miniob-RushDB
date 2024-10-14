@@ -163,7 +163,8 @@ RC Db::create_table(const char *table_name, span<const AttrInfoSqlNode> attribut
   return RC::SUCCESS;
 }
 
-RC Db::create_table(const char *table_name, SelectStmt *select_stmt, const StorageFormat storage_format)
+RC Db::create_table(const char *table_name, std::vector<std::string> attr_names, SelectStmt *select_stmt,
+    const StorageFormat storage_format)
 {
   RC rc = RC::SUCCESS;
   // check table_name
@@ -176,7 +177,14 @@ RC Db::create_table(const char *table_name, SelectStmt *select_stmt, const Stora
   string  table_file_path = table_meta_file(path_.c_str(), table_name);
   View   *table           = new View;
   int32_t table_id        = next_table_id_++;
-  rc = table->create(this, table_id, table_file_path.c_str(), table_name, path_.c_str(), select_stmt, storage_format);
+  rc                      = table->create(this,
+      table_id,
+      table_file_path.c_str(),
+      table_name,
+      path_.c_str(),
+      std::move(attr_names),
+      select_stmt,
+      storage_format);
   if (rc != RC::SUCCESS) {
     LOG_ERROR("Failed to create table %s.", table_name);
     delete table;

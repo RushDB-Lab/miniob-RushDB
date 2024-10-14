@@ -435,6 +435,15 @@ create_view_stmt:
       create_view.create_view_select = std::make_unique<SelectSqlNode>(std::move($5->selection));
       free($3);
     }
+    | CREATE VIEW ID LBRACE attr_list RBRACE AS select_stmt
+    {
+      $$ = new ParsedSqlNode(SCF_CREATE_VIEW);
+      CreateViewSqlNode &create_view = $$->create_view;
+      create_view.relation_name = $3;
+      create_view.attribute_names = std::move(*$5);
+      create_view.create_view_select = std::make_unique<SelectSqlNode>(std::move($8->selection));
+      free($3);
+    }
     ;
 
 drop_view_stmt:

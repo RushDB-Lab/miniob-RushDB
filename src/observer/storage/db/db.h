@@ -68,7 +68,8 @@ public:
   RC create_table(const char *table_name, span<const AttrInfoSqlNode> attributes,
       StorageFormat storage_format = StorageFormat::ROW_FORMAT);
 
-  RC create_table(const char *table_name, SelectStmt *select_stmt, StorageFormat storage_format);
+  RC create_table(const char *table_name, std::vector<std::string> attr_names, SelectStmt *select_stmt,
+      StorageFormat storage_format);
 
   RC drop_table(const char *table_name);
 

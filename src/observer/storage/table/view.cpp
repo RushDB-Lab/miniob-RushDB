@@ -19,7 +19,7 @@
 #include "sql/optimizer/physical_plan_generator.h"
 
 RC View::create(Db *db, int32_t table_id, const char *path, const char *name, const char *base_dir,
-    SelectStmt *select_stmt, StorageFormat storage_format)
+    std::vector<std::string> attr_names, SelectStmt *select_stmt, StorageFormat storage_format)
 {
   if (table_id < 0) {
     LOG_WARN("invalid table id. table_id=%d, table_name=%s", table_id, name);
@@ -34,20 +34,43 @@ RC View::create(Db *db, int32_t table_id, const char *path, const char *name, co
 
   RC rc = RC::SUCCESS;
 
+  auto tables = select_stmt->tables();
+  tables_     = std::move(tables);
+
   auto                        &query_exprs = select_stmt->query_expressions();
   std::vector<AttrInfoSqlNode> attr_infos(query_exprs.size());
+  field_index_.resize(query_exprs.size());
   for (int i = 0; i < select_stmt->query_expressions_size(); ++i) {
     auto           &query_expr = query_exprs[i];
     AttrInfoSqlNode attr_info;
     if (query_expr->type() == ExprType::FIELD) {
-      auto field_expr    = dynamic_cast<FieldExpr *>(query_expr.get());
+      auto field_expr = dynamic_cast<FieldExpr *>(query_expr.get());
+
+      // 建立视图字段到基表字段的索引
+      bool find = false;
+      for (auto &table : tables_) {
+        auto table_field_meta = table->table_meta().field(field_expr->name());
+        // 当前视图字段在这个表
+        if (table_field_meta != nullptr) {
+          field_index_[i] = {table, table_field_meta->field_id()};
+          find            = true;
+          break;
+        }
+      }
+      if (!find) {
+        return RC::SCHEMA_FIELD_MISSING;
+      }
+
       auto field_meta    = field_expr->field().meta();
       attr_info.type     = field_meta->type();
-      attr_info.name     = field_meta->name();
+      attr_info.name     = attr_names.empty() ? field_meta->name() : std::move(attr_names[i]);
       attr_info.length   = field_meta->len();
       attr_info.nullable = field_meta->nullable();
       attr_info.mutable_ = field_meta->is_mutable();
     } else {
+      // 表达式字段为无效索引
+      field_index_[i] = {nullptr, -1};
+
       if (query_expr->type() == ExprType::AGGREGATION) {
         mutable_ = false;  // 包含聚合函数的是只读视图
       }
@@ -122,36 +145,8 @@ RC View::create(Db *db, int32_t table_id, const char *path, const char *name, co
   db_       = db;
   base_dir_ = base_dir;
 
-  auto tables = select_stmt->tables();
-  tables_     = std::move(tables);
-
   // 视图类型
   type_ = TableType::View;
-
-  // 建立视图字段到基表字段的索引
-  auto field_metas = *table_meta_.field_metas();
-  field_index_.resize(field_metas.size());
-  for (int i = 0; i < field_metas.size(); ++i) {
-    // 表达式列不能映射到基表字段
-    if (!field_metas[i].is_mutable()) {
-      field_index_[i] = {nullptr, -1};
-      continue;
-    }
-    auto &view_field_meta = field_metas[i];
-    bool  find            = false;
-    for (auto &table : tables_) {
-      auto table_field_meta = table->table_meta().field(view_field_meta.name());
-      // 当前视图字段在这个表
-      if (table_field_meta != nullptr) {
-        field_index_[i] = {table, table_field_meta->field_id()};
-        find            = true;
-        break;
-      }
-    }
-    if (!find) {
-      return RC::SCHEMA_FIELD_MISSING;
-    }
-  }
 
   LOG_INFO("Successfully create table %s:%s", base_dir, name);
   return rc;

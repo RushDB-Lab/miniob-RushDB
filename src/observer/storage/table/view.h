@@ -28,8 +28,8 @@ public:
    * @param base_dir 表数据存放的路径
    * @param attributes 字段
    */
-  RC create(Db *db, int32_t table_id, const char *path, const char *name, const char *base_dir, SelectStmt *select_stmt,
-      StorageFormat storage_format);
+  RC create(Db *db, int32_t table_id, const char *path, const char *name, const char *base_dir,
+      std::vector<std::string> attr_names, SelectStmt *select_stmt, StorageFormat storage_format);
 
   RC drop() override;
 
