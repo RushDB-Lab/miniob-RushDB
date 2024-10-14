@@ -117,7 +117,6 @@ UNIQUE                                  RETURN_TOKEN(UNIQUE);
 NULL                                    RETURN_TOKEN(NULL_T);
 NULLABLE                                RETURN_TOKEN(NULLABLE);
 LOAD                                    RETURN_TOKEN(LOAD);
-DATA                                    RETURN_TOKEN(DATA);
 INFILE                                  RETURN_TOKEN(INFILE);
 EXPLAIN                                 RETURN_TOKEN(EXPLAIN);
 GROUP                                   RETURN_TOKEN(GROUP);
