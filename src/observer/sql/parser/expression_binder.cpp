@@ -128,7 +128,7 @@ RC ExpressionBinder::bind_star_expression(
 
   auto star_expr = static_cast<StarExpr *>(expr.get());
 
-  if (!is_blank(star_expr->name())) {
+  if (!is_blank(star_expr->name()) || !is_blank(star_expr->alias())) {
     return RC::INVALID_ALIAS;
   }
 
@@ -190,7 +190,9 @@ RC ExpressionBinder::bind_unbound_field_expression(
     Field      field(table, field_meta);
     FieldExpr *field_expr = new FieldExpr(field);
     // 这里设置了基类的 name 属性
-    if (multi_tables_) {
+    if (!is_blank(unbound_field_expr->alias())) {
+      field_expr->set_name(unbound_field_expr->alias());
+    } else if (multi_tables_) {
       // 创建一个字符数组来存储合并后的字符串
       char result[256];
       // 使用 snprintf 合并字符串

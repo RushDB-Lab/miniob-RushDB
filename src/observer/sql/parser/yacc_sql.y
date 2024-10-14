@@ -725,7 +725,7 @@ expression_list:
     {
       $$ = new std::vector<std::unique_ptr<Expression>>;
       if (nullptr != $2) {
-        $1->set_name($2);
+        $1->set_alias($2);
       }
       $$->emplace_back($1);
       free($2);
@@ -738,7 +738,7 @@ expression_list:
         $$ = new std::vector<std::unique_ptr<Expression>>;
       }
       if (nullptr != $2) {
-        $1->set_name($2);
+        $1->set_alias($2);
       }
       $$->emplace($$->begin(),std::move($1));
       free($2);

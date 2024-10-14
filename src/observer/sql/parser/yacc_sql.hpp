@@ -36,10 +36,10 @@
    private implementation details that can be changed or removed.  */
 
 #ifndef YY_YY_YACC_SQL_HPP_INCLUDED
-#define YY_YY_YACC_SQL_HPP_INCLUDED
+# define YY_YY_YACC_SQL_HPP_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
-#define YYDEBUG 0
+# define YYDEBUG 0
 #endif
 #if YYDEBUG
 extern int yydebug;
@@ -47,125 +47,126 @@ extern int yydebug;
 
 /* Token kinds.  */
 #ifndef YYTOKENTYPE
-#define YYTOKENTYPE
-enum yytokentype
-{
-  YYEMPTY      = -2,
-  YYEOF        = 0,   /* "end of file"  */
-  YYerror      = 256, /* error  */
-  YYUNDEF      = 257, /* "invalid token"  */
-  SEMICOLON    = 258, /* SEMICOLON  */
-  AS           = 259, /* AS  */
-  ASC          = 260, /* ASC  */
-  BY           = 261, /* BY  */
-  CREATE       = 262, /* CREATE  */
-  DROP         = 263, /* DROP  */
-  EXISTS       = 264, /* EXISTS  */
-  GROUP        = 265, /* GROUP  */
-  HAVING       = 266, /* HAVING  */
-  ORDER        = 267, /* ORDER  */
-  TABLE        = 268, /* TABLE  */
-  TABLES       = 269, /* TABLES  */
-  INDEX        = 270, /* INDEX  */
-  CALC         = 271, /* CALC  */
-  SELECT       = 272, /* SELECT  */
-  DESC         = 273, /* DESC  */
-  SHOW         = 274, /* SHOW  */
-  SYNC         = 275, /* SYNC  */
-  INSERT       = 276, /* INSERT  */
-  DELETE       = 277, /* DELETE  */
-  UPDATE       = 278, /* UPDATE  */
-  LBRACE       = 279, /* LBRACE  */
-  RBRACE       = 280, /* RBRACE  */
-  COMMA        = 281, /* COMMA  */
-  TRX_BEGIN    = 282, /* TRX_BEGIN  */
-  TRX_COMMIT   = 283, /* TRX_COMMIT  */
-  TRX_ROLLBACK = 284, /* TRX_ROLLBACK  */
-  INT_T        = 285, /* INT_T  */
-  IN           = 286, /* IN  */
-  STRING_T     = 287, /* STRING_T  */
-  FLOAT_T      = 288, /* FLOAT_T  */
-  DATE_T       = 289, /* DATE_T  */
-  TEXT_T       = 290, /* TEXT_T  */
-  NOT          = 291, /* NOT  */
-  UNIQUE       = 292, /* UNIQUE  */
-  NULL_T       = 293, /* NULL_T  */
-  NULLABLE     = 294, /* NULLABLE  */
-  HELP         = 295, /* HELP  */
-  EXIT         = 296, /* EXIT  */
-  DOT          = 297, /* DOT  */
-  INTO         = 298, /* INTO  */
-  VALUES       = 299, /* VALUES  */
-  FROM         = 300, /* FROM  */
-  WHERE        = 301, /* WHERE  */
-  AND          = 302, /* AND  */
-  OR           = 303, /* OR  */
-  SET          = 304, /* SET  */
-  ON           = 305, /* ON  */
-  LOAD         = 306, /* LOAD  */
-  DATA         = 307, /* DATA  */
-  INFILE       = 308, /* INFILE  */
-  EXPLAIN      = 309, /* EXPLAIN  */
-  STORAGE      = 310, /* STORAGE  */
-  FORMAT       = 311, /* FORMAT  */
-  INNER        = 312, /* INNER  */
-  JOIN         = 313, /* JOIN  */
-  EQ           = 314, /* EQ  */
-  LT           = 315, /* LT  */
-  GT           = 316, /* GT  */
-  LE           = 317, /* LE  */
-  GE           = 318, /* GE  */
-  NE           = 319, /* NE  */
-  LIKE         = 320, /* LIKE  */
-  IS           = 321, /* IS  */
-  NUMBER       = 322, /* NUMBER  */
-  FLOAT        = 323, /* FLOAT  */
-  ID           = 324, /* ID  */
-  SSS          = 325, /* SSS  */
-  UMINUS       = 326  /* UMINUS  */
-};
-typedef enum yytokentype yytoken_kind_t;
+# define YYTOKENTYPE
+  enum yytokentype
+  {
+    YYEMPTY = -2,
+    YYEOF = 0,                     /* "end of file"  */
+    YYerror = 256,                 /* error  */
+    YYUNDEF = 257,                 /* "invalid token"  */
+    SEMICOLON = 258,               /* SEMICOLON  */
+    AS = 259,                      /* AS  */
+    ASC = 260,                     /* ASC  */
+    BY = 261,                      /* BY  */
+    CREATE = 262,                  /* CREATE  */
+    DROP = 263,                    /* DROP  */
+    EXISTS = 264,                  /* EXISTS  */
+    GROUP = 265,                   /* GROUP  */
+    HAVING = 266,                  /* HAVING  */
+    ORDER = 267,                   /* ORDER  */
+    TABLE = 268,                   /* TABLE  */
+    TABLES = 269,                  /* TABLES  */
+    INDEX = 270,                   /* INDEX  */
+    CALC = 271,                    /* CALC  */
+    SELECT = 272,                  /* SELECT  */
+    DESC = 273,                    /* DESC  */
+    SHOW = 274,                    /* SHOW  */
+    SYNC = 275,                    /* SYNC  */
+    INSERT = 276,                  /* INSERT  */
+    DELETE = 277,                  /* DELETE  */
+    UPDATE = 278,                  /* UPDATE  */
+    LBRACE = 279,                  /* LBRACE  */
+    RBRACE = 280,                  /* RBRACE  */
+    COMMA = 281,                   /* COMMA  */
+    TRX_BEGIN = 282,               /* TRX_BEGIN  */
+    TRX_COMMIT = 283,              /* TRX_COMMIT  */
+    TRX_ROLLBACK = 284,            /* TRX_ROLLBACK  */
+    INT_T = 285,                   /* INT_T  */
+    IN = 286,                      /* IN  */
+    STRING_T = 287,                /* STRING_T  */
+    FLOAT_T = 288,                 /* FLOAT_T  */
+    DATE_T = 289,                  /* DATE_T  */
+    TEXT_T = 290,                  /* TEXT_T  */
+    NOT = 291,                     /* NOT  */
+    UNIQUE = 292,                  /* UNIQUE  */
+    NULL_T = 293,                  /* NULL_T  */
+    NULLABLE = 294,                /* NULLABLE  */
+    HELP = 295,                    /* HELP  */
+    EXIT = 296,                    /* EXIT  */
+    DOT = 297,                     /* DOT  */
+    INTO = 298,                    /* INTO  */
+    VALUES = 299,                  /* VALUES  */
+    FROM = 300,                    /* FROM  */
+    WHERE = 301,                   /* WHERE  */
+    AND = 302,                     /* AND  */
+    OR = 303,                      /* OR  */
+    SET = 304,                     /* SET  */
+    ON = 305,                      /* ON  */
+    LOAD = 306,                    /* LOAD  */
+    DATA = 307,                    /* DATA  */
+    INFILE = 308,                  /* INFILE  */
+    EXPLAIN = 309,                 /* EXPLAIN  */
+    STORAGE = 310,                 /* STORAGE  */
+    FORMAT = 311,                  /* FORMAT  */
+    INNER = 312,                   /* INNER  */
+    JOIN = 313,                    /* JOIN  */
+    EQ = 314,                      /* EQ  */
+    LT = 315,                      /* LT  */
+    GT = 316,                      /* GT  */
+    LE = 317,                      /* LE  */
+    GE = 318,                      /* GE  */
+    NE = 319,                      /* NE  */
+    LIKE = 320,                    /* LIKE  */
+    IS = 321,                      /* IS  */
+    NUMBER = 322,                  /* NUMBER  */
+    FLOAT = 323,                   /* FLOAT  */
+    ID = 324,                      /* ID  */
+    SSS = 325,                     /* SSS  */
+    UMINUS = 326                   /* UMINUS  */
+  };
+  typedef enum yytokentype yytoken_kind_t;
 #endif
 
 /* Value type.  */
-#if !defined YYSTYPE && !defined YYSTYPE_IS_DECLARED
+#if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
 #line 163 "yacc_sql.y"
 
-  ParsedSqlNode                            *sql_node;
-  Value                                    *value;
-  enum CompOp                               comp;
-  RelAttrSqlNode                           *rel_attr;
-  std::vector<AttrInfoSqlNode>             *attr_infos;
-  AttrInfoSqlNode                          *attr_info;
-  Expression                               *expression;
-  std::vector<std::unique_ptr<Expression>> *expression_list;
-  std::vector<Value>                       *value_list;
-  std::vector<std::vector<Value>>          *values_list;
-  SetClauseSqlNode                         *set_clause;
-  std::vector<SetClauseSqlNode>            *set_clauses;
-  JoinSqlNode                              *join_clauses;
-  std::vector<RelAttrSqlNode>              *rel_attr_list;
-  std::vector<RelationNode>                *relation_list;
-  OrderBySqlNode                           *orderby_unit;
-  std::vector<OrderBySqlNode>              *orderby_list;
-  char                                     *string;
-  int                                       number;
-  float                                     floats;
-  bool                                      nullable_info;
-  std::vector<std::string>                 *index_attr_list;
-  bool                                      unique;
+  ParsedSqlNode *                            sql_node;
+  Value *                                    value;
+  enum CompOp                                comp;
+  RelAttrSqlNode *                           rel_attr;
+  std::vector<AttrInfoSqlNode> *             attr_infos;
+  AttrInfoSqlNode *                          attr_info;
+  Expression *                               expression;
+  std::vector<std::unique_ptr<Expression>> * expression_list;
+  std::vector<Value> *                       value_list;
+  std::vector<std::vector<Value>> *          values_list;
+  SetClauseSqlNode *                         set_clause;
+  std::vector<SetClauseSqlNode> *            set_clauses;
+  JoinSqlNode *                              join_clauses;
+  std::vector<RelAttrSqlNode> *              rel_attr_list;
+  std::vector<RelationNode> *                relation_list;
+  OrderBySqlNode *                           orderby_unit;
+  std::vector<OrderBySqlNode> *              orderby_list;
+  char *                                     string;
+  int                                        number;
+  float                                      floats;
+  bool                                       nullable_info;
+  std::vector<std::string> *                 index_attr_list;
+  bool                                       unique;
 
 #line 161 "yacc_sql.hpp"
+
 };
 typedef union YYSTYPE YYSTYPE;
-#define YYSTYPE_IS_TRIVIAL 1
-#define YYSTYPE_IS_DECLARED 1
+# define YYSTYPE_IS_TRIVIAL 1
+# define YYSTYPE_IS_DECLARED 1
 #endif
 
 /* Location type.  */
-#if !defined YYLTYPE && !defined YYLTYPE_IS_DECLARED
+#if ! defined YYLTYPE && ! defined YYLTYPE_IS_DECLARED
 typedef struct YYLTYPE YYLTYPE;
 struct YYLTYPE
 {
@@ -174,10 +175,14 @@ struct YYLTYPE
   int last_line;
   int last_column;
 };
-#define YYLTYPE_IS_DECLARED 1
-#define YYLTYPE_IS_TRIVIAL 1
+# define YYLTYPE_IS_DECLARED 1
+# define YYLTYPE_IS_TRIVIAL 1
 #endif
 
-int yyparse(const char *sql_string, ParsedSqlResult *sql_result, void *scanner);
+
+
+
+int yyparse (const char * sql_string, ParsedSqlResult * sql_result, void * scanner);
+
 
 #endif /* !YY_YY_YACC_SQL_HPP_INCLUDED  */
