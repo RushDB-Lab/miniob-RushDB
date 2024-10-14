@@ -24,8 +24,8 @@ enum class AttrType
   DATES,     ///< 日期类型(4字节)
   NULLS,     ///< 空字段
   TEXTS,     ///< text 超长字段(4096字节)
-  LIST,      ///< 列表
   VECTOR,    ///< 向量
+  LIST,      ///< 列表
   MAXTYPE,   ///< 请在 UNDEFINED 与 MAXTYPE 之间增加新类型
 };
 

@@ -371,7 +371,9 @@ RC ExpressionBinder::bind_arithmetic_expression(
     LOG_WARN("invalid left children number of comparison expression: %d", child_bound_expressions.size());
     return RC::INVALID_ARGUMENT;
   }
-
+  if (!is_blank(expr->alias())) {
+    expr->set_name(expr->alias());
+  }
   unique_ptr<Expression> &left = child_bound_expressions[0];
   if (left.get() != left_expr.get()) {
     left_expr = std::move(left);

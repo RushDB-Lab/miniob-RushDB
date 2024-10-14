@@ -127,6 +127,7 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
         FLOAT_T
         DATE_T
         TEXT_T
+        VECTOR_T
         NOT
         UNIQUE
         NULL_T
@@ -264,8 +265,8 @@ commands: command_wrapper opt_semicolon  //commands or sqls. parser starts here.
   ;
 
 command_wrapper:
-    calc_stmt
-  | select_stmt
+    select_stmt
+  | calc_stmt
   | insert_stmt
   | update_stmt
   | delete_stmt
@@ -441,9 +442,13 @@ attr_def:
     ID type LBRACE NUMBER RBRACE nullable_constraint
     {
       $$ = new AttrInfoSqlNode;
-      $$->type = (AttrType)$2;
       $$->name = $1;
-      $$->length = $4;
+      $$->type = (AttrType)$2;
+      if ($$->type == AttrType::CHARS) {
+        $$->length = $4;
+      } else {             //vector
+        $$->length = 4*$4;
+      }
       $$->nullable = $6;
       if ($$->nullable) {
         $$->length++;
@@ -496,11 +501,12 @@ nullable_constraint:
     ;
 
 type:
-      INT_T    { $$ = static_cast<int>(AttrType::INTS);   }
-    | STRING_T { $$ = static_cast<int>(AttrType::CHARS);  }
-    | FLOAT_T  { $$ = static_cast<int>(AttrType::FLOATS); }
-    | DATE_T   { $$ = static_cast<int>(AttrType::DATES);  }
-    | TEXT_T   { $$ = static_cast<int>(AttrType::TEXTS);  }
+      INT_T      { $$ = static_cast<int>(AttrType::INTS);   }
+    | STRING_T   { $$ = static_cast<int>(AttrType::CHARS);  }
+    | FLOAT_T    { $$ = static_cast<int>(AttrType::FLOATS); }
+    | DATE_T     { $$ = static_cast<int>(AttrType::DATES);  }
+    | TEXT_T     { $$ = static_cast<int>(AttrType::TEXTS);  }
+    | VECTOR_T   { $$ = static_cast<int>(AttrType::VECTOR);  }
     ;
 
 insert_stmt:        /*insert   语句的语法解析树*/
@@ -1036,7 +1042,7 @@ set_variable_stmt:
     ;
 
 opt_semicolon: /*empty*/
-    | SEMICOLON
+     SEMICOLON
     ;
 %%
 //_____________________________________________________________________

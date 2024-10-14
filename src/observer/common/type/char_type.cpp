@@ -78,6 +78,9 @@ RC CharType::cast_to(const Value &val, AttrType type, Value &result, bool allow_
       }
       result.set_float(float_val);
     } break;
+    case AttrType::VECTOR: {
+      std::vector<float> vectorData;
+    }break;
     default: return RC::UNIMPLEMENTED;
   }
   return RC::SUCCESS;

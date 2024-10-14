@@ -52,3 +52,30 @@ RC parse_float_prefix(const char *str, float &result)
   result = static_cast<float>(float_val);
   return RC::SUCCESS;
 }
+
+// RC parse_vector_from_string(const char *str, std::vector<float> &vectorData) {
+//   if (!str || *str != '[') {
+//     return RC::INVALID_ARGUMENT;
+//   }
+//
+//   std::string s = str;
+//   // 去掉开头和结尾的方括号
+//   if (s.back() != ']') {
+//     return RC::INVALID_ARGUMENT;
+//   }
+//   s = s.substr(1, s.size() - 2);
+//
+//   std::stringstream ss(s);
+//   std::string token;
+//   float value;
+//
+//   while (std::getline(ss, token, ',')) {
+//     std::stringstream valueStream(token);
+//     if (!(valueStream >> value)) {
+//       return RC::PARSE_ERROR;
+//     }
+//     vectorData.push_back(value);
+//   }
+//
+//   return RC::SUCCESS;
+// }
