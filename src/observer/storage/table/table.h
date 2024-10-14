@@ -15,10 +15,8 @@ See the Mulan PSL v2 for more details. */
 #pragma once
 
 #include "storage/table/base_table.h"
-#include "storage/table/table_meta.h"
 #include "common/types.h"
 #include "common/lang/span.h"
-#include "common/lang/functional.h"
 
 struct RID;
 class Record;
@@ -32,7 +30,6 @@ class Index;
 class IndexScanner;
 class RecordDeleter;
 class Trx;
-class Db;
 
 /**
  * @brief 表
@@ -115,8 +112,6 @@ public:
   Index *find_index_by_field(const char *field_name) const;
 
 private:
-  Db                *db_ = nullptr;
-  string             base_dir_;
   RecordFileHandler *record_handler_ = nullptr;  /// 记录操作
   vector<Index *>    indexes_;
 };

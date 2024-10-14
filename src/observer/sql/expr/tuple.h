@@ -422,6 +422,10 @@ public:
   void set_left(Tuple *left) { left_ = left; }
   void set_right(Tuple *right) { right_ = right; }
 
+  std::vector<std::pair<BaseTable *, RID>> &left_base_rids() { return left_->base_rids(); }
+
+  std::vector<std::pair<BaseTable *, RID>> &right_base_rids() { return right_->base_rids(); }
+
   int cell_num() const override { return left_->cell_num() + right_->cell_num(); }
 
   RC cell_at(int index, Value &value) const override

@@ -10,13 +10,16 @@
  *                                                             *
  ***************************************************************/
 
+#include "storage/db/db.h"
 #include "storage/trx/trx.h"
 #include "storage/table/view.h"
 #include "storage/common/meta_util.h"
+#include "sql/stmt/select_stmt.h"
+#include "sql/optimizer/logical_plan_generator.h"
+#include "sql/optimizer/physical_plan_generator.h"
 
 RC View::create(Db *db, int32_t table_id, const char *path, const char *name, const char *base_dir,
-    span<const AttrInfoSqlNode> attributes, std::vector<BaseTable *> tables,
-    std::unique_ptr<PhysicalOperator> select_oper, StorageFormat storage_format)
+    SelectStmt *select_stmt, StorageFormat storage_format)
 {
   if (table_id < 0) {
     LOG_WARN("invalid table id. table_id=%d, table_name=%s", table_id, name);
@@ -29,12 +32,59 @@ RC View::create(Db *db, int32_t table_id, const char *path, const char *name, co
   }
   LOG_INFO("Begin to create table %s:%s", base_dir, name);
 
-  if (attributes.empty()) {
-    LOG_WARN("Invalid arguments. table_name=%s, attribute_count=%d", name, attributes.size());
+  RC rc = RC::SUCCESS;
+
+  auto                        &query_exprs = select_stmt->query_expressions();
+  std::vector<AttrInfoSqlNode> attr_infos(query_exprs.size());
+  for (int i = 0; i < select_stmt->query_expressions_size(); ++i) {
+    auto           &query_expr = query_exprs[i];
+    AttrInfoSqlNode attr_info;
+    if (query_expr->type() == ExprType::FIELD) {
+      auto field_expr    = dynamic_cast<FieldExpr *>(query_expr.get());
+      auto field_meta    = field_expr->field().meta();
+      attr_info.type     = field_meta->type();
+      attr_info.name     = field_meta->name();
+      attr_info.length   = field_meta->len();
+      attr_info.nullable = field_meta->nullable();
+      attr_info.mutable_ = field_meta->is_mutable();
+    } else {
+      if (query_expr->type() == ExprType::AGGREGATION) {
+        mutable_ = false;  // 包含聚合函数的是只读视图
+      }
+      attr_info.type = query_expr->value_type();
+      attr_info.name = query_expr->name();
+      // 简单处理，非 field 表达式都是可为空的
+      attr_info.length   = query_expr->value_length() + 1;
+      attr_info.nullable = true;
+      attr_info.mutable_ = false;
+    }
+    attr_infos[i] = std::move(attr_info);
+  }
+
+  if (attr_infos.empty()) {
+    LOG_WARN("Invalid arguments. table_name=%s, attribute_count=%d", name, attr_infos.size());
     return RC::INVALID_ARGUMENT;
   }
 
-  RC rc = RC::SUCCESS;
+  // 包含 groupby 和 having 的是只读视图
+  if (!select_stmt->group_by().empty() || select_stmt->having_filter_stmt()) {
+    mutable_ = false;
+  }
+
+  unique_ptr<LogicalOperator> logical_oper = nullptr;
+  LogicalPlanGenerator::create(select_stmt, logical_oper);
+  if (!logical_oper) {
+    return RC::INTERNAL;
+  }
+
+  unique_ptr<PhysicalOperator> physical_oper = nullptr;
+  PhysicalPlanGenerator::create(*logical_oper, physical_oper);
+  if (!physical_oper) {
+    return RC::INTERNAL;
+  }
+
+  // 查询物理算子
+  select_oper_ = std::move(physical_oper);
 
   // 使用 table_name.table 记录一个表的元数据
   // 判断表文件是否已经存在
@@ -52,7 +102,7 @@ RC View::create(Db *db, int32_t table_id, const char *path, const char *name, co
 
   // 创建文件
   const vector<FieldMeta> *trx_fields = db->trx_kit().trx_fields();
-  if ((rc = table_meta_.init(table_id, name, trx_fields, attributes, storage_format)) != RC::SUCCESS) {
+  if ((rc = table_meta_.init(table_id, name, trx_fields, attr_infos, storage_format)) != RC::SUCCESS) {
     LOG_ERROR("Failed to init table meta. name:%s, ret:%d", name, rc);
     return rc;  // delete table file
   }
@@ -72,16 +122,21 @@ RC View::create(Db *db, int32_t table_id, const char *path, const char *name, co
   db_       = db;
   base_dir_ = base_dir;
 
-  tables_ = std::move(tables);
+  auto tables = select_stmt->tables();
+  tables_     = std::move(tables);
 
-  // 查询物理算子
-  select_oper_ = std::move(select_oper);
   // 视图类型
   type_ = TableType::View;
 
+  // 建立视图字段到基表字段的索引
   auto field_metas = *table_meta_.field_metas();
   field_index_.resize(field_metas.size());
   for (int i = 0; i < field_metas.size(); ++i) {
+    // 表达式列不能映射到基表字段
+    if (!field_metas[i].is_mutable()) {
+      field_index_[i] = {nullptr, -1};
+      continue;
+    }
     auto &view_field_meta = field_metas[i];
     bool  find            = false;
     for (auto &table : tables_) {
@@ -162,9 +217,50 @@ RC View::delete_record(const Record &record)
   return rc;
 }
 
-RC View::delete_record(const RID &rid) { return RC::SUCCESS; }
+RC View::delete_record(const RID &rid) { return RC::UNIMPLEMENTED; }
 
-RC View::update_record(const Record &old_record, const Record &new_record) { return RC::SUCCESS; }
+RC View::update_record(const Record &old_record, const Record &new_record)
+{
+  // join 视图支持 update 可能会更新多个表
+  RC rc = RC::SUCCESS;
+
+  for (auto &[table, rid] : old_record.base_rids()) {
+    // 得到基表的记录
+    Record base_old_record;
+    rc = table->get_record(rid, base_old_record);
+    if (OB_FAIL(rc)) {
+      return rc;
+    }
+
+    // 将视图的修改记录映射到基表的记录
+    Record base_new_record = base_old_record;
+    auto  &field_metas     = *table_meta_.field_metas();
+    for (int i = 0; i < field_metas.size(); ++i) {
+      auto &field_meta = field_metas[i];
+      if (field_meta.is_mutable()) {
+        auto &[base_table, idx] = field_index_[i];
+        // 是当前表的字段
+        if (strcmp(base_table->name(), table->name()) == 0) {
+          // 取出视图中的值存入待更新的基表记录
+          Value value;
+          rc = new_record.get_field(field_meta, value);
+          if (OB_FAIL(rc)) {
+            return rc;
+          }
+          auto base_field_meta = base_table->table_meta().field(idx);
+          rc                   = base_new_record.set_field(base_field_meta->offset(), base_field_meta->len(), value);
+          if (OB_FAIL(rc)) {
+            return rc;
+          }
+        }
+      }
+    }
+
+    table->update_record(base_old_record, base_new_record);
+  }
+
+  return rc;
+}
 
 RC View::get_record(const RID &rid, Record &record) { return RC::SUCCESS; }
 

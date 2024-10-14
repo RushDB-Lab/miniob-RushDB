@@ -257,7 +257,7 @@ public:
     return RC::SUCCESS;
   }
 
-  RC get_field(const FieldMeta &field_meta, Value &value)
+  RC get_field(const FieldMeta &field_meta, Value &value) const
   {
     int field_offset = field_meta.offset();
     int data_len     = field_meta.len() - field_meta.nullable();

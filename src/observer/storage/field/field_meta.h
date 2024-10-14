@@ -33,12 +33,12 @@ public:
 
   // 除非字段定义为 not null，否则默认是 nullable 的
   FieldMeta(const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id,
-      bool nullable = true);
+      bool nullable = true, bool mutable_ = true);
 
   ~FieldMeta() = default;
 
   RC init(const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id,
-      bool nullable = true);
+      bool nullable = true, bool mutable_ = true);
 
 public:
   const char *name() const;
@@ -48,6 +48,7 @@ public:
   bool        visible() const;
   int         field_id() const;
   bool        nullable() const;
+  bool        is_mutable() const;
 
 public:
   void desc(ostream &os) const;
@@ -63,5 +64,6 @@ protected:
   int      attr_len_;
   bool     visible_;
   int      field_id_;
-  bool     nullable_;
+  bool     nullable_ = true;
+  bool     mutable_  = true;  // 如果是视图的表达式字段，实际上是不可插入或更新的
 };

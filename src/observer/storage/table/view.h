@@ -12,7 +12,6 @@
 
 #pragma once
 
-#include "storage/db/db.h"
 #include "storage/table/base_table.h"
 #include "sql/operator/physical_operator.h"
 
@@ -29,9 +28,8 @@ public:
    * @param base_dir 表数据存放的路径
    * @param attributes 字段
    */
-  RC create(Db *db, int32_t table_id, const char *path, const char *name, const char *base_dir,
-      span<const AttrInfoSqlNode> attributes, std::vector<BaseTable *> tables,
-      std::unique_ptr<PhysicalOperator> select_oper, StorageFormat storage_format);
+  RC create(Db *db, int32_t table_id, const char *path, const char *name, const char *base_dir, SelectStmt *select_stmt,
+      StorageFormat storage_format);
 
   RC drop() override;
 
@@ -44,16 +42,13 @@ public:
 
   RC sync() override;
 
-  bool is_mutable() const { return mutable_; }
-
   std::unique_ptr<PhysicalOperator> &select_oper() { return select_oper_; }
 
+  bool has_join() { return tables_.size() > 1; }
+
 private:
-  Db    *db_ = nullptr;
-  string base_dir_;
   // 视图的 field 对应 哪个物理表和对应的 field idx
   std::vector<std::pair<BaseTable *, int>> field_index_;
   std::vector<BaseTable *>                 tables_;
   std::unique_ptr<PhysicalOperator>        select_oper_;  // 存储了 select 的物理算子
-  bool                                     mutable_;      // 是否是只读视图
 };

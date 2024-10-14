@@ -12,13 +12,12 @@ See the Mulan PSL v2 for more details. */
 // Created by Wangyunlai on 2022/5/22.
 //
 
-#include "sql/stmt/update_stmt.h"
-#include "sql/stmt/filter_stmt.h"
-
 #include <common/log/log.h>
 #include <storage/db/db.h>
 
-#include <utility>
+#include "sql/stmt/update_stmt.h"
+#include "sql/stmt/filter_stmt.h"
+#include "storage/table/view.h"
 
 UpdateStmt::UpdateStmt(BaseTable *table, std::vector<FieldMeta> field_metas,
     std::vector<std::unique_ptr<Expression>> values, FilterStmt *filter_stmt)
@@ -51,6 +50,11 @@ RC UpdateStmt::create(Db *db, UpdateSqlNode &update_sql, Stmt *&stmt)
     return RC::SCHEMA_TABLE_NOT_EXIST;
   }
 
+  if (table->type() == TableType::View && !table->is_mutable()) {
+    LOG_ERROR("The target table %s of the UPDATE is not updatable", table->name());
+    return RC::READ_ONLY_VIEW_UPDATE_ERROR;
+  }
+
   auto                                     table_meta = table->table_meta();
   std::vector<FieldMeta>                   field_metas;
   std::vector<std::unique_ptr<Expression>> values;
@@ -63,6 +67,11 @@ RC UpdateStmt::create(Db *db, UpdateSqlNode &update_sql, Stmt *&stmt)
       LOG_WARN("Field does not exist. db=%s, table_name=%s, field_name=%s",
                 db->name(), table_name, clause.field_name.c_str());
       return RC::SCHEMA_FIELD_NOT_EXIST;
+    }
+
+    if (!field_meta->is_mutable()) {
+      LOG_ERROR("Column '%s' is not updateable", field_meta->name());
+      return RC::EXPRESSION_FIELD_NOT_UPDATEABLE;
     }
 
     // check whether the value is valid

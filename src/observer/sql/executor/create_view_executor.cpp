@@ -40,38 +40,7 @@ RC CreateViewExecutor::execute(SQLStageEvent *sql_event)
     "create view executor can not run this command: %d",
     static_cast<int>(stmt->type()));
 
-  std::vector<AttrInfoSqlNode> attr_infos;
-  for (auto &query_expr : select_stmt->query_expressions()) {
-    AttrInfoSqlNode attr_info;
-    if (auto field_expr = dynamic_cast<FieldExpr *>(query_expr.get())) {
-      auto field_meta    = field_expr->field().meta();
-      attr_info.type     = field_meta->type();
-      attr_info.name     = field_meta->name();
-      attr_info.length   = field_meta->len();
-      attr_info.nullable = field_meta->nullable();
-    } else {
-      attr_info.type   = query_expr->value_type();
-      attr_info.name   = query_expr->name();
-      attr_info.length = query_expr->value_length();
-    }
-    attr_infos.emplace_back(std::move(attr_info));
-  }
-
-  unique_ptr<LogicalOperator> logical_oper = nullptr;
-  LogicalPlanGenerator::create(select_stmt, logical_oper);
-  if (!logical_oper) {
-    return RC::INTERNAL;
-  }
-
-  unique_ptr<PhysicalOperator> physical_oper = nullptr;
-  PhysicalPlanGenerator::create(*logical_oper, physical_oper);
-  if (!physical_oper) {
-    return RC::INTERNAL;
-  }
-
-  auto tables = select_stmt->tables();
-  rc          = session->get_current_db()->create_table(
-      table_name, attr_infos, tables, std::move(physical_oper), StorageFormat::ROW_FORMAT);
+  rc = session->get_current_db()->create_table(table_name, select_stmt, StorageFormat::ROW_FORMAT);
   if (OB_FAIL(rc)) {
     return rc;
   }

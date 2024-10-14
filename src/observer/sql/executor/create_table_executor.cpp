@@ -55,6 +55,7 @@ RC CreateTableExecutor::execute(SQLStageEvent *sql_event)
           attr_info.length = expr->value_length();
           attr_info.type   = expr->value_type();
         }
+        attr_info.mutable_ = true;
         attr_infos.push_back(attr_info);
       }
     }

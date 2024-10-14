@@ -193,10 +193,11 @@ struct UpdateSqlNode
  */
 struct AttrInfoSqlNode
 {
-  AttrType    type;      ///< Type of attribute
-  std::string name;      ///< Attribute name
-  size_t      length;    ///< Length of attribute
-  bool        nullable;  ///< 字段是否可以为空
+  AttrType    type;             ///< Type of attribute
+  std::string name;             ///< Attribute name
+  size_t      length;           ///< Length of attribute
+  bool        nullable;         ///< 字段是否可以为空
+  bool        mutable_ = true;  ///< 视图字段是否是可插入修改的
 };
 
 /**

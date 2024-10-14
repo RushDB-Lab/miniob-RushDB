@@ -25,12 +25,12 @@ See the Mulan PSL v2 for more details. */
 #include "storage/clog/disk_log_handler.h"
 #include "storage/buffer/double_write_buffer.h"
 #include "storage/table/base_table.h"
-#include "sql/operator/physical_operator.h"
 
 class Table;
 class LogHandler;
 class BufferPoolManager;
 class TrxKit;
+class SelectStmt;
 
 /**
  * @brief 一个DB实例负责管理一批表
@@ -68,8 +68,7 @@ public:
   RC create_table(const char *table_name, span<const AttrInfoSqlNode> attributes,
       StorageFormat storage_format = StorageFormat::ROW_FORMAT);
 
-  RC create_table(const char *table_name, span<const AttrInfoSqlNode> attributes, std::vector<BaseTable *> tables,
-      unique_ptr<PhysicalOperator> select_oper, StorageFormat storage_format);
+  RC create_table(const char *table_name, SelectStmt *select_stmt, StorageFormat storage_format);
 
   RC drop_table(const char *table_name);
 

@@ -18,6 +18,8 @@
 #include "storage/table/table_meta.h"
 #include "storage/buffer/disk_buffer_pool.h"
 
+class Db;
+
 enum class TableType
 {
   Unknown,
@@ -144,7 +146,12 @@ public:
 
   virtual RC sync() = 0;
 
+  bool is_mutable() const { return mutable_; }
+
 protected:
+  Db    *db_ = nullptr;
+  string base_dir_;
+  bool mutable_ = true;  // 当前仅对视图可用，是否是只读视图，即包括聚合函数或 groupby having 语句
   TableType       type_             = TableType::Unknown;
   TableMeta       table_meta_       = TableMeta();
   DiskBufferPool *data_buffer_pool_ = nullptr;  /// 数据文件关联的buffer pool

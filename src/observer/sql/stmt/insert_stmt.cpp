@@ -16,6 +16,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "storage/db/db.h"
 #include "storage/table/table.h"
+#include "storage/table/view.h"
 
 InsertStmt::InsertStmt(BaseTable *table, const std::vector<std::vector<Value>> &values_list)
     : table_(table), values_list_(values_list)
@@ -37,9 +38,31 @@ RC InsertStmt::create(Db *db, const InsertSqlNode &inserts, Stmt *&stmt)
     return RC::SCHEMA_TABLE_NOT_EXIST;
   }
 
+  if (table->type() == TableType::View) {
+    if (!table->is_mutable()) {
+      LOG_ERROR("The target table %s of the INSERT is not insertable-into", table->name());
+      return RC::READ_ONLY_VIEW_INSERT_ERROR;
+    }
+    auto view = dynamic_cast<View *>(table);
+    if (view->has_join()) {
+      LOG_ERROR("Can not insert into join view '%s.%s' without fields list", db->name(), table->name());
+      return RC::JOIN_VIEW_INSERT_ERROR;
+    }
+  }
+
+  // check the fields are mutable
+  // 有表达式的列整个表都不能插入，但是可以删除更新非表达式列
+  const TableMeta &table_meta  = table->table_meta();
+  auto             field_metas = table_meta.field_metas();
+  for (auto &field_meta : *field_metas) {
+    if (!field_meta.is_mutable()) {
+      LOG_ERROR("Column '%s' is not insertable", field_meta.name());
+      return RC::EXPRESSION_FIELD_NOT_INSERTABLE;
+    }
+  }
+
   // check the fields number
-  const TableMeta &table_meta = table->table_meta();
-  const int        field_num  = table_meta.field_num() - table_meta.sys_field_num();
+  const int field_num = table_meta.field_num() - table_meta.sys_field_num();
   for (auto &value_list : inserts.values_list) {
     const int value_num = static_cast<int>(value_list.size());
     if (field_num != value_num) {
