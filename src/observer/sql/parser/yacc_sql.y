@@ -217,8 +217,8 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
 %type <expression_list>     group_by
 %type <expression>          opt_having
 %type <set_clause>          setClause
-%type <set_clauses>         setClauses
-%type <join_clauses>        joinClauses
+%type <set_clauses>         set_clauses
+%type <join_clauses>        join_clauses
 %type <orderby_unit>        sort_unit
 %type <orderby_list>        sort_list
 %type <orderby_list>        opt_order_by
@@ -636,7 +636,7 @@ delete_stmt:    /*  delete 语句的语法解析树*/
     ;
 
 update_stmt:      /*  update 语句的语法解析树*/
-    UPDATE ID SET setClauses where
+    UPDATE ID SET set_clauses where
     {
       $$ = new ParsedSqlNode(SCF_UPDATE);
       $$->update.relation_name = $2;
@@ -649,13 +649,13 @@ update_stmt:      /*  update 语句的语法解析树*/
     }
     ;
 
-setClauses:
+set_clauses:
       setClause
     {
       $$ = new std::vector<SetClauseSqlNode>;
       $$->emplace_back(std::move(*$1));
     }
-    | setClauses COMMA setClause
+    | set_clauses COMMA setClause
     {
       $$->emplace_back(std::move(*$3));
     }
@@ -705,7 +705,7 @@ select_stmt:
         delete $8;
       }
     }
-    | SELECT expression_list FROM relation INNER JOIN joinClauses where group_by
+    | SELECT expression_list FROM relation INNER JOIN join_clauses where group_by
     {
       $$ = new ParsedSqlNode(SCF_SELECT);
       if ($2 != nullptr) {
@@ -760,7 +760,7 @@ expression_list:
     {
       $$ = new std::vector<std::unique_ptr<Expression>>;
       if (nullptr != $2) {
-        $1->set_name($2);
+        $1->set_alias($2);
       }
       $$->emplace_back($1);
       free($2);
@@ -773,7 +773,7 @@ expression_list:
         $$ = new std::vector<std::unique_ptr<Expression>>;
       }
       if (nullptr != $2) {
-        $1->set_name($2);
+        $1->set_alias($2);
       }
       $$->emplace($$->begin(),std::move($1));
       free($2);
@@ -903,7 +903,7 @@ rel_list:
     }
     ;
 
-joinClauses:
+join_clauses:
       relation ON condition
     {
       $$ = new JoinSqlNode;
@@ -911,7 +911,7 @@ joinClauses:
       $$->conditions = std::unique_ptr<Expression>($3);
       free($1);
     }
-    | relation ON condition INNER JOIN joinClauses
+    | relation ON condition INNER JOIN join_clauses
     {
       $$ = $6;
       $$->relations.emplace_back($1);
@@ -1070,8 +1070,8 @@ set_variable_stmt:
     }
     ;
 
-opt_semicolon: /*empty*/
-    | SEMICOLON
+opt_semicolon:
+    SEMICOLON
     ;
 %%
 //_____________________________________________________________________
