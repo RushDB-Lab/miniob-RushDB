@@ -1035,8 +1035,8 @@ set_variable_stmt:
     }
     ;
 
-opt_semicolon: /*empty*/
-    | SEMICOLON
+opt_semicolon:
+    SEMICOLON
     ;
 %%
 //_____________________________________________________________________
