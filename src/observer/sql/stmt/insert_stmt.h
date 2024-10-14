@@ -28,7 +28,7 @@ class InsertStmt : public Stmt
 {
 public:
   InsertStmt() = delete;
-  InsertStmt(BaseTable *table, const std::vector<std::vector<Value>> &);
+  InsertStmt(BaseTable *table, std::vector<std::vector<Value>> values_list);
 
   StmtType type() const override { return StmtType::INSERT; }
 
@@ -38,6 +38,6 @@ public:
   const std::vector<std::vector<Value>> &values_list() const { return values_list_; };
 
 private:
-  BaseTable                             *table_ = nullptr;
-  const std::vector<std::vector<Value>> &values_list_;
+  BaseTable                      *table_ = nullptr;
+  std::vector<std::vector<Value>> values_list_;
 };

@@ -549,6 +549,17 @@ insert_stmt:        /*insert   语句的语法解析树*/
       }
       free($3);
     }
+    | INSERT INTO ID LBRACE attr_list RBRACE VALUES values_list
+    {
+      $$ = new ParsedSqlNode(SCF_INSERT);
+      $$->insertion.relation_name = $3;
+      $$->insertion.attr_names = std::move(*$5);
+      if ($8 != nullptr) {
+        $$->insertion.values_list.swap(*$8);
+        delete $8;
+      }
+      free($3);
+    }
     ;
 
 values_list:
