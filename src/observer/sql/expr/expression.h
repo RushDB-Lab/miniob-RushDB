@@ -117,6 +117,7 @@ public:
    */
   virtual const char *name() const { return name_.c_str(); }
   virtual const char *alias() const { return alias_.c_str(); }
+  bool                has_alias() const { return !alias_.empty(); }
   virtual void        set_name(std::string name) { name_ = std::move(name); }
   virtual void        set_alias(std::string alias) { alias_ = std::move(alias); }
   virtual bool        name_empty() { return name_.empty(); }

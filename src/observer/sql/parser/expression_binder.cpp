@@ -484,6 +484,7 @@ RC ExpressionBinder::bind_function_expression(
 
     // set name 阶段
     aggregate_expr->set_name(unbound_function_expr->name());
+    aggregate_expr->set_alias(unbound_function_expr->alias());
     rc = check_aggregate_expression(*aggregate_expr);
     if (OB_FAIL(rc)) {
       return rc;

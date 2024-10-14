@@ -63,7 +63,8 @@ RC View::create(Db *db, int32_t table_id, const char *path, const char *name, co
 
       auto field_meta    = field_expr->field().meta();
       attr_info.type     = field_meta->type();
-      attr_info.name     = attr_names.empty() ? field_meta->name() : std::move(attr_names[i]);
+      attr_info.name     = attr_names.empty() ? (field_expr->has_alias() ? field_expr->alias() : field_meta->name())
+                                              : std::move(attr_names[i]);
       attr_info.length   = field_meta->len();
       attr_info.nullable = field_meta->nullable();
       attr_info.mutable_ = field_meta->is_mutable();
@@ -75,7 +76,8 @@ RC View::create(Db *db, int32_t table_id, const char *path, const char *name, co
         mutable_ = false;  // 包含聚合函数的是只读视图
       }
       attr_info.type = query_expr->value_type();
-      attr_info.name = query_expr->name();
+      attr_info.name = attr_names.empty() ? (query_expr->has_alias() ? query_expr->alias() : query_expr->name())
+                                          : std::move(attr_names[i]);
       // 简单处理，非 field 表达式都是可为空的
       attr_info.length   = query_expr->value_length() + 1;
       attr_info.nullable = true;
