@@ -14,6 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/operator/physical_operator.h"
 #include "sql/expr/tuple.h"
+#include <functional>
 
 class OrderByPhysicalOperator : public PhysicalOperator
 {
@@ -41,8 +42,10 @@ private:
   /// 在 create order by stmt 之前提取 select clause 后的 field_expr (非agg_expr 中的) 和 agg_expr
   std::vector<Expression *> exprs_;
 
-  std::vector<std::vector<Value>> values_;
+  SplicedTuple tuple_;
 
-  std::vector<std::vector<Value>>::iterator it_;
-  SplicedTuple                              tuple_;
+  using order_line = pair<vector<Value>, vector<Value>>;
+  using order_func = std::function<bool(const order_line &, const order_line &)>;
+  using order_list = std::priority_queue<order_line, vector<order_line>, order_func>;
+  order_list order_and_field_line;
 };
