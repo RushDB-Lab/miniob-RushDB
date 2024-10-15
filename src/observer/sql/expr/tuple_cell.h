@@ -29,8 +29,8 @@ public:
   const char *field_name() const { return field_name_.c_str(); }
   const char *alias() const { return alias_.c_str(); }
 
-  bool alias_empty() const { return alias_.size() == 0; }
-  bool table_field_empty() const { return table_name_.size() + field_name_.size() == 0; }
+  bool alias_empty() const { return alias_.empty(); }
+  bool table_field_empty() const { return table_name_.empty() && field_name_.empty(); }
 
   bool operator==(const TupleCellSpec &other) const
   {
