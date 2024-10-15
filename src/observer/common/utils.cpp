@@ -14,6 +14,8 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <sstream>
+#include <string>
 
 bool check_date(int y, int m, int d)
 {
@@ -53,29 +55,49 @@ RC parse_float_prefix(const char *str, float &result)
   return RC::SUCCESS;
 }
 
-// RC parse_vector_from_string(const char *str, std::vector<float> &vectorData) {
-//   if (!str || *str != '[') {
-//     return RC::INVALID_ARGUMENT;
-//   }
-//
-//   std::string s = str;
-//   // 去掉开头和结尾的方括号
-//   if (s.back() != ']') {
-//     return RC::INVALID_ARGUMENT;
-//   }
-//   s = s.substr(1, s.size() - 2);
-//
-//   std::stringstream ss(s);
-//   std::string token;
-//   float value;
-//
-//   while (std::getline(ss, token, ',')) {
-//     std::stringstream valueStream(token);
-//     if (!(valueStream >> value)) {
-//       return RC::PARSE_ERROR;
-//     }
-//     vectorData.push_back(value);
-//   }
-//
-//   return RC::SUCCESS;
-// }
+RC parse_vector_from_string(const char *str, float *&array, size_t &length)
+{
+  if (!str || *str != '[') {
+    return RC::INVALID_ARGUMENT;
+  }
+
+  std::string s = str;
+  if (s.back() != ']') {
+    return RC::INVALID_ARGUMENT;
+  }
+
+  s = s.substr(1, s.size() - 2);  // 去掉开头和结尾的方括号
+  std::stringstream ss(s);
+  std::string       token;
+  size_t            count = 0;
+
+  // 先统计有多少个浮点数
+  while (std::getline(ss, token, ',')) {
+    count++;
+  }
+
+  if (count == 0) {
+    return RC::INVALID_ARGUMENT;  // 空数组
+  }
+
+  // 分配数组内存
+  //f
+  array  = new float[count];
+  length = count * sizeof(float);
+
+  // 重置流并解析浮点数
+  ss.clear();
+  ss.str(s);
+  size_t index = 0;
+
+  while (std::getline(ss, token, ',')) {
+    std::stringstream valueStream(token);
+    if (!(valueStream >> array[index])) {
+      delete[] array;  // 清理已分配内存
+      return RC::VECTOR_PARSE_ERROR;
+    }
+    index++;
+  }
+
+  return RC::SUCCESS;
+}

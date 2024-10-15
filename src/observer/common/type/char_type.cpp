@@ -79,7 +79,16 @@ RC CharType::cast_to(const Value &val, AttrType type, Value &result, bool allow_
       result.set_float(float_val);
     } break;
     case AttrType::VECTOR: {
-      std::vector<float> vectorData;
+      float *array = nullptr;
+      size_t length = 0;
+
+      // 解析字符串为 float 数组
+      RC rc = parse_vector_from_string(val.value_.pointer_value_, array, length);
+      if (rc != RC::SUCCESS) {
+        return rc;
+      }
+
+      result.set_vector(array,length);
     }break;
     default: return RC::UNIMPLEMENTED;
   }

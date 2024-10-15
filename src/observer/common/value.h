@@ -139,6 +139,7 @@ private:
   void set_date(int val);
   void set_string(const char *s, int len = 0);
   void set_text(const char *s, int len = 65535);
+  void set_vector(float *&array, size_t &length);
   void set_string_from_other(const Value &other);
 
 private:
