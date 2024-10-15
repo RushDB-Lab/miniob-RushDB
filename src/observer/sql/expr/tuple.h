@@ -364,7 +364,7 @@ public:
 
     const int size = static_cast<int>(specs_.size());
     for (int i = 0; i < size; i++) {
-      if (specs_[i].equals(spec)) {
+      if (specs_[i] == spec) {
         cell = cells_[i];
         return RC::SUCCESS;
       }
