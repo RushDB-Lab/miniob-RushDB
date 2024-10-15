@@ -412,8 +412,8 @@ RC PhysicalPlanGenerator::create_plan(OrderByLogicalOperator &logical_oper, std:
     }
   }
 
-  OrderByPhysicalOperator *orderby_operator =
-      new OrderByPhysicalOperator(std::move(logical_oper.order_by()), std::move(logical_oper.exprs()));
+  OrderByPhysicalOperator *orderby_operator = new OrderByPhysicalOperator(
+      std::move(logical_oper.order_by()), std::move(logical_oper.exprs()), logical_oper.limit());
   if (child_phy_oper) {
     orderby_operator->add_child(std::move(child_phy_oper));
   }

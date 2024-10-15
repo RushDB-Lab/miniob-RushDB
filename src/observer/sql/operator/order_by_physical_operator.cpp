@@ -14,8 +14,8 @@ See the Mulan PSL v2 for more details. */
 
 #include "order_by_physical_operator.h"
 
-OrderByPhysicalOperator::OrderByPhysicalOperator(vector<OrderBySqlNode> order_by, vector<Expression *> exprs)
-    : order_by_(std::move(order_by)), exprs_(std::move(exprs))
+OrderByPhysicalOperator::OrderByPhysicalOperator(vector<OrderBySqlNode> order_by, vector<Expression *> exprs, int limit)
+    : order_by_(std::move(order_by)), exprs_(std::move(exprs)), limit_(limit)
 {
   vector<Expression *> expressions;
   expressions.reserve(exprs_.size());
@@ -105,8 +105,13 @@ RC OrderByPhysicalOperator::next()
     return RC::RECORD_EOF;
   }
 
+  if (pop_count_ == limit_) {
+    return RC::RECORD_EOF;
+  }
+
   vector<Value> value = order_and_field_line.top().second;
   order_and_field_line.pop();
+  pop_count_++;
   tuple_.set_cells(value);
   return rc;
 }

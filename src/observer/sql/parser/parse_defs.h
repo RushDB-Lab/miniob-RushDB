@@ -104,6 +104,11 @@ struct OrderBySqlNode
   bool                        is_asc;  ///< 默认true 为升序
 };
 
+struct LimitSqlNode
+{
+  int number;
+};
+
 /**
  * @brief 描述一个select语句
  * @ingroup SQLParser
@@ -122,6 +127,7 @@ struct SelectSqlNode
   std::vector<std::unique_ptr<Expression>> group_by;           ///< group by clause
   std::vector<OrderBySqlNode>              order_by;           ///< attributes in order clause
   std::unique_ptr<Expression>              having_conditions;  ///< having
+  std::unique_ptr<LimitSqlNode>            limit;
 };
 
 /**

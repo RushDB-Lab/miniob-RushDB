@@ -131,6 +131,7 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
         NOT
         UNIQUE
         NULL_T
+        LIMIT
         NULLABLE
         HELP
         EXIT
@@ -179,6 +180,7 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
   std::vector<RelationNode> *                relation_list;
   OrderBySqlNode *                           orderby_unit;
   std::vector<OrderBySqlNode> *              orderby_list;
+  LimitSqlNode *                             limited_info;
   char *                                     string;
   int                                        number;
   float                                      floats;
@@ -222,6 +224,7 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
 %type <orderby_unit>        sort_unit
 %type <orderby_list>        sort_list
 %type <orderby_list>        opt_order_by
+%type <limited_info>        opt_limit
 %type <index_attr_list>     attr_list
 %type <unique>              opt_unique
 %type <sql_node>            calc_stmt
@@ -645,7 +648,7 @@ setClause:
     ;
 
 select_stmt:
-    SELECT expression_list FROM rel_list where group_by opt_having opt_order_by
+    SELECT expression_list FROM rel_list where group_by opt_having opt_order_by opt_limit
     {
       $$ = new ParsedSqlNode(SCF_SELECT);
       if ($2 != nullptr) {
@@ -676,6 +679,11 @@ select_stmt:
       if ($8 != nullptr) {
         $$->selection.order_by.swap(*$8);
         delete $8;
+      }
+
+      if ($9 != nullptr) {
+        $$->selection.limit = std::make_unique<LimitSqlNode>(*$9);
+        delete $9;
       }
     }
     | SELECT expression_list FROM relation INNER JOIN join_clauses where group_by
@@ -1008,6 +1016,18 @@ opt_having:
     | HAVING condition
     {
       $$ = $2;
+    }
+    ;
+
+opt_limit:
+    /* empty */
+    {
+      $$ = nullptr;
+    }
+    | LIMIT NUMBER
+    {
+      $$ = new LimitSqlNode();
+      $$->number = $2;
     }
     ;
 

@@ -20,7 +20,7 @@ See the Mulan PSL v2 for more details. */
 class OrderByPhysicalOperator : public PhysicalOperator
 {
 public:
-  OrderByPhysicalOperator(std::vector<OrderBySqlNode> order_by, std::vector<Expression *> exprs);
+  OrderByPhysicalOperator(std::vector<OrderBySqlNode> order_by, std::vector<Expression *> exprs, int limit);
 
   virtual ~OrderByPhysicalOperator() = default;
 
@@ -49,4 +49,7 @@ private:
   using order_func = std::function<bool(const order_line &, const order_line &)>;
   using order_list = std::priority_queue<order_line, vector<order_line>, order_func>;
   order_list order_and_field_line;
+
+  int pop_count_ = 0;
+  int limit_     = -1;
 };

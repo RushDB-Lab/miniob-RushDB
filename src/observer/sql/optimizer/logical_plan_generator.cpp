@@ -385,7 +385,7 @@ RC LogicalPlanGenerator::create_order_by_plan(SelectStmt *select_stmt, unique_pt
   }
 
   unique_ptr<LogicalOperator> orderby_oper(
-      new OrderByLogicalOperator(std::move(select_stmt->order_by()), query_expressions));
+      new OrderByLogicalOperator(std::move(select_stmt->order_by()), query_expressions, select_stmt->limit()));
   logical_operator = std::move(orderby_oper);
   return RC::SUCCESS;
 }

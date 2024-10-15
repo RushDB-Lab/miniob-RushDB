@@ -21,4 +21,4 @@ RC parse_date(const char *str, int &result);
 
 RC parse_float_prefix(const char *str, float &result);
 
-RC parse_vector_from_string(const char *str, float* &array, size_t &length);
+RC parse_vector_from_string(const char *str, float *&array, size_t &length);

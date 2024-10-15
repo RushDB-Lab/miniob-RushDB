@@ -1,3 +1,5 @@
+#if 0
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>
@@ -259,3 +261,5 @@ int main(int argc, char *argv[])
 
   return 0;
 }
+
+#endif  // #if 0
