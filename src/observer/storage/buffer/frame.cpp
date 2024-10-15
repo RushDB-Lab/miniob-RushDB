@@ -215,6 +215,8 @@ void Frame::read_unlatch(intptr_t xid)
 
     if (1 == recursive_count) {
       read_lockers_.erase(xid);
+    } else {
+      read_lockers_[xid] = recursive_count - 1;
     }
 #endif
   }
