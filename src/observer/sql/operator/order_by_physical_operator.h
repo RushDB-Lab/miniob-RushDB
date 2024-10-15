@@ -15,6 +15,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/physical_operator.h"
 #include "sql/expr/tuple.h"
 #include <functional>
+#include <queue>
 
 class OrderByPhysicalOperator : public PhysicalOperator
 {
