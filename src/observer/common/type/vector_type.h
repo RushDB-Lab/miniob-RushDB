@@ -15,7 +15,7 @@ See the Mulan PSL v2 for more details. */
 class VectorType : public DataType
 {
 public:
-  VectorType() : DataType(AttrType::VECTOR) {}
+  VectorType() : DataType(AttrType::VECTORS) {}
 
   virtual ~VectorType() = default;
 

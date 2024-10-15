@@ -362,7 +362,7 @@ RC Table::set_value_to_record(char *record_data, const Value &value, const Field
       copy_len = data_len + 1;
     }
   }
-  if (field->type() == AttrType::VECTOR) {
+  if (field->type() == AttrType::VECTORS) {
     if (copy_len > data_len) {
       copy_len = data_len;
     }

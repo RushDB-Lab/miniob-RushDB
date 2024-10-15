@@ -78,7 +78,7 @@ RC CharType::cast_to(const Value &val, AttrType type, Value &result, bool allow_
       }
       result.set_float(float_val);
     } break;
-    case AttrType::VECTOR: {
+    case AttrType::VECTORS: {
       float *array = nullptr;
       size_t length = 0;
 

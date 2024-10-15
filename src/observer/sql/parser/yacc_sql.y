@@ -446,8 +446,10 @@ attr_def:
       $$->type = (AttrType)$2;
       if ($$->type == AttrType::CHARS) {
         $$->length = $4;
-      } else {             //vector
-        $$->length = 4*$4;
+      } else if ($$->type == AttrType::VECTORS) {
+        $$->length = sizeof(float) * $4;
+      } else {
+        ASSERT(false, "$$->type is invalid.");
       }
       $$->nullable = $6;
       if ($$->nullable) {
@@ -461,13 +463,13 @@ attr_def:
       $$->type = (AttrType)$2;
       $$->name = $1;
       if ($$->type == AttrType::INTS) {
-        $$->length = 4;
+        $$->length = sizeof(int);
       } else if ($$->type == AttrType::FLOATS) {
-        $$->length = 4;
+        $$->length = sizeof(float);
       } else if ($$->type == AttrType::DATES) {
-        $$->length = 4;
+        $$->length = sizeof(int);
       } else if ($$->type == AttrType::CHARS) {
-        $$->length = 4;
+        $$->length = 4; // miniob🀄AttrType::CHARS默认长度为4
       } else if ($$->type == AttrType::TEXTS) {
         $$->length = 65535;
       } else {
@@ -506,7 +508,7 @@ type:
     | FLOAT_T    { $$ = static_cast<int>(AttrType::FLOATS); }
     | DATE_T     { $$ = static_cast<int>(AttrType::DATES);  }
     | TEXT_T     { $$ = static_cast<int>(AttrType::TEXTS);  }
-    | VECTOR_T   { $$ = static_cast<int>(AttrType::VECTOR);  }
+    | VECTOR_T   { $$ = static_cast<int>(AttrType::VECTORS);  }
     ;
 
 insert_stmt:        /*insert   语句的语法解析树*/
