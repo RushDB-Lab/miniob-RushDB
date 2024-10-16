@@ -14,8 +14,10 @@ See the Mulan PSL v2 for more details. */
 
 #include "order_by_physical_operator.h"
 
+#include <utility>
+
 OrderByPhysicalOperator::OrderByPhysicalOperator(vector<OrderBySqlNode> order_by, vector<Expression *> exprs)
-    : order_by_(std::move(order_by)), exprs_(exprs)
+    : order_by_(std::move(order_by)), exprs_(std::move(exprs))
 {
   vector<Expression *> expressions;
   expressions.reserve(exprs_.size());
