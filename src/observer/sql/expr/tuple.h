@@ -88,6 +88,8 @@ public:
 
   virtual RC spec_at(int index, TupleCellSpec &spec) const = 0;
 
+  virtual Tuple *copy() const = 0;
+
   /**
    * @brief 根据cell的描述，获取cell的值
    *
@@ -257,6 +259,17 @@ public:
 
   const Record &record() const { return *record_; }
 
+  Tuple *copy() const override
+  {
+    RowTuple *copy = new RowTuple();
+    for (auto &spec_ : speces_) {
+      copy->speces_.push_back(new FieldExpr(*spec_));
+    }
+    copy->record_ = new Record(record_->clone());
+    copy->table_  = table_;
+    return copy;
+  }
+
 private:
   Record                  *record_ = nullptr;
   const Table             *table_  = nullptr;
@@ -394,6 +407,14 @@ public:
     return RC::SUCCESS;
   }
 
+  Tuple *copy() const override
+  {
+    auto copy    = new ValueListTuple;
+    copy->cells_ = cells_;
+    copy->specs_ = specs_;
+    return copy;
+  }
+
 private:
   std::vector<Value>         cells_;
   std::vector<TupleCellSpec> specs_;
@@ -454,56 +475,19 @@ public:
     return right_->find_cell(spec, value);
   }
 
+  Tuple *copy() const override
+  {
+    auto copy = new JoinedTuple;
+    if (left_) {
+      copy->left_ = left_->copy();
+    }
+    if (right_) {
+      copy->right_ = right_->copy();
+    }
+    return copy;
+  }
+
 private:
   Tuple *left_  = nullptr;
   Tuple *right_ = nullptr;
-};
-
-/**
- * @brief 一些常量值组成的Tuple,用于 orderby 算子中
- * @ingroup Tuple
- */
-class SplicedTuple : public Tuple
-{
-public:
-  SplicedTuple()          = default;
-  virtual ~SplicedTuple() = default;
-
-  void set_cells(const std::vector<Value> &cells) { cells_ = cells; }
-
-  int cell_num() const override { return cells_.size(); }
-
-  RC cell_at(int index, Value &cell) const override
-  {
-    if (index < 0 || index >= cell_num()) {
-      return RC::NOTFOUND;
-    }
-
-    cell = cells_[index];
-    return RC::SUCCESS;
-  }
-
-  RC find_cell(const TupleCellSpec &spec, Value &cell) const override
-  {
-    assert(false);
-    return RC::INTERNAL;
-  }
-
-  RC init(const std::vector<Expression *> &exprs)
-  {
-    exprs_ = exprs;
-    return RC::SUCCESS;
-  }
-
-  RC spec_at(int index, TupleCellSpec &spec) const override
-  {
-    assert(false);
-    return RC::INTERNAL;
-  }
-
-  std::vector<Expression *> &exprs() { return exprs_; }
-
-private:
-  std::vector<Value>        cells_;
-  std::vector<Expression *> exprs_;
 };

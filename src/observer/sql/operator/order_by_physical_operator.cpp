@@ -14,15 +14,14 @@ See the Mulan PSL v2 for more details. */
 
 #include "order_by_physical_operator.h"
 
-OrderByPhysicalOperator::OrderByPhysicalOperator(vector<OrderBySqlNode> order_by, vector<Expression *> exprs, int limit)
-    : order_by_(std::move(order_by)), exprs_(std::move(exprs)), limit_(limit)
+OrderByPhysicalOperator::OrderByPhysicalOperator(vector<OrderBySqlNode> order_by, vector<Expression *> exprs)
+    : order_by_(std::move(order_by)), exprs_(exprs)
 {
   vector<Expression *> expressions;
   expressions.reserve(exprs_.size());
   for (auto &expr : exprs_) {
     expressions.push_back(expr);
   }
-  tuple_.init(expressions);
 
   order_and_field_line = order_list([this](const order_line &cells_a, const order_line &cells_b) -> bool {
     auto  order_size   = order_by_.size();
@@ -67,18 +66,7 @@ RC OrderByPhysicalOperator::fetch_and_sort_tables()
       order_by_line.emplace_back(cell);
     }
 
-    // 获取 select 字段的 values
-    vector<Value> field_line;
-    for (auto &expr : tuple_.exprs()) {
-      Value cell;
-      rc = expr->get_value(*children_[0]->current_tuple(), cell);
-      if (OB_FAIL(rc)) {
-        return rc;
-      }
-      field_line.emplace_back(cell);
-    }
-
-    order_and_field_line.emplace(order_by_line, field_line);
+    order_and_field_line.emplace(order_by_line, children_[0]->current_tuple()->copy());
   }
 
   return RC::SUCCESS;
@@ -100,22 +88,15 @@ RC OrderByPhysicalOperator::open(Trx *trx)
 
 RC OrderByPhysicalOperator::next()
 {
-  RC rc = RC::SUCCESS;
   if (order_and_field_line.empty()) {
     return RC::RECORD_EOF;
   }
 
-  if (pop_count_ == limit_) {
-    return RC::RECORD_EOF;
-  }
-
-  vector<Value> value = order_and_field_line.top().second;
+  tuple_ = order_and_field_line.top().second;
   order_and_field_line.pop();
-  pop_count_++;
-  tuple_.set_cells(value);
-  return rc;
+  return RC::SUCCESS;
 }
 
 RC OrderByPhysicalOperator::close() { return children_[0]->close(); }
 
-Tuple *OrderByPhysicalOperator::current_tuple() { return &tuple_; }
+Tuple *OrderByPhysicalOperator::current_tuple() { return tuple_; }

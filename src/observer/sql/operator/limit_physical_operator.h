@@ -9,23 +9,32 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
 //
-// Created by Wangyunlai on 2024/05/30.
+// Created by HuXin on 24-10-9.
 //
 
-#pragma once
-
+#include "sql/operator/physical_operator.h"
+#include "sql/expr/tuple.h"
 #include <functional>
-#include <memory>
+#include <queue>
 
-#include "common/rc.h"
-
-class Expression;
-
-class ExpressionIterator
+class LimitPhysicalOperator : public PhysicalOperator
 {
 public:
-  static RC iterate_child_expr(Expression &expr, const std::function<RC(std::unique_ptr<Expression> &)> &callback);
-  static RC condition_iterate_expr(std::unique_ptr<Expression> &expr);
-  static RC having_condition_iterate_expr(
-      std::unique_ptr<Expression> &expr, std::vector<Expression *> &bound_expressions);
+  LimitPhysicalOperator(int limit) : limit_(limit) {}
+
+  virtual ~LimitPhysicalOperator() = default;
+
+  PhysicalOperatorType type() const override { return PhysicalOperatorType::LIMIT; }
+
+  int limit() const { return limit_; }
+
+  RC open(Trx *trx) override;
+  RC next() override;
+  RC close() override;
+
+  Tuple *current_tuple() override;
+
+private:
+  int pos_ = 0;
+  int limit_;
 };

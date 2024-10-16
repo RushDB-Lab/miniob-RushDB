@@ -45,6 +45,8 @@ public:
   void   add_tuple(std::unique_ptr<Tuple> tuple);
   Tuple &tuple_at(size_t index);
 
+  Tuple *copy() const override;
+
 private:
   std::vector<std::unique_ptr<Tuple>> tuples_;
 };

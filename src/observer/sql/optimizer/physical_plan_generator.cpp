@@ -26,6 +26,9 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/expr_vec_physical_operator.h"
 #include "sql/operator/group_by_vec_physical_operator.h"
 #include "sql/operator/index_scan_physical_operator.h"
+#include "sql/operator/order_by_logical_operator.h"
+#include "sql/operator/limit_logical_operator.h"
+#include "sql/operator/limit_physical_operator.h"
 #include "sql/operator/insert_logical_operator.h"
 #include "sql/operator/insert_physical_operator.h"
 #include "sql/operator/join_logical_operator.h"
@@ -96,6 +99,10 @@ RC PhysicalPlanGenerator::create(LogicalOperator &logical_operator, unique_ptr<P
 
     case LogicalOperatorType::ORDER_BY: {
       return create_plan(static_cast<OrderByLogicalOperator &>(logical_operator), oper);
+    } break;
+
+    case LogicalOperatorType::LIMIT: {
+      return create_plan(static_cast<LimitLogicalOperator &>(logical_operator), oper);
     } break;
 
     default: {
@@ -412,13 +419,35 @@ RC PhysicalPlanGenerator::create_plan(OrderByLogicalOperator &logical_oper, std:
     }
   }
 
-  OrderByPhysicalOperator *orderby_operator = new OrderByPhysicalOperator(
-      std::move(logical_oper.order_by()), std::move(logical_oper.exprs()), logical_oper.limit());
+  OrderByPhysicalOperator *orderby_operator =
+      new OrderByPhysicalOperator(std::move(logical_oper.order_by()), std::move(logical_oper.exprs()));
   if (child_phy_oper) {
     orderby_operator->add_child(std::move(child_phy_oper));
   }
 
   oper = unique_ptr<PhysicalOperator>(orderby_operator);
+  return rc;
+}
+
+RC PhysicalPlanGenerator::create_plan(LimitLogicalOperator &logical_oper, unique_ptr<PhysicalOperator> &oper)
+{
+  vector<unique_ptr<LogicalOperator>> &child_opers = logical_oper.children();
+  unique_ptr<PhysicalOperator>         child_phy_oper;
+
+  RC rc = RC::SUCCESS;
+  if (!child_opers.empty()) {
+    LogicalOperator *child_oper = child_opers.front().get();
+    rc                          = create(*child_oper, child_phy_oper);
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("failed to create orderby logical operator's child physical operator. rc=%s", strrc(rc));
+      return rc;
+    }
+  }
+
+  LimitPhysicalOperator *limit_oper = new LimitPhysicalOperator(logical_oper.limit());
+  limit_oper->add_child(std::move(child_phy_oper));
+
+  oper = unique_ptr<PhysicalOperator>(limit_oper);
   return rc;
 }
 
