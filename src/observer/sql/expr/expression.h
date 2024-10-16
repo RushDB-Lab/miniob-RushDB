@@ -219,8 +219,11 @@ public:
 
   RC get_value(const Tuple &tuple, Value &value) override;
 
+  void set_table_alias(std::string table_alias) { table_alias_ = std::move(table_alias); }
+
 private:
-  Field field_;
+  Field       field_;
+  std::string table_alias_;
 };
 
 /**

@@ -40,7 +40,7 @@ void ExpressionBinder::wildcard_fields(
   for (int i = table_meta.sys_field_num(); i < field_num; i++) {
     Field      field(table, table_meta.field(i));
     FieldExpr *field_expr = new FieldExpr(field);
-    field_expr->set_alias(std::move(table_alias));
+    field_expr->set_table_alias(std::move(table_alias));
     // 这里设置了基类的 name 属性
     if (multi_tables) {
       // 多表查询带表名
@@ -199,7 +199,7 @@ RC ExpressionBinder::bind_unbound_field_expression(
 
     Field      field(table, field_meta);
     FieldExpr *field_expr = new FieldExpr(field);
-    field_expr->set_alias(table_alias);
+    field_expr->set_table_alias(table_alias);
     // 这里设置了基类的 name 属性
     if (!is_blank(unbound_field_expr->alias())) {
       field_expr->set_name(unbound_field_expr->alias());
