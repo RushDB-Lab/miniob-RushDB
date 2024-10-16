@@ -73,7 +73,8 @@ RC TableMeta::init(int32_t table_id, const char *name, const std::vector<FieldMe
           field_meta.len(),
           false /*visible*/,
           field_meta.field_id(),
-          field_meta.nullable());
+          field_meta.nullable(),
+          field_meta.is_mutable());
       field_offset += field_meta.len();
     }
 
@@ -91,7 +92,8 @@ RC TableMeta::init(int32_t table_id, const char *name, const std::vector<FieldMe
         attr_info.length,
         true /*visible*/,
         i,
-        attr_info.nullable);
+        attr_info.nullable,
+        attr_info.mutable_);
     if (OB_FAIL(rc)) {
       LOG_ERROR("Failed to init field meta. table name=%s, field name: %s", name, attr_info.name.c_str());
       return rc;

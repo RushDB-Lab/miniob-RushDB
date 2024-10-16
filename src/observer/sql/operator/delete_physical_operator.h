@@ -26,7 +26,7 @@ class DeleteStmt;
 class DeletePhysicalOperator : public PhysicalOperator
 {
 public:
-  DeletePhysicalOperator(Table *table) : table_(table) {}
+  DeletePhysicalOperator(BaseTable *table) : table_(table) {}
 
   virtual ~DeletePhysicalOperator() = default;
 
@@ -39,7 +39,7 @@ public:
   Tuple *current_tuple() override { return nullptr; }
 
 private:
-  Table              *table_ = nullptr;
+  BaseTable          *table_ = nullptr;
   Trx                *trx_   = nullptr;
   std::vector<Record> records_;
 };

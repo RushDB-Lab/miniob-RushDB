@@ -36,6 +36,9 @@ RC TableScanPhysicalOperator::next()
   while (OB_SUCC(rc = record_scanner_.next(current_record_))) {
     LOG_TRACE("got a record. rid=%s", current_record_.rid().to_string().c_str());
 
+    // 存储记录来自哪个表和 rid
+    tuple_.reset();
+    tuple_.append_base_rids(table_, current_record_.rid());
     tuple_.set_record(&current_record_);
     rc = filter(tuple_, filter_result);
     if (rc != RC::SUCCESS) {

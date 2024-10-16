@@ -137,7 +137,7 @@ MvccTrx::MvccTrx(MvccTrxKit &kit, LogHandler &log_handler, int32_t trx_id)
 
 MvccTrx::~MvccTrx() {}
 
-RC MvccTrx::insert_record(Table *table, Record &record)
+RC MvccTrx::insert_record(BaseTable *table, Record &record)
 {
   Field begin_field;
   Field end_field;
@@ -160,7 +160,7 @@ RC MvccTrx::insert_record(Table *table, Record &record)
   return rc;
 }
 
-RC MvccTrx::delete_record(Table *table, Record &record)
+RC MvccTrx::delete_record(BaseTable *table, Record &record)
 {
   Field begin_field;
   Field end_field;
@@ -198,7 +198,7 @@ RC MvccTrx::delete_record(Table *table, Record &record)
   return RC::SUCCESS;
 }
 
-RC MvccTrx::update_record(Table *table, Record &old_record, Record &new_record)
+RC MvccTrx::update_record(BaseTable *table, Record &old_record, Record &new_record)
 {
   Field begin_field;
   Field end_field;
@@ -224,7 +224,7 @@ RC MvccTrx::update_record(Table *table, Record &old_record, Record &new_record)
   return rc;
 }
 
-RC MvccTrx::visit_record(Table *table, Record &record, ReadWriteMode mode)
+RC MvccTrx::visit_record(BaseTable *table, Record &record, ReadWriteMode mode)
 {
   Field begin_field;
   Field end_field;
@@ -286,7 +286,7 @@ RC MvccTrx::visit_record(Table *table, Record &record, ReadWriteMode mode)
  * @param begin_xid_field 返回处理begin_xid的字段
  * @param end_xid_field   返回处理end_xid的字段
  */
-void MvccTrx::trx_fields(Table *table, Field &begin_xid_field, Field &end_xid_field) const
+void MvccTrx::trx_fields(BaseTable *table, Field &begin_xid_field, Field &end_xid_field) const
 {
   const TableMeta      &table_meta = table->table_meta();
   span<const FieldMeta> trx_fields = table_meta.trx_fields();
@@ -336,8 +336,8 @@ RC MvccTrx::commit_with_trx_id(int32_t commit_xid)
   for (const Operation &operation : operations_) {
     switch (operation.type()) {
       case Operation::Type::INSERT: {
-        RID    rid   = operation.rid();
-        Table *table = operation.table();
+        RID        rid   = operation.rid();
+        BaseTable *table = operation.table();
 
         Field begin_xid_field, end_xid_field;
         trx_fields(table, begin_xid_field, end_xid_field);
@@ -359,8 +359,8 @@ RC MvccTrx::commit_with_trx_id(int32_t commit_xid)
       } break;
 
       case Operation::Type::DELETE: {
-        RID    rid   = operation.rid();
-        Table *table = operation.table();
+        RID        rid   = operation.rid();
+        BaseTable *table = operation.table();
 
         Field begin_xid_field, end_xid_field;
         trx_fields(table, begin_xid_field, end_xid_field);
@@ -381,8 +381,8 @@ RC MvccTrx::commit_with_trx_id(int32_t commit_xid)
       } break;
 
       case Operation::Type::UPDATE: {
-        RID    rid   = operation.rid();
-        Table *table = operation.table();
+        RID        rid   = operation.rid();
+        BaseTable *table = operation.table();
 
         Field begin_xid_field, end_xid_field;
         trx_fields(table, begin_xid_field, end_xid_field);
@@ -427,8 +427,8 @@ RC MvccTrx::rollback()
   for (auto &operation : std::ranges::reverse_view(operations_)) {
     switch (operation.type()) {
       case Operation::Type::INSERT: {
-        RID    rid   = operation.rid();
-        Table *table = operation.table();
+        RID        rid   = operation.rid();
+        BaseTable *table = operation.table();
         // 这里也可以不删除，仅仅给数据加个标识位，等垃圾回收器来收割也行
 
         if (recovering_) {
@@ -455,8 +455,8 @@ RC MvccTrx::rollback()
       } break;
 
       case Operation::Type::DELETE: {
-        RID    rid   = operation.rid();
-        Table *table = operation.table();
+        RID        rid   = operation.rid();
+        BaseTable *table = operation.table();
 
         ASSERT(rc == RC::SUCCESS, "failed to get record while rollback. rid=%s, rc=%s",
               rid.to_string().c_str(), strrc(rc));
@@ -482,8 +482,8 @@ RC MvccTrx::rollback()
       } break;
 
       case Operation::Type::UPDATE: {
-        RID    rid   = operation.rid();
-        Table *table = operation.table();
+        RID        rid   = operation.rid();
+        BaseTable *table = operation.table();
 
         if (recovering_) {
           // 恢复的时候，需要额外判断下当前记录是否还是当前事务拥有。是的话才能删除记录
@@ -525,7 +525,7 @@ RC MvccTrx::rollback()
   return rc;
 }
 
-RC find_table(Db *db, const LogEntry &log_entry, Table *&table)
+RC find_table(Db *db, const LogEntry &log_entry, BaseTable *&table)
 {
   auto *trx_log_header = reinterpret_cast<const MvccTrxLogHeader *>(log_entry.data());
   switch (MvccTrxLogOperation(trx_log_header->operation_type).type()) {
@@ -547,13 +547,15 @@ RC find_table(Db *db, const LogEntry &log_entry, Table *&table)
 
 RC MvccTrx::redo(Db *db, const LogEntry &log_entry)
 {
-  auto  *trx_log_header = reinterpret_cast<const MvccTrxLogHeader *>(log_entry.data());
-  Table *table          = nullptr;
-  RC     rc             = find_table(db, log_entry, table);
+  auto      *trx_log_header = reinterpret_cast<const MvccTrxLogHeader *>(log_entry.data());
+  BaseTable *base_table     = nullptr;
+  RC         rc             = find_table(db, log_entry, base_table);
   if (OB_FAIL(rc)) {
     return rc;
   }
 
+  ASSERT(base_table->type() == TableType::Table, "Only tables support MVCC. The provided base_table is not of type Table.");
+  Table *table = static_cast<Table *>(base_table);
   switch (MvccTrxLogOperation(trx_log_header->operation_type).type()) {
     case MvccTrxLogOperation::Type::INSERT_RECORD: {
       auto *trx_log_record = reinterpret_cast<const MvccTrxRecordLogEntry *>(log_entry.data());

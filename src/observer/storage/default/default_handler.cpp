@@ -174,7 +174,7 @@ Db *DefaultHandler::find_db(const char *dbname) const
   return iter->second;
 }
 
-Table *DefaultHandler::find_table(const char *dbname, const char *table_name) const
+BaseTable *DefaultHandler::find_table(const char *dbname, const char *table_name) const
 {
   if (dbname == nullptr || table_name == nullptr) {
     LOG_WARN("Invalid argument. dbname=%p, table_name=%p", dbname, table_name);

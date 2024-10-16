@@ -36,8 +36,8 @@ public:
   virtual ~FilterStmt();
 
 public:
-  static RC create(Db *db, Table *default_table, std::unordered_map<std::string, Table *> *tables,
-      std::unique_ptr<Expression> &condition, FilterStmt *&stmt);
+  static RC create(Db *db, BaseTable *default_table, std::vector<std::string> tables_alias,
+      std::unordered_map<std::string, BaseTable *> *tables, std::unique_ptr<Expression> &condition, FilterStmt *&stmt);
 
   bool                         condition_empty() const { return nullptr == condition_; }
   std::unique_ptr<Expression> &condition() { return condition_; }

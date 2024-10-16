@@ -68,7 +68,7 @@ MvccTrxLogHandler::MvccTrxLogHandler(LogHandler &log_handler) : log_handler_(log
 
 MvccTrxLogHandler::~MvccTrxLogHandler() {}
 
-RC MvccTrxLogHandler::insert_record(int32_t trx_id, Table *table, const RID &rid)
+RC MvccTrxLogHandler::insert_record(int32_t trx_id, BaseTable *table, const RID &rid)
 {
   ASSERT(trx_id > 0, "invalid trx_id:%d", trx_id);
 
@@ -83,7 +83,7 @@ RC MvccTrxLogHandler::insert_record(int32_t trx_id, Table *table, const RID &rid
       lsn, LogModule::Id::TRANSACTION, span<const char>(reinterpret_cast<const char *>(&log_entry), sizeof(log_entry)));
 }
 
-RC MvccTrxLogHandler::delete_record(int32_t trx_id, Table *table, const RID &rid)
+RC MvccTrxLogHandler::delete_record(int32_t trx_id, BaseTable *table, const RID &rid)
 {
   ASSERT(trx_id > 0, "invalid trx_id:%d", trx_id);
 

@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details. */
 using namespace std;
 using namespace common;
 
-Table *BinderContext::find_table(const char *table_name) const
+BaseTable *BinderContext::find_table(const char *table_name) const
 {
   auto iter = this->tables_->find(table_name);
   if (iter == tables_->end()) {
@@ -32,13 +32,15 @@ Table *BinderContext::find_table(const char *table_name) const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-static void wildcard_fields(Table *table, vector<unique_ptr<Expression>> &expressions, bool multi_tables = false)
+void ExpressionBinder::wildcard_fields(
+    BaseTable *table, std::string table_alias, vector<unique_ptr<Expression>> &expressions, bool multi_tables)
 {
   const TableMeta &table_meta = table->table_meta();
   const int        field_num  = table_meta.field_num();
   for (int i = table_meta.sys_field_num(); i < field_num; i++) {
     Field      field(table, table_meta.field(i));
     FieldExpr *field_expr = new FieldExpr(field);
+    field_expr->set_table_alias(std::move(table_alias));
     // 这里设置了基类的 name 属性
     if (multi_tables) {
       // 多表查询带表名
@@ -132,11 +134,11 @@ RC ExpressionBinder::bind_star_expression(
     return RC::INVALID_ALIAS;
   }
 
-  vector<Table *> tables_to_wildcard;
+  vector<BaseTable *> tables_to_wildcard;
 
   const char *table_name = star_expr->table_name();
   if (!is_blank(table_name) && 0 != strcmp(table_name, "*")) {
-    Table *table = context_.find_table(table_name);
+    BaseTable *table = context_.find_table(table_name);
     if (nullptr == table) {
       LOG_INFO("no such table in from list: %s", table_name);
       return RC::SCHEMA_TABLE_NOT_EXIST;
@@ -144,12 +146,24 @@ RC ExpressionBinder::bind_star_expression(
 
     tables_to_wildcard.push_back(table);
   } else {
-    const vector<Table *> &all_tables = context_.query_tables();
+    const vector<BaseTable *> &all_tables = context_.query_tables();
     tables_to_wildcard.insert(tables_to_wildcard.end(), all_tables.begin(), all_tables.end());
   }
 
-  for (Table *table : tables_to_wildcard) {
-    wildcard_fields(table, bound_expressions, multi_tables_);
+  // select t2/table_alias_2.* from table_alias_1 t1, table_alias_2 t2 where t1.id < t2.id; 非自交可能指定也可能没
+  // select t2.* from table_alias_1 t1, table_alias_1 t2 where t1.id < t2.id; 自交的话必然指定了别名
+  if (tables_to_wildcard.size() == 1) {
+    // 看看能不能找到对应的表名，能的话是第一种情况
+    for (int i = 0; i < context_.query_tables().size(); ++i) {
+      if (strcmp(context_.query_tables()[i]->name(), table_name) == 0) {
+        table_name = context_.alias()[i].c_str();
+      }
+    }
+    wildcard_fields(tables_to_wildcard[0], table_name, bound_expressions, multi_tables_);
+  } else {
+    for (int i = 0; i < tables_to_wildcard.size(); ++i) {
+      wildcard_fields(tables_to_wildcard[i], context_.alias()[i], bound_expressions, multi_tables_);
+    }
   }
 
   return RC::SUCCESS;
@@ -167,7 +181,7 @@ RC ExpressionBinder::bind_unbound_field_expression(
   const char *table_name = unbound_field_expr->table_name();
   const char *field_name = unbound_field_expr->field_name();
 
-  Table *table = nullptr;
+  BaseTable *table = nullptr;
   if (is_blank(table_name)) {
     table = context_.default_table();
   } else {
@@ -178,8 +192,16 @@ RC ExpressionBinder::bind_unbound_field_expression(
     }
   }
 
+  std::string table_alias;
+  if (context_.has_tables_alias()) {
+    // 多表自交要投影某些列或者有谓词条件的，一定是通过别名进行查询
+    if (strcmp(table->name(), table_name) != 0) {
+      table_alias = table_name;
+    }
+  }
+
   if (0 == strcmp(field_name, "*")) {
-    wildcard_fields(table, bound_expressions, multi_tables_);
+    wildcard_fields(table, table_alias, bound_expressions, multi_tables_);
   } else {
     const FieldMeta *field_meta = table->table_meta().field(field_name);
     if (nullptr == field_meta) {
@@ -189,6 +211,7 @@ RC ExpressionBinder::bind_unbound_field_expression(
 
     Field      field(table, field_meta);
     FieldExpr *field_expr = new FieldExpr(field);
+    field_expr->set_table_alias(table_alias);
     // 这里设置了基类的 name 属性
     if (!is_blank(unbound_field_expr->alias())) {
       field_expr->set_name(unbound_field_expr->alias());
@@ -486,6 +509,7 @@ RC ExpressionBinder::bind_function_expression(
 
     // set name 阶段
     aggregate_expr->set_name(unbound_function_expr->name());
+    aggregate_expr->set_alias(unbound_function_expr->alias());
     rc = check_aggregate_expression(*aggregate_expr);
     if (OB_FAIL(rc)) {
       return rc;

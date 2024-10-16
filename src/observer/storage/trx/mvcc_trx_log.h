@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/clog/log_replayer.h"
 
 class LogHandler;
-class Table;
+class BaseTable;
 class Db;
 class MvccTrxKit;
 class MvccTrx;
@@ -115,12 +115,12 @@ public:
   /**
    * @brief 记录插入一条记录的日志
    */
-  RC insert_record(int32_t trx_id, Table *table, const RID &rid);
+  RC insert_record(int32_t trx_id, BaseTable *table, const RID &rid);
 
   /**
    * @brief 记录删除一条记录的日志
    */
-  RC delete_record(int32_t trx_id, Table *table, const RID &rid);
+  RC delete_record(int32_t trx_id, BaseTable *table, const RID &rid);
 
   /**
    * @brief 记录提交事务的日志

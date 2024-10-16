@@ -25,7 +25,7 @@ class UpdatePhysicalOperator : public PhysicalOperator
 {
 public:
   UpdatePhysicalOperator(
-      Table *table, std::vector<FieldMeta> field_metas, std::vector<std::unique_ptr<Expression>> values)
+      BaseTable *table, std::vector<FieldMeta> field_metas, std::vector<std::unique_ptr<Expression>> values)
       : table_(table), field_metas_(std::move(field_metas)), values_(std::move(values))
   {}
 
@@ -43,7 +43,7 @@ private:
   void rollback();
 
   Trx                                     *trx_   = nullptr;
-  Table                                   *table_ = nullptr;
+  BaseTable                               *table_ = nullptr;
   std::vector<FieldMeta>                   field_metas_;
   std::vector<std::unique_ptr<Expression>> values_;
   std::vector<Record>                      records_;
