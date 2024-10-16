@@ -28,6 +28,19 @@ IndexScanPhysicalOperator::IndexScanPhysicalOperator(Table *table, Index *index,
   }
 }
 
+IndexScanPhysicalOperator::IndexScanPhysicalOperator(Table *table, std::string table_alias, Index *index,
+    ReadWriteMode mode, const Value *left_value, bool left_inclusive, const Value *right_value, bool right_inclusive)
+    : table_(table), index_(index), mode_(mode), left_inclusive_(left_inclusive), right_inclusive_(right_inclusive)
+{
+  tuple_.set_table_alias(table_alias);
+  if (left_value) {
+    left_value_ = *left_value;
+  }
+  if (right_value) {
+    right_value_ = *right_value;
+  }
+}
+
 RC IndexScanPhysicalOperator::open(Trx *trx)
 {
   if (nullptr == table_ || nullptr == index_) {

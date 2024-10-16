@@ -36,6 +36,13 @@ public:
   const std::vector<BaseTable *>               &query_tables() const { return query_tables_; }
   std::unordered_map<std::string, BaseTable *> &table_map() { return *tables_; }
 
+  // 对于 update delete 目前还不支持给表取别名，所以是空的
+  bool has_tables_alias() { return !tables_alias_.empty(); }
+
+  const std::vector<std::string> &alias() { return tables_alias_; }
+
+  void set_alias(std::vector<std::string> alias) { tables_alias_ = std::move(alias); }
+
 private:
   Db *db_;
 
@@ -46,6 +53,7 @@ public:
 private:
   BaseTable                                    *default_table_;
   std::vector<BaseTable *>                      query_tables_;
+  std::vector<std::string>                      tables_alias_;
   std::unordered_map<std::string, BaseTable *> *tables_;
 };
 
@@ -85,6 +93,9 @@ private:
       std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions);
   RC bind_exprlist_expression(
       std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions);
+
+  void wildcard_fields(BaseTable *table, std::string table_alias, vector<unique_ptr<Expression>> &expressions,
+      bool multi_tables = false);
 
 private:
   bool           multi_tables_;

@@ -45,6 +45,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt,
   vector<BaseTable *>                tables;
   unordered_map<string, BaseTable *> table_map = parent_table_map;
   unordered_map<string, BaseTable *> temp_map;
+  std::vector<std::string>           tables_alias(select_sql.relations.size());
 
   for (size_t i = 0; i < select_sql.relations.size(); i++) {
     const char *table_name = select_sql.relations[i].relation.c_str();
@@ -59,17 +60,20 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt,
       return RC::SCHEMA_TABLE_NOT_EXIST;
     }
     // 建立别名
-    const string &table_alias = select_sql.relations[i].alias;
+    auto &table_alias = select_sql.relations[i].alias;
     if (!table_alias.empty()) {
-      const auto &success = temp_map.insert({table_alias, table});
+      const auto &success = temp_map.emplace(table_alias, table);
       if (!success.second)
         return RC::INVALID_ALIAS;
+    } else {
+      temp_map.emplace(table_name, table);
     }
 
+    tables_alias[i] = table_alias;
+    tables.emplace_back(table);
     binder_context.add_table(table);
-    tables.push_back(table);
-    temp_map.insert({table_name, table});
   }
+
   // alias is all avaliable
   table_map.insert(temp_map.begin(), temp_map.end());
 
@@ -77,6 +81,8 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt,
   if (tables.size() == 1) {
     default_table = tables[0];
   }
+
+  binder_context.set_alias(tables_alias);
   binder_context.set_tables(&table_map);
   binder_context.set_default_table(default_table);
   // collect query fields in `select` statement
@@ -117,7 +123,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt,
 
   // create filter statement in `where` statement
   FilterStmt *filter_stmt = nullptr;
-  RC          rc          = FilterStmt::create(db, default_table, &table_map, select_sql.conditions, filter_stmt);
+  RC rc = FilterStmt::create(db, default_table, binder_context.alias(), &table_map, select_sql.conditions, filter_stmt);
   if (rc != RC::SUCCESS) {
     LOG_WARN("cannot construct filter stmt");
     return rc;
@@ -125,7 +131,8 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt,
 
   // create filter statement in `having` statement
   FilterStmt *having_filter_stmt = nullptr;
-  rc = FilterStmt::create(db, default_table, &table_map, select_sql.having_conditions, having_filter_stmt);
+  rc                             = FilterStmt::create(
+      db, default_table, binder_context.alias(), &table_map, select_sql.having_conditions, having_filter_stmt);
   if (rc != RC::SUCCESS) {
     LOG_WARN("cannot construct having filter stmt");
     return rc;
@@ -135,6 +142,7 @@ RC SelectStmt::create(Db *db, SelectSqlNode &select_sql, Stmt *&stmt,
   SelectStmt *select_stmt = new SelectStmt();
 
   select_stmt->tables_.swap(tables);
+  select_stmt->tables_alias_ = std::move(tables_alias);
   select_stmt->query_expressions_.swap(bound_expressions);
   select_stmt->filter_stmt_ = filter_stmt;
   select_stmt->group_by_.swap(group_by_expressions);

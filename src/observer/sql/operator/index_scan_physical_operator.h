@@ -28,7 +28,10 @@ public:
   IndexScanPhysicalOperator(Table *table, Index *index, ReadWriteMode mode, const Value *left_value,
       bool left_inclusive, const Value *right_value, bool right_inclusive);
 
-  virtual ~IndexScanPhysicalOperator() = default;
+  IndexScanPhysicalOperator(Table *table, std::string table_alias, Index *index, ReadWriteMode mode,
+      const Value *left_value, bool left_inclusive, const Value *right_value, bool right_inclusive);
+
+  ~IndexScanPhysicalOperator() override = default;
 
   PhysicalOperatorType type() const override { return PhysicalOperatorType::INDEX_SCAN; }
 

@@ -51,10 +51,12 @@ public:
   std::vector<std::unique_ptr<Expression>> &query_expressions() { return query_expressions_; }
   std::vector<std::unique_ptr<Expression>> &group_by() { return group_by_; }
   std::vector<OrderBySqlNode>              &order_by() { return order_by_; }
+  std::vector<std::string>                 &tables_alias() { return tables_alias_; }
 
 private:
   std::vector<std::unique_ptr<Expression>> query_expressions_;
   std::vector<BaseTable *>                 tables_;
+  std::vector<std::string>                 tables_alias_;  // 存表名
   FilterStmt                              *filter_stmt_ = nullptr;
   std::vector<std::unique_ptr<Expression>> group_by_;
   std::vector<OrderBySqlNode>              order_by_;

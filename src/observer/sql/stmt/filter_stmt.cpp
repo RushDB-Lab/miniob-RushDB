@@ -21,8 +21,8 @@ See the Mulan PSL v2 for more details. */
 
 FilterStmt::~FilterStmt() = default;
 
-RC FilterStmt::create(Db *db, BaseTable *default_table, std::unordered_map<std::string, BaseTable *> *tables,
-    std::unique_ptr<Expression> &condition, FilterStmt *&stmt)
+RC FilterStmt::create(Db *db, BaseTable *default_table, std::vector<std::string> tables_alias,
+    std::unordered_map<std::string, BaseTable *> *tables, std::unique_ptr<Expression> &condition, FilterStmt *&stmt)
 {
   RC rc = RC::SUCCESS;
   stmt  = nullptr;
@@ -41,6 +41,7 @@ RC FilterStmt::create(Db *db, BaseTable *default_table, std::unordered_map<std::
     }
   }
   binder_context.add_db(db);
+  binder_context.set_alias(std::move(tables_alias));
   binder_context.set_tables(tables);
   binder_context.set_default_table(default_table);
   ExpressionBinder expression_binder(binder_context);

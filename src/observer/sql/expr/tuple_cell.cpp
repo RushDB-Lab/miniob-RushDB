@@ -27,12 +27,6 @@ TupleCellSpec::TupleCellSpec(const char *table_name, const char *field_name, con
   }
   if (alias) {
     alias_ = alias;
-  } else {
-    if (table_name_.empty()) {
-      alias_ = field_name_;
-    } else {
-      alias_ = table_name_ + "." + field_name_;
-    }
   }
 }
 

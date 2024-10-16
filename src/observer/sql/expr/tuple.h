@@ -199,6 +199,8 @@ public:
     }
   }
 
+  void set_table_alias(std::string &alias) { table_alias_ = std::move(alias); }
+
   int cell_num() const override { return speces_.size(); }
 
   RC cell_at(int index, Value &cell) const override
@@ -238,6 +240,14 @@ public:
   {
     const char *table_name = spec.table_name();
     const char *field_name = spec.field_name();
+    const char *alias      = spec.alias();
+
+    if (!common::is_blank(alias)) {
+      if (0 != strcmp(alias, table_alias_.c_str())) {
+        return RC::NOTFOUND;
+      }
+    }
+
     if (0 != strcmp(table_name, table_->name())) {
       return RC::NOTFOUND;
     }
@@ -272,6 +282,7 @@ private:
   Record                  *record_ = nullptr;
   const BaseTable         *table_  = nullptr;
   std::vector<FieldExpr *> speces_;
+  std::string              table_alias_;
 };
 
 /**

@@ -27,7 +27,7 @@ using namespace std;
 
 RC FieldExpr::get_value(const Tuple &tuple, Value &value)
 {
-  return tuple.find_cell(TupleCellSpec(table_name(), field_name()), value);
+  return tuple.find_cell(TupleCellSpec(table_name(), field_name(), alias()), value);
 }
 
 bool FieldExpr::equal(const Expression &other) const

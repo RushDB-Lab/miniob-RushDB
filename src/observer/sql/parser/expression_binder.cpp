@@ -32,13 +32,15 @@ BaseTable *BinderContext::find_table(const char *table_name) const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-static void wildcard_fields(BaseTable *table, vector<unique_ptr<Expression>> &expressions, bool multi_tables = false)
+void ExpressionBinder::wildcard_fields(
+    BaseTable *table, std::string table_alias, vector<unique_ptr<Expression>> &expressions, bool multi_tables)
 {
   const TableMeta &table_meta = table->table_meta();
   const int        field_num  = table_meta.field_num();
   for (int i = table_meta.sys_field_num(); i < field_num; i++) {
     Field      field(table, table_meta.field(i));
     FieldExpr *field_expr = new FieldExpr(field);
+    field_expr->set_alias(std::move(table_alias));
     // 这里设置了基类的 name 属性
     if (multi_tables) {
       // 多表查询带表名
@@ -148,8 +150,8 @@ RC ExpressionBinder::bind_star_expression(
     tables_to_wildcard.insert(tables_to_wildcard.end(), all_tables.begin(), all_tables.end());
   }
 
-  for (BaseTable *table : tables_to_wildcard) {
-    wildcard_fields(table, bound_expressions, multi_tables_);
+  for (int i = 0; i < tables_to_wildcard.size(); ++i) {
+    wildcard_fields(tables_to_wildcard[i], context_.alias()[i], bound_expressions, multi_tables_);
   }
 
   return RC::SUCCESS;
@@ -178,8 +180,16 @@ RC ExpressionBinder::bind_unbound_field_expression(
     }
   }
 
+  std::string table_alias;
+  if (context_.has_tables_alias()) {
+    // 多表自交要投影某些列或者有谓词条件的，一定是通过别名进行查询
+    if (strcmp(table->name(), table_name) != 0) {
+      table_alias = table_name;
+    }
+  }
+
   if (0 == strcmp(field_name, "*")) {
-    wildcard_fields(table, bound_expressions, multi_tables_);
+    wildcard_fields(table, table_alias, bound_expressions, multi_tables_);
   } else {
     const FieldMeta *field_meta = table->table_meta().field(field_name);
     if (nullptr == field_meta) {
@@ -189,6 +199,7 @@ RC ExpressionBinder::bind_unbound_field_expression(
 
     Field      field(table, field_meta);
     FieldExpr *field_expr = new FieldExpr(field);
+    field_expr->set_alias(table_alias);
     // 这里设置了基类的 name 属性
     if (!is_blank(unbound_field_expr->alias())) {
       field_expr->set_name(unbound_field_expr->alias());

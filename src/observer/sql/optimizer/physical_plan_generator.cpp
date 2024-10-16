@@ -188,6 +188,7 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
 
     const Value               &value           = value_expr->get_value();
     IndexScanPhysicalOperator *index_scan_oper = new IndexScanPhysicalOperator(table,
+        std::move(table_get_oper.table_alias()),
         index,
         table_get_oper.read_write_mode(),
         &value,
@@ -200,13 +201,14 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
     LOG_TRACE("Index scan used on table: {}", table->name());
   } else {
     if (base_table->type() == TableType::Table) {
-      auto table_scan_oper = std::make_unique<TableScanPhysicalOperator>(table, table_get_oper.read_write_mode());
+      auto table_scan_oper = std::make_unique<TableScanPhysicalOperator>(
+          table, std::move(table_get_oper.table_alias()), table_get_oper.read_write_mode());
       table_scan_oper->set_predicates(std::move(predicates));
       oper = std::move(table_scan_oper);
       LOG_TRACE("Table scan used on table: {}", table->name());
     } else if (base_table->type() == TableType::View) {
-      auto view            = static_cast<View *>(base_table);
-      auto table_scan_oper = std::make_unique<ViewScanPhysicalOperator>(view, table_get_oper.read_write_mode());
+      auto view            = dynamic_cast<View *>(base_table);
+      auto table_scan_oper = std::make_unique<ViewScanPhysicalOperator>(view, std::move(table_get_oper.table_alias()));
       table_scan_oper->set_predicates(std::move(predicates));
       oper = std::move(table_scan_oper);
       LOG_TRACE("View scan used on view: {}", view->name());

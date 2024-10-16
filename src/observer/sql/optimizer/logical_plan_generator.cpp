@@ -104,8 +104,10 @@ RC LogicalPlanGenerator::create_plan(SelectStmt *select_stmt, unique_ptr<Logical
   last_oper = &table_oper;
 
   const std::vector<BaseTable *> &tables = select_stmt->tables();
-  for (BaseTable *table : tables) {
-    unique_ptr<LogicalOperator> table_get_oper(new TableGetLogicalOperator(table, ReadWriteMode::READ_ONLY));
+  const std::vector<std::string> &alias  = select_stmt->tables_alias();
+  for (int i = 0; i < tables.size(); ++i) {
+    unique_ptr<LogicalOperator> table_get_oper(
+        new TableGetLogicalOperator(tables[i], alias[i], ReadWriteMode::READ_ONLY));
     if (table_oper == nullptr) {
       table_oper = std::move(table_get_oper);
     } else {

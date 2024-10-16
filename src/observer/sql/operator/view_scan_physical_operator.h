@@ -28,7 +28,13 @@ class View;
 class ViewScanPhysicalOperator : public PhysicalOperator
 {
 public:
-  ViewScanPhysicalOperator(View *view, ReadWriteMode mode) : view_(view) { select_expr_ = view_->select_oper().get(); }
+  ViewScanPhysicalOperator(View *view) : view_(view) { select_expr_ = view_->select_oper().get(); }
+
+  ViewScanPhysicalOperator(View *view, std::string alias) : view_(view)
+  {
+    tuple_.set_table_alias(alias);
+    select_expr_ = view_->select_oper().get();
+  }
 
   ~ViewScanPhysicalOperator() override = default;
 
