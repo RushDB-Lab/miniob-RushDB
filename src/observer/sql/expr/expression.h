@@ -489,10 +489,8 @@ public:
       case Type::DATE_FORMAT: {
         return AttrType::CHARS;
       }
-      default: {
-        return AttrType::UNDEFINED;
-      }
     }
+    return AttrType::UNDEFINED;
   }
 
   RC get_value(const Tuple &tuple, Value &value) override;
@@ -563,8 +561,6 @@ public:
   ExprType type() const override;
 
   AttrType value_type() const override;
-
-  std::unique_ptr<Expression> deep_copy() const;
 
   RC generate_select_stmt(Db *db, const std::unordered_map<std::string, Table *> &tables);
   RC generate_logical_oper();

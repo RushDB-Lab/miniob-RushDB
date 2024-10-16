@@ -23,7 +23,11 @@ See the Mulan PSL v2 for more details. */
 #include "sql/optimizer/physical_plan_generator.h"
 #include "common/lang/defer.h"
 
-using namespace std;
+#define check_type(str, rule)           \
+  if (0 == strcasecmp(type_str, str)) { \
+    type = rule;                        \
+    return RC::SUCCESS;                 \
+  }
 
 RC FieldExpr::get_value(const Tuple &tuple, Value &value)
 {
@@ -730,21 +734,12 @@ RC AggregateFunctionExpr::get_value(const Tuple &tuple, Value &value)
 
 RC AggregateFunctionExpr::type_from_string(const char *type_str, AggregateFunctionExpr::Type &type)
 {
-  RC rc = RC::SUCCESS;
-  if (0 == strcasecmp(type_str, "count")) {
-    type = Type::COUNT;
-  } else if (0 == strcasecmp(type_str, "sum")) {
-    type = Type::SUM;
-  } else if (0 == strcasecmp(type_str, "avg")) {
-    type = Type::AVG;
-  } else if (0 == strcasecmp(type_str, "max")) {
-    type = Type::MAX;
-  } else if (0 == strcasecmp(type_str, "min")) {
-    type = Type::MIN;
-  } else {
-    rc = RC::INVALID_ARGUMENT;
-  }
-  return rc;
+  check_type("sum", Type::SUM);
+  check_type("avg", Type::AVG);
+  check_type("max", Type::MAX);
+  check_type("min", Type::MIN);
+  check_type("count", Type::COUNT);
+  return RC::INVALID_ARGUMENT;
 }
 
 SubQueryExpr::SubQueryExpr(SelectSqlNode &select_node) : sql_node_(select_node) {}
@@ -861,8 +856,6 @@ ExprType SubQueryExpr::type() const { return ExprType::SUBQUERY; }
 
 AttrType SubQueryExpr::value_type() const { return AttrType::UNDEFINED; }
 
-std::unique_ptr<Expression> SubQueryExpr::deep_copy() const { return {}; }
-
 ListExpr::ListExpr(std::vector<Expression *> &&exprs)
 {
   for (auto expr : exprs) {
@@ -873,17 +866,10 @@ ListExpr::ListExpr(std::vector<Expression *> &&exprs)
 
 RC NormalFunctionExpr::type_from_string(const char *type_str, NormalFunctionExpr::Type &type)
 {
-  RC rc = RC::SUCCESS;
-  if (0 == strcasecmp(type_str, "date_format")) {
-    type = Type::DATE_FORMAT;
-  } else if (0 == strcasecmp(type_str, "length")) {
-    type = Type::LENGTH;
-  } else if (0 == strcasecmp(type_str, "round")) {
-    type = Type::ROUND;
-  } else {
-    rc = RC::INVALID_ARGUMENT;
-  }
-  return rc;
+  check_type("date_format", Type::DATE_FORMAT);
+  check_type("length", Type::LENGTH);
+  check_type("round", Type::ROUND);
+  return RC::INVALID_ARGUMENT;
 }
 
 RC NormalFunctionExpr::get_value(const Tuple &tuple, Value &result)
@@ -898,20 +884,11 @@ RC NormalFunctionExpr::get_value(const Tuple &tuple, Value &result)
     args_values_.push_back(value);
   }
   switch (type_) {
-    case Type::LENGTH: {
-      return builtin::length(args_values_, result);
-    }
-    case Type::ROUND: {
-      return builtin::round(args_values_, result);
-    }
-    case Type::DATE_FORMAT: {
-      return builtin::date_format(args_values_, result);
-    }
-    default: {
-      return RC::INTERNAL;
-    }
+    case Type::LENGTH: return builtin::length(args_values_, result);
+    case Type::ROUND: return builtin::round(args_values_, result);
+    case Type::DATE_FORMAT: return builtin::date_format(args_values_, result);
   }
-  return RC::SUCCESS;
+  return RC::INTERNAL;
 }
 
 RC NormalFunctionExpr::try_get_value(Value &result) const
@@ -926,18 +903,9 @@ RC NormalFunctionExpr::try_get_value(Value &result) const
     args_values_.push_back(value);
   }
   switch (type_) {
-    case Type::LENGTH: {
-      return builtin::length(args_values_, result);
-    }
-    case Type::ROUND: {
-      return builtin::round(args_values_, result);
-    }
-    case Type::DATE_FORMAT: {
-      return builtin::date_format(args_values_, result);
-    }
-    default: {
-      return RC::INTERNAL;
-    }
+    case Type::LENGTH: return builtin::length(args_values_, result);
+    case Type::ROUND: return builtin::round(args_values_, result);
+    case Type::DATE_FORMAT: return builtin::date_format(args_values_, result);
   }
-  return RC::SUCCESS;
+  return RC::INTERNAL;
 }
