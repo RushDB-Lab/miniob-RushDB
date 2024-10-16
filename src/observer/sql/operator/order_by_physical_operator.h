@@ -49,5 +49,5 @@ private:
   using order_list = std::priority_queue<order_line, vector<order_line>, order_func>;
   order_list order_and_field_line;
 
-  Tuple *tuple_;
+  Tuple *tuple_ = nullptr;
 };
