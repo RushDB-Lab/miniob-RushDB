@@ -23,6 +23,8 @@
 #include "readline/readline.h"
 #endif
 
+const int TABLE_RECORD_NUMBER = 20;
+
 #define MAX_MEM_BUFFER_SIZE 131072
 #define PORT_DEFAULT 6789
 
@@ -210,7 +212,7 @@ int main(int argc, char *argv[])
   send_sql(sockfd, "CREATE TABLE big_order_by_3 (id INT, addr CHAR(100), num INT, price FLOAT, birthday DATE);");
 
   // Insert data (for simplicity, inserting a small amount of random data)
-  for (int i = 1; i <= 20; i++) {
+  for (int i = 1; i <= TABLE_RECORD_NUMBER; i++) {
     char insert_sql[512];
     snprintf(insert_sql,
         sizeof(insert_sql),

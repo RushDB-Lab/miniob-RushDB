@@ -12,6 +12,8 @@ See the Mulan PSL v2 for more details. */
 // Created by Longda on 2021
 //
 
+#if 1
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>
@@ -245,3 +247,5 @@ int main(int argc, char *argv[])
 
   return 0;
 }
+
+#endif
