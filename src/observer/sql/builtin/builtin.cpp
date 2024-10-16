@@ -88,7 +88,84 @@ static string get_full_month_name(int month)
     default: return "";  // 如果月份值无效，返回一个错误字符串
   }
 }
+
+static RC get_year_month_day(const Value &value, int &year, int &month, int &day)
+{
+  if (value.attr_type() == AttrType::DATES) {
+    // 提取年、月、日（假设日期格式为YYYYMMDD）
+    int val = value.get_date();
+    year    = val / 10000;        // 获取年份
+    month   = (val / 100) % 100;  // 获取月份
+    day     = val % 100;          // 获取日期
+  }
+
+  if (value.attr_type() == AttrType::CHARS) {
+    // 日期格式假设为 '2019-9-17' 或 '2019-09-17'
+    std::string date_str = value.to_string();
+    if (sscanf(date_str.c_str(), "%d-%d-%d", &year, &month, &day) != 3) {
+      return RC::INVALID_ARGUMENT;
+    }
+  }
+
+  if (!check_date(year, month, day)) {
+    return RC::ERROR_DATE;
+  }
+
+  return RC::SUCCESS;
+}
+
 }  // namespace date
+
+RC year(const vector<Value> &args, Value &result)
+{
+  if (args.size() != 1) {
+    return RC::INVALID_ARGUMENT;
+  }
+  if (args[0].attr_type() != AttrType::DATES && args[0].attr_type() != AttrType::CHARS) {
+    return RC::INVALID_ARGUMENT;
+  }
+  int year, month, day;
+  RC  rc = date::get_year_month_day(args[0], year, month, day);
+  if (OB_FAIL(rc)) {
+    return rc;
+  }
+  result = Value(year);
+  return RC::SUCCESS;
+}
+
+RC month(const vector<Value> &args, Value &result)
+{
+  if (args.size() != 1) {
+    return RC::INVALID_ARGUMENT;
+  }
+  if (args[0].attr_type() != AttrType::DATES && args[0].attr_type() != AttrType::CHARS) {
+    return RC::INVALID_ARGUMENT;
+  }
+  int year, month, day;
+  RC  rc = date::get_year_month_day(args[0], year, month, day);
+  if (OB_FAIL(rc)) {
+    return rc;
+  }
+  result = Value(month);
+  return RC::SUCCESS;
+}
+
+RC day(const vector<Value> &args, Value &result)
+{
+  if (args.size() != 1) {
+    return RC::INVALID_ARGUMENT;
+  }
+  if (args[0].attr_type() != AttrType::DATES && args[0].attr_type() != AttrType::CHARS) {
+    return RC::INVALID_ARGUMENT;
+  }
+  int year, month, day;
+  RC  rc = date::get_year_month_day(args[0], year, month, day);
+  if (OB_FAIL(rc)) {
+    return rc;
+  }
+  result = Value(day);
+  return RC::SUCCESS;
+}
 
 RC date_format(const vector<Value> &args, Value &result)
 {
@@ -103,25 +180,9 @@ RC date_format(const vector<Value> &args, Value &result)
   }
 
   int year, month, day;
-
-  if (args[0].attr_type() == AttrType::DATES) {
-    // 提取年、月、日（假设日期格式为YYYYMMDD）
-    int val = args[0].get_date();
-    year    = val / 10000;        // 获取年份
-    month   = (val / 100) % 100;  // 获取月份
-    day     = val % 100;          // 获取日期
-  }
-
-  if (args[0].attr_type() == AttrType::CHARS) {
-    // 日期格式假设为 '2019-9-17' 或 '2019-09-17'
-    std::string date_str = args[0].to_string();
-    if (sscanf(date_str.c_str(), "%d-%d-%d", &year, &month, &day) != 3) {
-      return RC::INVALID_ARGUMENT;
-    }
-  }
-
-  if (!check_date(year, month, day)) {
-    return RC::ERROR_DATE;
+  RC  rc = date::get_year_month_day(args[0], year, month, day);
+  if (OB_FAIL(rc)) {
+    return rc;
   }
 
   auto fmt = args[1].to_string();

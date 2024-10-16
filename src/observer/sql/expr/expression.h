@@ -464,6 +464,9 @@ public:
   {
     LENGTH,
     ROUND,
+    YEAR,
+    MONTH,
+    DAY,
     DATE_FORMAT,
     DISTANCE,
     STRING_TO_VECTOR,

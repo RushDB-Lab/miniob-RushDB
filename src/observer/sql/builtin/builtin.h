@@ -20,6 +20,12 @@ extern RC length(const vector<Value> &args, Value &result);
 
 extern RC round(const vector<Value> &args, Value &result);
 
+extern RC year(const vector<Value> &args, Value &result);
+
+extern RC month(const vector<Value> &args, Value &result);
+
+extern RC day(const vector<Value> &args, Value &result);
+
 extern RC date_format(const vector<Value> &args, Value &result);
 
 extern RC distance(const vector<Value> &args, Value &result);

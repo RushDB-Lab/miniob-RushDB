@@ -866,6 +866,9 @@ ListExpr::ListExpr(std::vector<Expression *> &&exprs)
 
 RC NormalFunctionExpr::type_from_string(const char *type_str, NormalFunctionExpr::Type &type)
 {
+  check_type("day", Type::DAY);
+  check_type("month", Type::MONTH);
+  check_type("year", Type::YEAR);
   check_type("date_format", Type::DATE_FORMAT);
   check_type("length", Type::LENGTH);
   check_type("round", Type::ROUND);
@@ -895,6 +898,9 @@ RC NormalFunctionExpr::get_value(const Tuple &tuple, Value &result)
     case Type::STRING_TO_VECTOR: return builtin::string_to_vector(args_values_, result);
     case Type::VECTOR_TO_STRING: return builtin::vector_to_string(args_values_, result);
     case Type::VECTOR_DIM: return builtin::vector_dim(args_values_, result);
+    case Type::YEAR: return builtin::year(args_values_, result);
+    case Type::MONTH: return builtin::month(args_values_, result);
+    case Type::DAY: return builtin::day(args_values_, result);
   }
   return RC::INTERNAL;
 }
@@ -918,6 +924,9 @@ RC NormalFunctionExpr::try_get_value(Value &result) const
     case Type::STRING_TO_VECTOR: return builtin::string_to_vector(args_values_, result);
     case Type::VECTOR_TO_STRING: return builtin::vector_to_string(args_values_, result);
     case Type::VECTOR_DIM: return builtin::vector_dim(args_values_, result);
+    case Type::YEAR: return builtin::year(args_values_, result);
+    case Type::MONTH: return builtin::month(args_values_, result);
+    case Type::DAY: return builtin::day(args_values_, result);
   }
   return RC::INTERNAL;
 }
@@ -932,6 +941,9 @@ AttrType NormalFunctionExpr::value_type() const
     case Type::STRING_TO_VECTOR: return AttrType::VECTORS;
     case Type::VECTOR_TO_STRING: return AttrType::CHARS;
     case Type::VECTOR_DIM: return AttrType::INTS;
+    case Type::YEAR: return AttrType::INTS;
+    case Type::MONTH: return AttrType::INTS;
+    case Type::DAY: return AttrType::INTS;
   }
   return AttrType::UNDEFINED;
 }
