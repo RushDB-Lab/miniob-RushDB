@@ -8,24 +8,23 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
+//
+// Created by HuXin on 24-10-9.
+//
+
 #pragma once
 
-#include "common/type/data_type.h"
+#include "sql/operator/logical_operator.h"
 
-class VectorType : public DataType
+class LimitLogicalOperator : public LogicalOperator
 {
 public:
-  VectorType() : DataType(AttrType::VECTORS) {}
+  LimitLogicalOperator(int limit) : limit_(limit) {}
 
-  virtual ~VectorType() = default;
+  LogicalOperatorType type() const override { return LogicalOperatorType::LIMIT; }
 
-  int compare(const Value &left, const Value &right) const override;
+  int limit() const { return limit_; }
 
-  RC cast_to(const Value &val, AttrType type, Value &result, bool allow_type_promotion = true) const override;
-
-  RC set_value_from_str(Value &val, const string &data) const override;
-
-  int cast_cost(AttrType type) override;
-
-  RC to_string(const Value &val, string &result) const override;
+private:
+  int limit_;
 };

@@ -151,6 +151,10 @@ void Value::set_data(char *data, int length)
       value_.int_value_ = *(int *)data;
       length_           = length;
     } break;
+    case AttrType::VECTORS: {
+      value_.pointer_value_ = data;
+      length_               = length;
+    } break;
     default: {
       LOG_WARN("unknown data type: %d", attr_type_);
     } break;
@@ -230,6 +234,14 @@ void Value::set_text(const char *s, int len /*= 65535*/)
     value_.pointer_value_[len] = '\0';
   }
 }
+void Value::set_vector(float *&array, size_t &length)
+{
+  attr_type_            = AttrType::VECTORS;
+  length_               = length;
+  value_.pointer_value_ = reinterpret_cast<char *>(array);
+
+  own_data_ = true;
+}
 
 void Value::set_value(const Value &value)
 {
@@ -271,6 +283,7 @@ void Value::set_string_from_other(const Value &other)
 const char *Value::data() const
 {
   switch (attr_type_) {
+    case AttrType::VECTORS:
     case AttrType::CHARS:
     case AttrType::TEXTS: {
       return value_.pointer_value_;
@@ -446,4 +459,12 @@ RC Value::borrow_text(const Value &v)
   value_.pointer_value_ = v.value_.pointer_value_;
   length_               = v.length_;
   return RC::SUCCESS;
+}
+
+int Value::get_vector_length() const { return length_ / sizeof(float); }
+
+float Value::get_vector_element(int i) const
+{
+  auto ptr = value_.pointer_value_ + sizeof(float) * i;
+  return *(float *)(ptr);
 }

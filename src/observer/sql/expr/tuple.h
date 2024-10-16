@@ -88,6 +88,8 @@ public:
 
   virtual RC spec_at(int index, TupleCellSpec &spec) const = 0;
 
+  virtual Tuple *copy() const = 0;
+
   /**
    * @brief 根据cell的描述，获取cell的值
    *
@@ -278,6 +280,18 @@ public:
 
   const Record &record() const { return *record_; }
 
+  Tuple *copy() const override
+  {
+    RowTuple *copy = new RowTuple();
+    for (auto &spec_ : speces_) {
+      copy->speces_.push_back(new FieldExpr(*spec_));
+    }
+    copy->record_      = new Record(record_->clone());
+    copy->table_       = table_;
+    copy->table_alias_ = table_alias_;
+    return copy;
+  }
+
 private:
   Record                  *record_ = nullptr;
   const BaseTable         *table_  = nullptr;
@@ -386,7 +400,7 @@ public:
 
     const int size = static_cast<int>(specs_.size());
     for (int i = 0; i < size; i++) {
-      if (specs_[i].equals(spec)) {
+      if (specs_[i] == spec) {
         cell = cells_[i];
         return RC::SUCCESS;
       }
@@ -414,6 +428,14 @@ public:
       value_list.specs_.push_back(spec);
     }
     return RC::SUCCESS;
+  }
+
+  Tuple *copy() const override
+  {
+    auto copy    = new ValueListTuple;
+    copy->cells_ = cells_;
+    copy->specs_ = specs_;
+    return copy;
   }
 
 private:
@@ -478,6 +500,18 @@ public:
     }
 
     return right_->find_cell(spec, value);
+  }
+
+  Tuple *copy() const override
+  {
+    auto copy = new JoinedTuple;
+    if (left_) {
+      copy->left_ = left_->copy();
+    }
+    if (right_) {
+      copy->right_ = right_->copy();
+    }
+    return copy;
   }
 
 private:

@@ -93,7 +93,26 @@ RC ScalarGroupByPhysicalOperator::open(Trx *trx)
 
 RC ScalarGroupByPhysicalOperator::next()
 {
+  if (emitted_) {
+    return RC::RECORD_EOF;
+  }
   if (group_value_ == nullptr || emitted_) {
+    auto *aggregate_expr = static_cast<AggregateFunctionExpr *>(aggregate_expressions_[0]);
+    if (aggregate_expr->aggregate_type() == AggregateFunctionExpr::Type::COUNT) {
+      Value val(0);
+      auto  Vlist = make_unique<ValueListTuple>();
+      Vlist->set_cells(std::vector<Value>{val});
+      TupleCellSpec spec(aggregate_expr->name());
+      Vlist->set_names(std::vector<TupleCellSpec>{spec});
+      CompositeTuple composite_tuple;
+      composite_tuple.add_tuple(std::move(Vlist));
+
+      AggregatorList aggregator_list;
+      group_value_ = make_unique<GroupValueType>(std::move(aggregator_list), std::move(composite_tuple));
+      emitted_     = true;
+
+      return RC::SUCCESS;
+    }
     return RC::RECORD_EOF;
   }
 

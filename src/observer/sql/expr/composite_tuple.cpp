@@ -69,3 +69,12 @@ Tuple &CompositeTuple::tuple_at(size_t index)
   ASSERT(index < tuples_.size(), "index=%d, tuples_size=%d", index, tuples_.size());
   return *tuples_[index];
 }
+
+Tuple *CompositeTuple::copy() const
+{
+  CompositeTuple *copy = new CompositeTuple();
+  for (auto &tuple : tuples_) {
+    copy->tuples_.emplace_back(tuple->copy());
+  }
+  return copy;
+}

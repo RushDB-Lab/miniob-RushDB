@@ -29,13 +29,30 @@ public:
   const char *field_name() const { return field_name_.c_str(); }
   const char *alias() const { return alias_.c_str(); }
 
-  bool equals(const TupleCellSpec &other) const
+  bool alias_empty() const { return alias_.empty(); }
+  bool table_field_empty() const { return table_name_.empty() && field_name_.empty(); }
+
+  bool operator==(const TupleCellSpec &other) const
   {
-    return table_name_ == other.table_name_ && field_name_ == other.field_name_ && alias_ == other.alias_;
+    return (!alias_empty() && !other.alias_empty() && alias_hash_ == other.alias_hash_ && alias_ == other.alias_) ||
+           (!table_field_empty() && !other.table_field_empty() && table_name_hash_ == other.table_name_hash_ &&
+               field_name_hash_ == other.field_name_hash_ && table_name_ == other.table_name_ &&
+               field_name_ == other.field_name_);
   }
 
 private:
   std::string table_name_;
   std::string field_name_;
   std::string alias_;
+
+  std::size_t table_name_hash_;
+  std::size_t field_name_hash_;
+  std::size_t alias_hash_;
+
+  void init_hash()
+  {
+    table_name_hash_ = std::hash<std::string>()(table_name_);
+    field_name_hash_ = std::hash<std::string>()(field_name_);
+    alias_hash_      = std::hash<std::string>()(alias_);
+  }
 };

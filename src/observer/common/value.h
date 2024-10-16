@@ -122,6 +122,8 @@ public:
   string      get_string() const;
   bool        get_boolean() const;
   int         get_date() const;
+  int         get_vector_length() const;
+  float       get_vector_element(int i) const;
   bool        is_null() const { return is_null_; }
   inline bool is_str() const { return attr_type_ == AttrType::CHARS; }
 
@@ -139,6 +141,7 @@ private:
   void set_date(int val);
   void set_string(const char *s, int len = 0);
   void set_text(const char *s, int len = 65535);
+  void set_vector(float *&array, size_t &length);
   void set_string_from_other(const Value &other);
 
 private:

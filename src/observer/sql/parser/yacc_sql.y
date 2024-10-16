@@ -127,9 +127,11 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
         FLOAT_T
         DATE_T
         TEXT_T
+        VECTOR_T
         NOT
         UNIQUE
         NULL_T
+        LIMIT
         NULLABLE
         HELP
         EXIT
@@ -179,6 +181,7 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
   std::vector<RelationNode> *                relation_list;
   OrderBySqlNode *                           orderby_unit;
   std::vector<OrderBySqlNode> *              orderby_list;
+  LimitSqlNode *                             limited_info;
   char *                                     string;
   int                                        number;
   float                                      floats;
@@ -222,6 +225,7 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
 %type <orderby_unit>        sort_unit
 %type <orderby_list>        sort_list
 %type <orderby_list>        opt_order_by
+%type <limited_info>        opt_limit
 %type <index_attr_list>     attr_list
 %type <unique>              opt_unique
 %type <sql_node>            calc_stmt
@@ -267,8 +271,8 @@ commands: command_wrapper opt_semicolon  //commands or sqls. parser starts here.
   ;
 
 command_wrapper:
-    calc_stmt
-  | select_stmt
+    select_stmt
+  | calc_stmt
   | insert_stmt
   | update_stmt
   | delete_stmt
@@ -476,9 +480,15 @@ attr_def:
     ID type LBRACE NUMBER RBRACE nullable_constraint
     {
       $$ = new AttrInfoSqlNode;
-      $$->type = (AttrType)$2;
       $$->name = $1;
-      $$->length = $4;
+      $$->type = (AttrType)$2;
+      if ($$->type == AttrType::CHARS) {
+        $$->length = $4;
+      } else if ($$->type == AttrType::VECTORS) {
+        $$->length = sizeof(float) * $4;
+      } else {
+        ASSERT(false, "$$->type is invalid.");
+      }
       $$->nullable = $6;
       if ($$->nullable) {
         $$->length++;
@@ -491,13 +501,15 @@ attr_def:
       $$->type = (AttrType)$2;
       $$->name = $1;
       if ($$->type == AttrType::INTS) {
-        $$->length = 4;
+        $$->length = sizeof(int);
       } else if ($$->type == AttrType::FLOATS) {
-        $$->length = 4;
+        $$->length = sizeof(float);
       } else if ($$->type == AttrType::DATES) {
-        $$->length = 4;
+        $$->length = sizeof(int);
       } else if ($$->type == AttrType::CHARS) {
-        $$->length = 4;
+        $$->length = sizeof(char);
+      } else if ($$->type == AttrType::VECTORS) {
+        $$->length = sizeof(float) * 1;
       } else if ($$->type == AttrType::TEXTS) {
         $$->length = 65535;
       } else {
@@ -531,11 +543,12 @@ nullable_constraint:
     ;
 
 type:
-      INT_T    { $$ = static_cast<int>(AttrType::INTS);   }
-    | STRING_T { $$ = static_cast<int>(AttrType::CHARS);  }
-    | FLOAT_T  { $$ = static_cast<int>(AttrType::FLOATS); }
-    | DATE_T   { $$ = static_cast<int>(AttrType::DATES);  }
-    | TEXT_T   { $$ = static_cast<int>(AttrType::TEXTS);  }
+      INT_T      { $$ = static_cast<int>(AttrType::INTS);   }
+    | STRING_T   { $$ = static_cast<int>(AttrType::CHARS);  }
+    | FLOAT_T    { $$ = static_cast<int>(AttrType::FLOATS); }
+    | DATE_T     { $$ = static_cast<int>(AttrType::DATES);  }
+    | TEXT_T     { $$ = static_cast<int>(AttrType::TEXTS);  }
+    | VECTOR_T   { $$ = static_cast<int>(AttrType::VECTORS);  }
     ;
 
 insert_stmt:        /*insert   语句的语法解析树*/
@@ -683,7 +696,7 @@ setClause:
     ;
 
 select_stmt:
-    SELECT expression_list FROM rel_list where group_by opt_having opt_order_by
+    SELECT expression_list FROM rel_list where group_by opt_having opt_order_by opt_limit
     {
       $$ = new ParsedSqlNode(SCF_SELECT);
       if ($2 != nullptr) {
@@ -714,6 +727,11 @@ select_stmt:
       if ($8 != nullptr) {
         $$->selection.order_by.swap(*$8);
         delete $8;
+      }
+
+      if ($9 != nullptr) {
+        $$->selection.limit = std::make_unique<LimitSqlNode>(*$9);
+        delete $9;
       }
     }
     | SELECT expression_list FROM relation INNER JOIN join_clauses where group_by
@@ -1046,6 +1064,18 @@ opt_having:
     | HAVING condition
     {
       $$ = $2;
+    }
+    ;
+
+opt_limit:
+    /* empty */
+    {
+      $$ = nullptr;
+    }
+    | LIMIT NUMBER
+    {
+      $$ = new LimitSqlNode();
+      $$->number = $2;
     }
     ;
 

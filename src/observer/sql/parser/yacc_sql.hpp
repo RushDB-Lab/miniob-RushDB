@@ -87,42 +87,44 @@ enum yytokentype
   FLOAT_T      = 288, /* FLOAT_T  */
   DATE_T       = 289, /* DATE_T  */
   TEXT_T       = 290, /* TEXT_T  */
-  NOT          = 291, /* NOT  */
-  UNIQUE       = 292, /* UNIQUE  */
-  NULL_T       = 293, /* NULL_T  */
-  NULLABLE     = 294, /* NULLABLE  */
-  HELP         = 295, /* HELP  */
-  EXIT         = 296, /* EXIT  */
-  DOT          = 297, /* DOT  */
-  INTO         = 298, /* INTO  */
-  VALUES       = 299, /* VALUES  */
-  FROM         = 300, /* FROM  */
-  WHERE        = 301, /* WHERE  */
-  AND          = 302, /* AND  */
-  OR           = 303, /* OR  */
-  SET          = 304, /* SET  */
-  ON           = 305, /* ON  */
-  LOAD         = 306, /* LOAD  */
-  INFILE       = 307, /* INFILE  */
-  EXPLAIN      = 308, /* EXPLAIN  */
-  STORAGE      = 309, /* STORAGE  */
-  FORMAT       = 310, /* FORMAT  */
-  INNER        = 311, /* INNER  */
-  JOIN         = 312, /* JOIN  */
-  VIEW         = 313, /* VIEW  */
-  EQ           = 314, /* EQ  */
-  LT           = 315, /* LT  */
-  GT           = 316, /* GT  */
-  LE           = 317, /* LE  */
-  GE           = 318, /* GE  */
-  NE           = 319, /* NE  */
-  LIKE         = 320, /* LIKE  */
-  IS           = 321, /* IS  */
-  NUMBER       = 322, /* NUMBER  */
-  FLOAT        = 323, /* FLOAT  */
-  ID           = 324, /* ID  */
-  SSS          = 325, /* SSS  */
-  UMINUS       = 326  /* UMINUS  */
+  VECTOR_T     = 291, /* VECTOR_T  */
+  NOT          = 292, /* NOT  */
+  UNIQUE       = 293, /* UNIQUE  */
+  NULL_T       = 294, /* NULL_T  */
+  LIMIT        = 295, /* LIMIT  */
+  NULLABLE     = 296, /* NULLABLE  */
+  HELP         = 297, /* HELP  */
+  EXIT         = 298, /* EXIT  */
+  DOT          = 299, /* DOT  */
+  INTO         = 300, /* INTO  */
+  VALUES       = 301, /* VALUES  */
+  FROM         = 302, /* FROM  */
+  WHERE        = 303, /* WHERE  */
+  AND          = 304, /* AND  */
+  OR           = 305, /* OR  */
+  SET          = 306, /* SET  */
+  ON           = 307, /* ON  */
+  LOAD         = 308, /* LOAD  */
+  INFILE       = 309, /* INFILE  */
+  EXPLAIN      = 310, /* EXPLAIN  */
+  STORAGE      = 311, /* STORAGE  */
+  FORMAT       = 312, /* FORMAT  */
+  INNER        = 313, /* INNER  */
+  JOIN         = 314, /* JOIN  */
+  VIEW         = 315, /* VIEW  */
+  EQ           = 316, /* EQ  */
+  LT           = 317, /* LT  */
+  GT           = 318, /* GT  */
+  LE           = 319, /* LE  */
+  GE           = 320, /* GE  */
+  NE           = 321, /* NE  */
+  LIKE         = 322, /* LIKE  */
+  IS           = 323, /* IS  */
+  NUMBER       = 324, /* NUMBER  */
+  FLOAT        = 325, /* FLOAT  */
+  ID           = 326, /* ID  */
+  SSS          = 327, /* SSS  */
+  UMINUS       = 328  /* UMINUS  */
 };
 typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -131,7 +133,7 @@ typedef enum yytokentype yytoken_kind_t;
 #if !defined YYSTYPE && !defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 164 "yacc_sql.y"
+#line 166 "yacc_sql.y"
 
   ParsedSqlNode                            *sql_node;
   Value                                    *value;
@@ -150,6 +152,7 @@ union YYSTYPE
   std::vector<RelationNode>                *relation_list;
   OrderBySqlNode                           *orderby_unit;
   std::vector<OrderBySqlNode>              *orderby_list;
+  LimitSqlNode                             *limited_info;
   char                                     *string;
   int                                       number;
   float                                     floats;
@@ -157,7 +160,7 @@ union YYSTYPE
   std::vector<std::string>                 *index_attr_list;
   bool                                      unique;
 
-#line 161 "yacc_sql.hpp"
+#line 164 "yacc_sql.hpp"
 };
 typedef union YYSTYPE YYSTYPE;
 #define YYSTYPE_IS_TRIVIAL 1

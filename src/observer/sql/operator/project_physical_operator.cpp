@@ -57,9 +57,6 @@ RC ProjectPhysicalOperator::close()
 
 Tuple *ProjectPhysicalOperator::current_tuple()
 {
-  if (children_[0]->type() == PhysicalOperatorType::ORDER_BY) {
-    return children_[0]->current_tuple();
-  }
   auto tuple = children_[0]->current_tuple();
   tuple_.set_base_rids(tuple->base_rids());
   tuple_.set_tuple(tuple);
