@@ -150,8 +150,20 @@ RC ExpressionBinder::bind_star_expression(
     tables_to_wildcard.insert(tables_to_wildcard.end(), all_tables.begin(), all_tables.end());
   }
 
-  for (int i = 0; i < tables_to_wildcard.size(); ++i) {
-    wildcard_fields(tables_to_wildcard[i], context_.alias()[i], bound_expressions, multi_tables_);
+  // select t2/table_alias_2.* from table_alias_1 t1, table_alias_2 t2 where t1.id < t2.id; 非自交可能指定也可能没
+  // select t2.* from table_alias_1 t1, table_alias_1 t2 where t1.id < t2.id; 自交的话必然指定了别名
+  if (tables_to_wildcard.size() == 1) {
+    // 看看能不能找到对应的表名，能的话是第一种情况
+    for (int i = 0; i < context_.query_tables().size(); ++i) {
+      if (strcmp(context_.query_tables()[i]->name(), table_name) == 0) {
+        table_name = context_.alias()[i].c_str();
+      }
+    }
+    wildcard_fields(tables_to_wildcard[0], table_name, bound_expressions, multi_tables_);
+  } else {
+    for (int i = 0; i < tables_to_wildcard.size(); ++i) {
+      wildcard_fields(tables_to_wildcard[i], context_.alias()[i], bound_expressions, multi_tables_);
+    }
   }
 
   return RC::SUCCESS;
