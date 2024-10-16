@@ -294,7 +294,7 @@ enum yysymbol_kind_t
   YYSYMBOL_expression_list = 112,          /* expression_list  */
   YYSYMBOL_expression = 113,               /* expression  */
   YYSYMBOL_alias = 114,                    /* alias  */
-  YYSYMBOL_aggr_func_expr = 115,           /* aggr_func_expr  */
+  YYSYMBOL_func_expr = 115,                /* func_expr  */
   YYSYMBOL_sub_query_expr = 116,           /* sub_query_expr  */
   YYSYMBOL_rel_attr = 117,                 /* rel_attr  */
   YYSYMBOL_relation = 118,                 /* relation  */
@@ -756,7 +756,7 @@ static const char *const yytname[] =
   "nullable_constraint", "type", "insert_stmt", "values_list",
   "value_list", "value", "nonnegative_value", "storage_format",
   "delete_stmt", "update_stmt", "set_clauses", "setClause", "select_stmt",
-  "calc_stmt", "expression_list", "expression", "alias", "aggr_func_expr",
+  "calc_stmt", "expression_list", "expression", "alias", "func_expr",
   "sub_query_expr", "rel_attr", "relation", "rel_list", "join_clauses",
   "where", "condition", "comp_op", "opt_order_by", "sort_list",
   "sort_unit", "group_by", "opt_having", "opt_limit", "load_data_stmt",
@@ -2614,9 +2614,9 @@ yyreduce:
 #line 2615 "yacc_sql.cpp"
     break;
 
-  case 95: /* expression: aggr_func_expr  */
+  case 95: /* expression: func_expr  */
 #line 807 "yacc_sql.y"
-                     {
+                {
       (yyval.expression) = (yyvsp[0].expression);      // AggrFuncExpr
     }
 #line 2623 "yacc_sql.cpp"
@@ -2654,7 +2654,7 @@ yyreduce:
 #line 2655 "yacc_sql.cpp"
     break;
 
-  case 100: /* aggr_func_expr: ID LBRACE expression_list RBRACE  */
+  case 100: /* func_expr: ID LBRACE expression_list RBRACE  */
 #line 829 "yacc_sql.y"
     {
         (yyval.expression) = new UnboundFunctionExpr((yyvsp[-3].string), std::move(*(yyvsp[-1].expression_list)));
