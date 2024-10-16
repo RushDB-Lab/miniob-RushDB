@@ -1,5 +1,5 @@
 -- echo initialization
-CREATE TABLE aggregation_func(id int, num int, price float, addr char, birthday date);
+CREATE TABLE aggregation_func(id int, num int, price float, addr char(4), birthday date);
 
 INSERT INTO aggregation_func VALUES (1, 18, 10.0, 'abc', '2020-01-01');
 INSERT INTO aggregation_func VALUES (2, 15, 20.0, 'abc', '2010-01-11');

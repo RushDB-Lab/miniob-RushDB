@@ -1,5 +1,5 @@
 INITIALIZATION
-CREATE TABLE aggregation_func(id int, num int, price float, addr char, birthday date);
+CREATE TABLE aggregation_func(id int, num int, price float, addr char(4), birthday date);
 SUCCESS
 
 INSERT INTO aggregation_func VALUES (1, 18, 10.0, 'abc', '2020-01-01');
