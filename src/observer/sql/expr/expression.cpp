@@ -899,13 +899,13 @@ RC NormalFunctionExpr::get_value(const Tuple &tuple, Value &result)
   }
   switch (type_) {
     case Type::LENGTH: {
-      return STD::LENGTH(args_values_, result);
+      return builtin::length(args_values_, result);
     }
     case Type::ROUND: {
-      return STD::ROUND(args_values_, result);
+      return builtin::round(args_values_, result);
     }
     case Type::DATE_FORMAT: {
-      return STD::DATE_FORMAT(args_values_, result);
+      return builtin::date_format(args_values_, result);
     }
     default: {
       return RC::INTERNAL;
@@ -927,13 +927,13 @@ RC NormalFunctionExpr::try_get_value(Value &result) const
   }
   switch (type_) {
     case Type::LENGTH: {
-      return STD::LENGTH(args_values_, result);
+      return builtin::length(args_values_, result);
     }
     case Type::ROUND: {
-      return STD::ROUND(args_values_, result);
+      return builtin::round(args_values_, result);
     }
     case Type::DATE_FORMAT: {
-      return STD::DATE_FORMAT(args_values_, result);
+      return builtin::date_format(args_values_, result);
     }
     default: {
       return RC::INTERNAL;
