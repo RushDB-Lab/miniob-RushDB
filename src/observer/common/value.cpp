@@ -460,3 +460,11 @@ RC Value::borrow_text(const Value &v)
   length_               = v.length_;
   return RC::SUCCESS;
 }
+
+int Value::get_vector_length() const { return length_ / sizeof(float); }
+
+float Value::get_vector_element(int i) const
+{
+  auto ptr = value_.pointer_value_ + sizeof(float) * i;
+  return *(float *)(ptr);
+}

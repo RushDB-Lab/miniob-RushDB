@@ -869,6 +869,10 @@ RC NormalFunctionExpr::type_from_string(const char *type_str, NormalFunctionExpr
   check_type("date_format", Type::DATE_FORMAT);
   check_type("length", Type::LENGTH);
   check_type("round", Type::ROUND);
+  check_type("distance", Type::DISTANCE);
+  check_type("string_to_vector", Type::STRING_TO_VECTOR);
+  check_type("vector_to_string", Type::VECTOR_TO_STRING);
+  check_type("vector_dim", Type::VECTOR_DIM);
   return RC::INVALID_ARGUMENT;
 }
 
@@ -887,6 +891,10 @@ RC NormalFunctionExpr::get_value(const Tuple &tuple, Value &result)
     case Type::LENGTH: return builtin::length(args_values_, result);
     case Type::ROUND: return builtin::round(args_values_, result);
     case Type::DATE_FORMAT: return builtin::date_format(args_values_, result);
+    case Type::DISTANCE: return builtin::distance(args_values_, result);
+    case Type::STRING_TO_VECTOR: return builtin::string_to_vector(args_values_, result);
+    case Type::VECTOR_TO_STRING: return builtin::vector_to_string(args_values_, result);
+    case Type::VECTOR_DIM: return builtin::vector_dim(args_values_, result);
   }
   return RC::INTERNAL;
 }
@@ -906,6 +914,24 @@ RC NormalFunctionExpr::try_get_value(Value &result) const
     case Type::LENGTH: return builtin::length(args_values_, result);
     case Type::ROUND: return builtin::round(args_values_, result);
     case Type::DATE_FORMAT: return builtin::date_format(args_values_, result);
+    case Type::DISTANCE: return builtin::distance(args_values_, result);
+    case Type::STRING_TO_VECTOR: return builtin::string_to_vector(args_values_, result);
+    case Type::VECTOR_TO_STRING: return builtin::vector_to_string(args_values_, result);
+    case Type::VECTOR_DIM: return builtin::vector_dim(args_values_, result);
   }
   return RC::INTERNAL;
+}
+
+AttrType NormalFunctionExpr::value_type() const
+{
+  switch (type_) {
+    case Type::LENGTH: return AttrType::INTS;
+    case Type::ROUND: return AttrType::FLOATS;
+    case Type::DATE_FORMAT: return AttrType::CHARS;
+    case Type::DISTANCE: return AttrType::FLOATS;
+    case Type::STRING_TO_VECTOR: return AttrType::VECTORS;
+    case Type::VECTOR_TO_STRING: return AttrType::CHARS;
+    case Type::VECTOR_DIM: return AttrType::INTS;
+  }
+  return AttrType::UNDEFINED;
 }

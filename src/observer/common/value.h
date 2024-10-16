@@ -122,6 +122,8 @@ public:
   string      get_string() const;
   bool        get_boolean() const;
   int         get_date() const;
+  int         get_vector_length() const;
+  float       get_vector_element(int i) const;
   bool        is_null() const { return is_null_; }
   inline bool is_str() const { return attr_type_ == AttrType::CHARS; }
 

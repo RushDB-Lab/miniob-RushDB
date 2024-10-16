@@ -22,4 +22,12 @@ extern RC round(const vector<Value> &args, Value &result);
 
 extern RC date_format(const vector<Value> &args, Value &result);
 
+extern RC distance(const vector<Value> &args, Value &result);
+
+extern RC string_to_vector(const vector<Value> &args, Value &result);
+
+extern RC vector_to_string(const vector<Value> &args, Value &result);
+
+extern RC vector_dim(const vector<Value> &args, Value &result);
+
 };  // namespace builtin

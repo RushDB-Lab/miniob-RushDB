@@ -92,7 +92,6 @@ static string get_full_month_name(int month)
 
 RC date_format(const vector<Value> &args, Value &result)
 {
-
   if (args.size() != 2) {
     return RC::INVALID_ARGUMENT;
   }
@@ -168,6 +167,101 @@ RC date_format(const vector<Value> &args, Value &result)
   }
 
   result = Value(str.c_str());
+  return RC::SUCCESS;
+}
+
+RC distance(const vector<Value> &args, Value &result)
+{
+  if (args.size() != 2) {
+    return RC::INVALID_ARGUMENT;
+  }
+  if (args[0].attr_type() != AttrType::VECTORS && args[0].attr_type() != AttrType::CHARS) {
+    return RC::INVALID_ARGUMENT;
+  }
+  if (args[1].attr_type() != AttrType::VECTORS && args[1].attr_type() != AttrType::CHARS) {
+    return RC::INVALID_ARGUMENT;
+  }
+
+  Value value0, value1;
+  if (args[0].attr_type() == AttrType::CHARS) {
+    RC rc = Value::cast_to(args[0], AttrType::VECTORS, value0);
+    if (OB_FAIL(rc)) {
+      return rc;
+    }
+  } else if (args[0].attr_type() == AttrType::VECTORS) {
+    value0 = args[0];
+  } else {
+    return RC::INVALID_ARGUMENT;
+  }
+
+  if (args[1].attr_type() == AttrType::CHARS) {
+    RC rc = Value::cast_to(args[1], AttrType::VECTORS, value1);
+    if (OB_FAIL(rc)) {
+      return rc;
+    }
+  } else if (args[1].attr_type() == AttrType::VECTORS) {
+    value1 = args[1];
+  } else {
+    return RC::INVALID_ARGUMENT;
+  }
+
+  auto v0_length = value0.get_vector_length();
+  auto v1_length = value1.get_vector_length();
+  if (v0_length != v1_length) {
+    return RC::VECTOR_LENGTG_ARE_INCONSISTENT;
+  }
+
+  float ans = 0.0;
+  for (int i = 0; i < v0_length; i++) {
+    float v0 = value0.get_vector_element(i);
+    float v1 = value1.get_vector_element(i);
+    ans += (v0 - v1) * (v0 - v1);
+  }
+  ans    = std::sqrt(ans);
+  result = Value(ans);
+  return RC::SUCCESS;
+}
+
+RC string_to_vector(const vector<Value> &args, Value &result)
+{
+  if (args.size() != 1) {
+    return RC::INVALID_ARGUMENT;
+  }
+  if (args[0].attr_type() != AttrType::CHARS) {
+    return RC::INVALID_ARGUMENT;
+  }
+  return Value::cast_to(args[0], AttrType::VECTORS, result);
+}
+
+RC vector_to_string(const vector<Value> &args, Value &result)
+{
+  if (args.size() != 1) {
+    return RC::INVALID_ARGUMENT;
+  }
+  if (args[0].attr_type() != AttrType::VECTORS) {
+    return RC::INVALID_ARGUMENT;
+  }
+  return Value::cast_to(args[0], AttrType::CHARS, result);
+}
+
+RC vector_dim(const vector<Value> &args, Value &result)
+{
+  if (args.size() != 1) {
+    return RC::INVALID_ARGUMENT;
+  }
+  Value value;
+  if (args[0].attr_type() == AttrType::CHARS) {
+    RC rc = Value::cast_to(args[0], AttrType::VECTORS, value);
+    if (OB_FAIL(rc)) {
+      return rc;
+    }
+  } else if (args[0].attr_type() == AttrType::VECTORS) {
+    value = args[0];
+  } else {
+    return RC::INVALID_ARGUMENT;
+  }
+
+  result = Value(value.get_vector_length());
   return RC::SUCCESS;
 }
 

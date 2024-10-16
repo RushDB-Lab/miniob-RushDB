@@ -8,7 +8,11 @@
 int VectorType::compare(const Value &left, const Value &right) const { return DataType::compare(left, right); }
 RC  VectorType::cast_to(const Value &val, AttrType type, Value &result, bool allow_type_promotion) const
 {
-  return DataType::cast_to(val, type, result, allow_type_promotion);
+  if (type == AttrType::CHARS) {
+    result = Value(val.to_string().c_str());
+    return RC::SUCCESS;
+  }
+  return RC::INTERNAL;
 }
 RC VectorType::set_value_from_str(Value &val, const string &data) const
 {

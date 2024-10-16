@@ -465,6 +465,10 @@ public:
     LENGTH,
     ROUND,
     DATE_FORMAT,
+    DISTANCE,
+    STRING_TO_VECTOR,
+    VECTOR_TO_STRING,
+    VECTOR_DIM,
   };
 
   NormalFunctionExpr(Type type, const char *aggregate_name, std::vector<std::unique_ptr<Expression>> child)
@@ -477,21 +481,7 @@ public:
 
   Type function_type() const { return type_; }
 
-  AttrType value_type() const override
-  {
-    switch (type_) {
-      case Type::LENGTH: {
-        return AttrType::INTS;
-      }
-      case Type::ROUND: {
-        return AttrType::FLOATS;
-      }
-      case Type::DATE_FORMAT: {
-        return AttrType::CHARS;
-      }
-    }
-    return AttrType::UNDEFINED;
-  }
+  AttrType value_type() const override;
 
   RC get_value(const Tuple &tuple, Value &value) override;
   RC try_get_value(Value &value) const override;
