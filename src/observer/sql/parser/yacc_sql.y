@@ -472,7 +472,9 @@ attr_def:
       } else if ($$->type == AttrType::DATES) {
         $$->length = sizeof(int);
       } else if ($$->type == AttrType::CHARS) {
-        $$->length = 4; // miniob🀄AttrType::CHARS默认长度为4
+        $$->length = sizeof(char);
+      } else if ($$->type == AttrType::VECTORS) {
+        $$->length = sizeof(float) * 1;
       } else if ($$->type == AttrType::TEXTS) {
         $$->length = 65535;
       } else {

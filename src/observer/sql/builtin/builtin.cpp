@@ -88,7 +88,7 @@ static string get_full_month_name(int month)
     default: return "";  // 如果月份值无效，返回一个错误字符串
   }
 }
-};  // namespace date
+}  // namespace date
 
 RC date_format(const vector<Value> &args, Value &result)
 {
