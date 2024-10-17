@@ -135,7 +135,7 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
         NULLABLE
         HELP
         EXIT
-        DOT //QUOTE
+        DOT
         INTO
         VALUES
         FROM
@@ -144,8 +144,6 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
         OR
         SET
         ON
-        LOAD
-        // DATA
         INFILE
         EXPLAIN
         STORAGE
@@ -246,7 +244,6 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
 %type <sql_node>            begin_stmt
 %type <sql_node>            commit_stmt
 %type <sql_node>            rollback_stmt
-// %type <sql_node>            load_data_stmt
 %type <sql_node>            explain_stmt
 %type <sql_node>            set_variable_stmt
 %type <sql_node>            help_stmt
@@ -289,7 +286,6 @@ command_wrapper:
   | begin_stmt
   | commit_stmt
   | rollback_stmt
-//  | load_data_stmt
   | explain_stmt
   | set_variable_stmt
   | help_stmt
@@ -1078,19 +1074,6 @@ opt_limit:
       $$->number = $2;
     }
     ;
-
-/* load_data_stmt:
-    LOAD DATA INFILE SSS INTO TABLE ID 
-    {
-      char *tmp_file_name = common::substr($4, 1, strlen($4) - 2);
-      
-      $$ = new ParsedSqlNode(SCF_LOAD_DATA);
-      $$->load_data.relation_name = $7;
-      $$->load_data.file_name = tmp_file_name;
-      free($7);
-      free(tmp_file_name);
-    }
-    ;*/
 
 explain_stmt:
     EXPLAIN command_wrapper
