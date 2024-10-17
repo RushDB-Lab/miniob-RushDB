@@ -55,7 +55,7 @@ RC parse_float_prefix(const char *str, float &result)
   return RC::SUCCESS;
 }
 
-RC parse_vector_from_string(const char *str, float *&array, size_t &length)
+RC parse_vector_from_string(const char *str, float *&array, int &length)
 {
   if (!str || *str != '[') {
     return RC::INVALID_ARGUMENT;

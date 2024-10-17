@@ -20,7 +20,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/type/data_type.h"
 #include "common/type/date_type.h"
 #include "common/type/text_type.h"
-#include <cassert>
+#include "common/utils.h"
 
 class NullValue
 {};
@@ -144,8 +144,9 @@ private:
   void set_date(int val);
   void set_string(const char *s, int len = 0);
   void set_text(const char *s, int len = 65535);
-  void set_vector(float *&array, size_t &length);
+  void set_vector(float *&array, int &length);
   void set_vector(const vector<float> &val);
+  void set_vector();
   void set_string_from_other(const Value &other);
 
 private:
