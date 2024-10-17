@@ -19,7 +19,7 @@ See the Mulan PSL v2 for more details. */
 
 BplusTreeIndex::~BplusTreeIndex() noexcept { close(); }
 
-RC BplusTreeIndex::create(Table *table, const char *file_name, const IndexMeta &index_meta)
+RC BplusTreeIndex::create(Table *table, const char *file_name, const IndexMeta &index_meta, const FieldMeta &field_meta)
 {
   if (inited_) {
     LOG_WARN("Failed to create index due to the index has been created before. file_name:%s, index:%s",
@@ -44,7 +44,7 @@ RC BplusTreeIndex::create(Table *table, const char *file_name, const IndexMeta &
   return RC::SUCCESS;
 }
 
-RC BplusTreeIndex::open(Table *table, const char *file_name, const IndexMeta &index_meta)
+RC BplusTreeIndex::open(Table *table, const char *file_name, const IndexMeta &index_meta, const FieldMeta &field_meta)
 {
   if (inited_) {
     LOG_WARN("Failed to open index due to the index has been initedd before. file_name:%s, index:%s",
