@@ -32,7 +32,7 @@ Value::Value(bool val) { set_boolean(val); }
 
 Value::Value(const char *s, int len /*= 0*/) { set_string(s, len); }
 
-Value::Value(ListValue, const vector<Value> &values) { set_list(values); }
+Value::Value(const vector<float> &values) { set_list(values); }
 
 Value::Value(const Value &other)
 {
@@ -236,6 +236,7 @@ void Value::set_text(const char *s, int len /*= 65535*/)
     value_.pointer_value_[len] = '\0';
   }
 }
+
 void Value::set_vector(float *&array, size_t &length)
 {
   attr_type_            = AttrType::VECTORS;
@@ -245,14 +246,11 @@ void Value::set_vector(float *&array, size_t &length)
   own_data_ = true;
 }
 
-void Value::set_list(const vector<Value> &val)
+void Value::set_list(const vector<float> &val)
 {
-  attr_type_ = AttrType::LISTS;
-  length_    = 0;
-  for (auto &v : val) {
-    length_ += v.length_;
-  }
-  value_.list_value_ = new vector<Value>(val);
+  attr_type_         = AttrType::VECTORS;
+  length_            = val.size() * sizeof(float);
+  value_.vector_value_ = new vector<float>(val);
 
   own_data_ = true;
 }
@@ -290,7 +288,7 @@ void Value::set_string_from_other(const Value &other)
   if (own_data_ && other.value_.pointer_value_ != nullptr) {
     this->value_.pointer_value_ = new char[this->length_ + 1];
     memcpy(this->value_.pointer_value_, other.value_.pointer_value_, this->length_);
-    reinterpret_cast<char *>(this->value_.pointer_value_)[this->length_] = '\0';
+    this->value_.pointer_value_[this->length_] = '\0';
   }
 }
 
@@ -474,5 +472,3 @@ RC Value::borrow_text(const Value &v)
   length_               = v.length_;
   return RC::SUCCESS;
 }
-
-int Value::get_vector_length() const { return length_ / sizeof(float); }

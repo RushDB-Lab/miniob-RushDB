@@ -161,8 +161,10 @@ union YYSTYPE
   bool                                       nullable_info;
   std::vector<std::string> *                 index_attr_list;
   bool                                       unique;
+  float                                      digits;
+  std::vector<float> *                       digits_list;
 
-#line 166 "yacc_sql.hpp"
+#line 168 "yacc_sql.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;

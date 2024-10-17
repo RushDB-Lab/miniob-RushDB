@@ -466,6 +466,7 @@ class NormalFunctionExpr : public UnboundFunctionExpr
 public:
   enum class Type
   {
+    TYPEOF,
     LENGTH,
     ROUND,
     YEAR,
