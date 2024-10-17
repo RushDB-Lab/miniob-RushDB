@@ -318,7 +318,7 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
       for (int i = 0; i < v0_length; i++) {
         float v0 = args[0].get_vector_element(i);
         float v1 = args[1].get_vector_element(i);
-        ans += (v0 * v1) + (v0 * v1);
+        ans += (v0 - v1) * (v0 - v1);
       }
       ans    = sqrt(ans);
       result = Value(ans);
