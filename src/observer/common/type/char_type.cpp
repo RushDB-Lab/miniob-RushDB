@@ -88,8 +88,7 @@ RC CharType::cast_to(const Value &val, AttrType type, Value &result, bool allow_
         return rc;
       }
 
-      // TODO: result.set_vector
-      return RC::INTERNAL;
+      result.set_vector(array, length);
     } break;
     default: return RC::UNIMPLEMENTED;
   }

@@ -12,6 +12,15 @@ See the Mulan PSL v2 for more details. */
 
 namespace builtin {
 
+RC _typeof(const vector<Value> &args, Value &result)
+{
+  if (args.size() != 1) {
+    return RC::INVALID_ARGUMENT;
+  }
+  result = Value(attr_type_to_string(args[0].attr_type()));
+  return RC::SUCCESS;
+}
+
 RC length(const vector<Value> &args, Value &result)
 {
   if (args.size() != 1) {
@@ -292,8 +301,8 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
     return RC::INVALID_ARGUMENT;
   }
 
-  auto v0_length = value0.get_vector_length();
-  auto v1_length = value1.get_vector_length();
+  auto v0_length = value0.get_vector().size();
+  auto v1_length = value1.get_vector().size();
   if (v0_length != v1_length) {
     return RC::VECTOR_LENGTG_ARE_INCONSISTENT;
   }

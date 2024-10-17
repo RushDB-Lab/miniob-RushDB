@@ -677,11 +677,8 @@ nonnegative_value:
     | NULL_T {
       $$ = new Value(NullValue());
     }
-    | LSBRACE value_list RSBRACE {
+    | LSBRACE digits_list RSBRACE {
       $$ = new Value(*$2);
-    }
-    | QUOTE LSBRACE digits_list RSBRACE QUOTE {
-      $$ = new Value(*$3);
     }
     ;
 
