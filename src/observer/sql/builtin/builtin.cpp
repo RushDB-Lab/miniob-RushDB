@@ -48,15 +48,15 @@ RC round(const vector<Value> &args, Value &result)
   double scaledNumber = number * factor;
 
   // 获取整数部分和小数部分
-  double integerPart;
-  double fractionalPart = std::modf(scaledNumber, &integerPart);
+  double integer_part;
+  double fractional_part = std::modf(scaledNumber, &integer_part);
 
   // 如果小数部分刚好是 0.5，进行银行家舍入
-  if (fractionalPart == 0.5 || fractionalPart == -0.5) {
-    if (static_cast<long long>(integerPart) % 2 == 0) {
-      round = integerPart / factor;  // 偶数，直接舍去小数
+  if (fractional_part == 0.5 || fractional_part == -0.5) {
+    if (static_cast<long long>(integer_part) % 2 == 0) {
+      round = integer_part / factor;  // 偶数，直接舍去小数
     } else {
-      round = (integerPart + (number > 0 ? 1 : -1)) / factor;  // 奇数，舍入到偶数
+      round = (integer_part + (number > 0 ? 1 : -1)) / factor;  // 奇数，舍入到偶数
     }
   } else {
     round = std::round(scaledNumber) / factor;  // 否则使用普通的四舍五入
