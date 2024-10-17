@@ -20,6 +20,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/type/data_type.h"
 #include "common/type/date_type.h"
 #include "common/type/text_type.h"
+#include "common/utils.h"
 
 class NullValue
 {};
@@ -55,6 +56,7 @@ public:
   explicit Value(float val);
   explicit Value(bool val);
   explicit Value(const char *s, int len = 0);
+  explicit Value(const vector<float> &values);
 
   Value(const Value &other);
   Value(Value &&other);
@@ -142,7 +144,9 @@ private:
   void set_date(int val);
   void set_string(const char *s, int len = 0);
   void set_text(const char *s, int len = 65535);
-  void set_vector(float *&array, size_t &length);
+  void set_vector(float *array, int length);
+  void set_vector(const vector<float> &val);
+  void set_vector();
   void set_string_from_other(const Value &other);
 
 private:
@@ -155,7 +159,10 @@ private:
     float   float_value_;
     bool    bool_value_;
     char   *pointer_value_;
+    float  *vector_value_;
   } value_ = {.int_value_ = 0};
+
+  static_assert(sizeof(std::vector<Value> *) == sizeof(char *));
 
   /// 是否申请并占有内存, 目前对于 CHARS 类型 own_data_ 为true, 其余类型 own_data_ 为false
   bool own_data_ = false;

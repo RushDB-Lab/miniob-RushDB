@@ -248,7 +248,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
     return rc;
   }
   DEFER(if (nullptr != left_subquery_expr) left_subquery_expr->close();
-        if (nullptr != right_subquery_expr) right_subquery_expr->close(););
+      if (nullptr != right_subquery_expr) right_subquery_expr->close(););
 
   // Get the value of the left expression
   rc = left_->get_value(tuple, left_value);
@@ -448,6 +448,10 @@ AttrType ArithmeticExpr::value_type() const
   if (left_->value_type() == AttrType::INTS && right_->value_type() == AttrType::INTS &&
       arithmetic_type_ != Type::DIV) {
     return AttrType::INTS;
+  }
+
+  if (left_->value_type() == AttrType::VECTORS && right_->value_type() == AttrType::VECTORS) {
+    return AttrType::VECTORS;
   }
 
   return AttrType::FLOATS;
@@ -866,6 +870,7 @@ ListExpr::ListExpr(std::vector<Expression *> &&exprs)
 
 RC NormalFunctionExpr::type_from_string(const char *type_str, NormalFunctionExpr::Type &type)
 {
+  check_type("typeof", Type::TYPEOF);
   check_type("day", Type::DAY);
   check_type("month", Type::MONTH);
   check_type("year", Type::YEAR);
@@ -905,6 +910,7 @@ RC NormalFunctionExpr::get_value(const Tuple &tuple, Value &result)
     case Type::L2_DISTANCE: return builtin::l2_distance(args_values_, result);
     case Type::COSINE_DISTANCE: return builtin::cosine_distance(args_values_, result);
     case Type::INNER_PRODUCT: return builtin::inner_product(args_values_, result);
+    case Type::TYPEOF: return builtin::_typeof(args_values_, result);
   }
   return RC::INTERNAL;
 }
@@ -933,6 +939,7 @@ RC NormalFunctionExpr::try_get_value(Value &result) const
     case Type::L2_DISTANCE: return builtin::l2_distance(args_values_, result);
     case Type::COSINE_DISTANCE: return builtin::cosine_distance(args_values_, result);
     case Type::INNER_PRODUCT: return builtin::inner_product(args_values_, result);
+    case Type::TYPEOF: return builtin::_typeof(args_values_, result);
   }
   return RC::INTERNAL;
 }
@@ -952,6 +959,7 @@ AttrType NormalFunctionExpr::value_type() const
     case Type::L2_DISTANCE: return AttrType::FLOATS;
     case Type::COSINE_DISTANCE: return AttrType::FLOATS;
     case Type::INNER_PRODUCT: return AttrType::FLOATS;
+    case Type::TYPEOF: return AttrType::CHARS;
   }
   return AttrType::UNDEFINED;
 }

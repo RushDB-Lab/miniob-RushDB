@@ -83,6 +83,7 @@ See the Mulan PSL v2 for more details. */
   DEFINE_RC(UNSUPPORTED)                     \
   DEFINE_RC(VALUE_TOO_LONG)                  \
   DEFINE_RC(VECTOR_LENGTG_ARE_INCONSISTENT)  \
+  DEFINE_RC(VECTOR_DIM_MISMATCH)             \
   DEFINE_RC(TO_LONG_SUBQUERY_EXPR)           \
   DEFINE_RC(NOT_NULLABLE_VALUE)              \
   DEFINE_RC(NOT_NULL_AFTER_IS)               \

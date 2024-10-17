@@ -80,7 +80,7 @@ RC CharType::cast_to(const Value &val, AttrType type, Value &result, bool allow_
     } break;
     case AttrType::VECTORS: {
       float *array  = nullptr;
-      size_t length = 0;
+      int length = 0;
 
       // 解析字符串为 float 数组
       RC rc = parse_vector_from_string(val.value_.pointer_value_, array, length);

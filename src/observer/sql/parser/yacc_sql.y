@@ -117,6 +117,8 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
         UPDATE
         LBRACE
         RBRACE
+        LSBRACE
+        RSBRACE
         COMMA
         TRX_BEGIN
         TRX_COMMIT
@@ -134,8 +136,9 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
         LIMIT
         NULLABLE
         HELP
+        QUOTE
         EXIT
-        DOT //QUOTE
+        DOT
         INTO
         VALUES
         FROM
@@ -144,8 +147,6 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
         OR
         SET
         ON
-        LOAD
-        // DATA
         INFILE
         EXPLAIN
         STORAGE
@@ -188,6 +189,8 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
   bool                                       nullable_info;
   std::vector<std::string> *                 index_attr_list;
   bool                                       unique;
+  float                                      digits;
+  std::vector<float> *                       digits_list;
 }
 
 %token <number> NUMBER
@@ -198,6 +201,8 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
 
 /** type 定义了各种解析后的结果输出的是什么类型。类型对应了 union 中的定义的成员变量名称 **/
 %type <number>              type
+%type <digits>              digits
+%type <digits_list>         digits_list
 %type <value>               value
 %type <value>               nonnegative_value
 %type <string>              relation
@@ -219,7 +224,7 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
 %type <expression_list>     expression_list
 %type <expression_list>     group_by
 %type <expression>          opt_having
-%type <set_clause>          setClause
+%type <set_clause>          set_clause
 %type <set_clauses>         set_clauses
 %type <join_clauses>        join_clauses
 %type <orderby_unit>        sort_unit
@@ -246,7 +251,6 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
 %type <sql_node>            begin_stmt
 %type <sql_node>            commit_stmt
 %type <sql_node>            rollback_stmt
-// %type <sql_node>            load_data_stmt
 %type <sql_node>            explain_stmt
 %type <sql_node>            set_variable_stmt
 %type <sql_node>            help_stmt
@@ -289,7 +293,6 @@ command_wrapper:
   | begin_stmt
   | commit_stmt
   | rollback_stmt
-//  | load_data_stmt
   | explain_stmt
   | set_variable_stmt
   | help_stmt
@@ -588,8 +591,48 @@ values_list:
       delete $4;
     }
 
+digits:
+    NUMBER
+    {
+      $$ = float($1);
+    }
+    | '-' NUMBER
+    {
+      $$ = float(-$2);
+    }
+    | FLOAT
+    {
+      $$ = $1;
+    }
+    | '-' FLOAT
+    {
+      $$ = $2;
+    }
+    ;
+
+
+digits_list:
+    /* empty */
+    {
+      $$ = new std::vector<float>();
+    }
+    | digits
+    {
+      $$ = new std::vector<float>();
+      $$->push_back($1);
+    }
+    | digits_list COMMA digits
+    {
+      $$->push_back($3);
+    }
+    ;
+
 value_list:
-      value
+    /* empty */
+    {
+      $$ = new std::vector<Value>;
+    }
+    | value
     {
       $$ = new std::vector<Value>;
       $$->emplace_back(*$1);
@@ -634,6 +677,9 @@ nonnegative_value:
     | NULL_T {
       $$ = new Value(NullValue());
     }
+    | LSBRACE digits_list RSBRACE {
+      $$ = new Value(*$2);
+    }
     ;
 
 storage_format:
@@ -674,18 +720,18 @@ update_stmt:      /*  update 语句的语法解析树*/
     ;
 
 set_clauses:
-      setClause
+      set_clause
     {
       $$ = new std::vector<SetClauseSqlNode>;
       $$->emplace_back(std::move(*$1));
     }
-    | set_clauses COMMA setClause
+    | set_clauses COMMA set_clause
     {
       $$->emplace_back(std::move(*$3));
     }
     ;
 
-setClause:
+set_clause:
       ID EQ expression
     {
       $$ = new SetClauseSqlNode;
@@ -1078,19 +1124,6 @@ opt_limit:
       $$->number = $2;
     }
     ;
-
-/* load_data_stmt:
-    LOAD DATA INFILE SSS INTO TABLE ID 
-    {
-      char *tmp_file_name = common::substr($4, 1, strlen($4) - 2);
-      
-      $$ = new ParsedSqlNode(SCF_LOAD_DATA);
-      $$->load_data.relation_name = $7;
-      $$->load_data.file_name = tmp_file_name;
-      free($7);
-      free(tmp_file_name);
-    }
-    ;*/
 
 explain_stmt:
     EXPLAIN command_wrapper

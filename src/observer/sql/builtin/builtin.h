@@ -16,6 +16,8 @@ See the Mulan PSL v2 for more details. */
 
 namespace builtin {
 
+extern RC _typeof(const vector<Value> &args, Value &result);
+
 extern RC length(const vector<Value> &args, Value &result);
 
 extern RC round(const vector<Value> &args, Value &result);

@@ -12,6 +12,15 @@ See the Mulan PSL v2 for more details. */
 
 namespace builtin {
 
+RC _typeof(const vector<Value> &args, Value &result)
+{
+  if (args.size() != 1) {
+    return RC::INVALID_ARGUMENT;
+  }
+  result = Value(attr_type_to_string(args[0].attr_type()));
+  return RC::SUCCESS;
+}
+
 RC length(const vector<Value> &args, Value &result)
 {
   if (args.size() != 1) {
@@ -298,7 +307,6 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
     return RC::VECTOR_LENGTG_ARE_INCONSISTENT;
   }
 
-  // TODO: 计算结果并赋值给result
   switch (type) {
     case Type::L2: {
       /*
@@ -306,7 +314,15 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
        * 语法：l2_distance(vector A, vector B)
        * 计算公式：$[ D = \sqrt{\sum_{i=1}^{n} (A_{i} - B_{i})^2} ]$
        */
-      return RC::INTERNAL;
+      float ans = 0.0;
+      for (int i = 0; i < v0_length; i++) {
+        float v0 = args[0].get_vector_element(i);
+        float v1 = args[1].get_vector_element(i);
+        ans += (v0 * v1) + (v0 * v1);
+      }
+      ans    = sqrt(ans);
+      result = Value(ans);
+      return RC::SUCCESS;
     }
     case Type::COSINE: {
       /*
@@ -315,7 +331,26 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
        * 计算公式：$[ D = \frac{\mathbf{A} \cdot \mathbf{B}}{|\mathbf{A}| |\mathbf{B}|} = \frac{\sum_{i=1}^{n} A_i *
        * B_i}{\sqrt{\sum_{i=1}^{n} A_i^2} \sqrt{\sum_{i=1}^{n} B_i^2}} ]$
        */
-      return RC::INTERNAL;
+      float dot_product = 0.0;
+      float norm_v0     = 0.0;
+      float norm_v1     = 0.0;
+
+      for (int i = 0; i < v0_length; i++) {
+        float v0 = args[0].get_vector_element(i);
+        float v1 = args[1].get_vector_element(i);
+        dot_product += v0 * v1;  // 计算点积
+        norm_v0 += v0 * v0;      // 计算 v0 的模长平方
+        norm_v1 += v1 * v1;      // 计算 v1 的模长平方
+      }
+
+      if (norm_v0 == 0.0 || norm_v1 == 0.0) {
+        result = Value(NullValue());
+        return RC::SUCCESS;  // 避免除以 0 的情况
+      }
+
+      float cosine_similarity = dot_product / (sqrt(norm_v0) * sqrt(norm_v1));
+      result                  = Value(cosine_similarity);
+      return RC::SUCCESS;
     }
     case Type::INNER: {
       /*
@@ -323,7 +358,16 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
        * 语法：inner_product(vector A, vector B)
        * 计算公式：$[ D = \mathbf{A} \cdot \mathbf{B} = a_1 b_1 + a_2 b_2 + ... + a_n b_n = \sum_{i=1}^{n} a_i b_i ]$
        */
-      return RC::INTERNAL;
+      float dot_product = 0.0;
+
+      for (int i = 0; i < v0_length; i++) {
+        float v0 = args[0].get_vector_element(i);
+        float v1 = args[1].get_vector_element(i);
+        dot_product += v0 * v1;  // 对应元素相乘并求和
+      }
+
+      result = Value(dot_product);
+      return RC::SUCCESS;
     }
     default: {
       return RC::INTERNAL;
