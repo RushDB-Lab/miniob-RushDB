@@ -306,7 +306,8 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
        * 语法：l2_distance(vector A, vector B)
        * 计算公式：$[ D = \sqrt{\sum_{i=1}^{n} (A_{i} - B_{i})^2} ]$
        */
-    } break;
+      return RC::INTERNAL;
+    }
     case Type::COSINE: {
       /*
        * cosine_distance：
@@ -314,7 +315,7 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
        * 计算公式：$[ D = \frac{\mathbf{A} \cdot \mathbf{B}}{|\mathbf{A}| |\mathbf{B}|} = \frac{\sum_{i=1}^{n} A_i *
        * B_i}{\sqrt{\sum_{i=1}^{n} A_i^2} \sqrt{\sum_{i=1}^{n} B_i^2}} ]$
        */
-      break;
+      return RC::INTERNAL;
     }
     case Type::INNER: {
       /*
@@ -322,11 +323,12 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
        * 语法：inner_product(vector A, vector B)
        * 计算公式：$[ D = \mathbf{A} \cdot \mathbf{B} = a_1 b_1 + a_2 b_2 + ... + a_n b_n = \sum_{i=1}^{n} a_i b_i ]$
        */
-      break;
+      return RC::INTERNAL;
+    }
+    default: {
+      return RC::INTERNAL;
     }
   }
-
-  return RC::SUCCESS;
 }
 }  // namespace vector_distance
 
