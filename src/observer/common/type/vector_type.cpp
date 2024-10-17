@@ -8,11 +8,11 @@
 int VectorType::compare(const Value &left, const Value &right) const
 {
   // 获取左向量和右向量的指针
-  const float *left_data = reinterpret_cast<const float *>(left.data());
+  const float *left_data  = reinterpret_cast<const float *>(left.data());
   const float *right_data = reinterpret_cast<const float *>(right.data());
 
   // 获取向量的长度
-  int left_count = left.length() / sizeof(float);
+  int left_count  = left.length() / sizeof(float);
   int right_count = right.length() / sizeof(float);
 
   // 如果向量长度不一致，先比较长度
@@ -23,7 +23,7 @@ int VectorType::compare(const Value &left, const Value &right) const
   // 逐元素比较两个向量
   for (int i = 0; i < left_count; ++i) {
     if (left_data[i] < right_data[i]) {
-      return -1; // left 小于 right
+      return -1;  // left 小于 right
     } else if (left_data[i] > right_data[i]) {
       return 1;  // left 大于 right
     }
@@ -33,7 +33,7 @@ int VectorType::compare(const Value &left, const Value &right) const
   return 0;
 }
 
-RC  VectorType::cast_to(const Value &val, AttrType type, Value &result, bool allow_type_promotion) const
+RC VectorType::cast_to(const Value &val, AttrType type, Value &result, bool allow_type_promotion) const
 {
   if (type == AttrType::CHARS) {
     result = Value(val.to_string().c_str());
