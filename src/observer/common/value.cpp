@@ -248,11 +248,11 @@ void Value::set_text(const char *s, int len /*= 65535*/)
   }
 }
 
-void Value::set_vector(float *&array, int &length)
+void Value::set_vector(float *array, int length)
 {
-  attr_type_            = AttrType::VECTORS;
-  length_               = length;
-  value_.pointer_value_ = reinterpret_cast<char *>(array);
+  attr_type_           = AttrType::VECTORS;
+  length_              = length;
+  value_.vector_value_ = array;
 
   own_data_ = true;
 }
@@ -309,7 +309,7 @@ void Value::set_string_from_other(const Value &other)
 const char *Value::data() const
 {
   switch (attr_type_) {
- case AttrType::CHARS:
+    case AttrType::CHARS:
     case AttrType::TEXTS: {
       return value_.pointer_value_;
     } break;
