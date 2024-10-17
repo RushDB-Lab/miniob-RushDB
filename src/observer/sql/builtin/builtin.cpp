@@ -298,6 +298,7 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
     return RC::VECTOR_LENGTG_ARE_INCONSISTENT;
   }
 
+  // TODO: 计算结果并赋值给result
   switch (type) {
     case Type::L2: {
       /*
