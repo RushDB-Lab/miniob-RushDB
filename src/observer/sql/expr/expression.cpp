@@ -872,7 +872,9 @@ RC NormalFunctionExpr::type_from_string(const char *type_str, NormalFunctionExpr
   check_type("date_format", Type::DATE_FORMAT);
   check_type("length", Type::LENGTH);
   check_type("round", Type::ROUND);
-  check_type("distance", Type::DISTANCE);
+  check_type("l2_distance", Type::L2_DISTANCE);
+  check_type("cosine_distance", Type::COSINE_DISTANCE);
+  check_type("inner_product", Type::INNER_PRODUCT);
   check_type("string_to_vector", Type::STRING_TO_VECTOR);
   check_type("vector_to_string", Type::VECTOR_TO_STRING);
   check_type("vector_dim", Type::VECTOR_DIM);
@@ -894,13 +896,15 @@ RC NormalFunctionExpr::get_value(const Tuple &tuple, Value &result)
     case Type::LENGTH: return builtin::length(args_values_, result);
     case Type::ROUND: return builtin::round(args_values_, result);
     case Type::DATE_FORMAT: return builtin::date_format(args_values_, result);
-    case Type::DISTANCE: return builtin::distance(args_values_, result);
     case Type::STRING_TO_VECTOR: return builtin::string_to_vector(args_values_, result);
     case Type::VECTOR_TO_STRING: return builtin::vector_to_string(args_values_, result);
     case Type::VECTOR_DIM: return builtin::vector_dim(args_values_, result);
     case Type::YEAR: return builtin::year(args_values_, result);
     case Type::MONTH: return builtin::month(args_values_, result);
     case Type::DAY: return builtin::day(args_values_, result);
+    case Type::L2_DISTANCE: return builtin::l2_distance(args_values_, result);
+    case Type::COSINE_DISTANCE: return builtin::cosine_distance(args_values_, result);
+    case Type::INNER_PRODUCT: return builtin::inner_product(args_values_, result);
   }
   return RC::INTERNAL;
 }
@@ -920,13 +924,15 @@ RC NormalFunctionExpr::try_get_value(Value &result) const
     case Type::LENGTH: return builtin::length(args_values_, result);
     case Type::ROUND: return builtin::round(args_values_, result);
     case Type::DATE_FORMAT: return builtin::date_format(args_values_, result);
-    case Type::DISTANCE: return builtin::distance(args_values_, result);
     case Type::STRING_TO_VECTOR: return builtin::string_to_vector(args_values_, result);
     case Type::VECTOR_TO_STRING: return builtin::vector_to_string(args_values_, result);
     case Type::VECTOR_DIM: return builtin::vector_dim(args_values_, result);
     case Type::YEAR: return builtin::year(args_values_, result);
     case Type::MONTH: return builtin::month(args_values_, result);
     case Type::DAY: return builtin::day(args_values_, result);
+    case Type::L2_DISTANCE: return builtin::l2_distance(args_values_, result);
+    case Type::COSINE_DISTANCE: return builtin::cosine_distance(args_values_, result);
+    case Type::INNER_PRODUCT: return builtin::inner_product(args_values_, result);
   }
   return RC::INTERNAL;
 }
@@ -937,13 +943,15 @@ AttrType NormalFunctionExpr::value_type() const
     case Type::LENGTH: return AttrType::INTS;
     case Type::ROUND: return AttrType::FLOATS;
     case Type::DATE_FORMAT: return AttrType::CHARS;
-    case Type::DISTANCE: return AttrType::FLOATS;
     case Type::STRING_TO_VECTOR: return AttrType::VECTORS;
     case Type::VECTOR_TO_STRING: return AttrType::CHARS;
     case Type::VECTOR_DIM: return AttrType::INTS;
     case Type::YEAR: return AttrType::INTS;
     case Type::MONTH: return AttrType::INTS;
     case Type::DAY: return AttrType::INTS;
+    case Type::L2_DISTANCE: return AttrType::FLOATS;
+    case Type::COSINE_DISTANCE: return AttrType::FLOATS;
+    case Type::INNER_PRODUCT: return AttrType::FLOATS;
   }
   return AttrType::UNDEFINED;
 }

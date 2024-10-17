@@ -249,7 +249,15 @@ RC date_format(const vector<Value> &args, Value &result)
   return RC::SUCCESS;
 }
 
-RC distance(const vector<Value> &args, Value &result)
+namespace vector_distance {
+enum class Type
+{
+  L2,
+  COSINE,
+  INNER,
+};
+
+RC distance(const std::vector<Value> &args, Value &result, Type type)
 {
   if (args.size() != 2) {
     return RC::INVALID_ARGUMENT;
@@ -290,15 +298,50 @@ RC distance(const vector<Value> &args, Value &result)
     return RC::VECTOR_LENGTG_ARE_INCONSISTENT;
   }
 
-  float ans = 0.0;
-  for (int i = 0; i < v0_length; i++) {
-    float v0 = value0.get_vector_element(i);
-    float v1 = value1.get_vector_element(i);
-    ans += (v0 - v1) * (v0 - v1);
+  switch (type) {
+    case Type::L2: {
+      /*
+       * l2_distance
+       * 语法：l2_distance(vector A, vector B)
+       * 计算公式：$[ D = \sqrt{\sum_{i=1}^{n} (A_{i} - B_{i})^2} ]$
+       */
+    } break;
+    case Type::COSINE: {
+      /*
+       * cosine_distance：
+       * 语法：cosine_distance(vector A, vector B)
+       * 计算公式：$[ D = \frac{\mathbf{A} \cdot \mathbf{B}}{|\mathbf{A}| |\mathbf{B}|} = \frac{\sum_{i=1}^{n} A_i *
+       * B_i}{\sqrt{\sum_{i=1}^{n} A_i^2} \sqrt{\sum_{i=1}^{n} B_i^2}} ]$
+       */
+      break;
+    }
+    case Type::INNER: {
+      /*
+       * inner_product：
+       * 语法：inner_product(vector A, vector B)
+       * 计算公式：$[ D = \mathbf{A} \cdot \mathbf{B} = a_1 b_1 + a_2 b_2 + ... + a_n b_n = \sum_{i=1}^{n} a_i b_i ]$
+       */
+      break;
+    }
   }
-  ans    = std::sqrt(ans);
-  result = Value(ans);
+
   return RC::SUCCESS;
+}
+}  // namespace vector_distance
+
+RC l2_distance(const vector<Value> &args, Value &result)
+{
+  return vector_distance::distance(args, result, vector_distance::Type::L2);
+}
+
+RC cosine_distance(const vector<Value> &args, Value &result)
+{
+  return vector_distance::distance(args, result, vector_distance::Type::COSINE);
+}
+
+RC inner_product(const vector<Value> &args, Value &result)
+{
+  return vector_distance::distance(args, result, vector_distance::Type::INNER);
 }
 
 RC string_to_vector(const vector<Value> &args, Value &result)

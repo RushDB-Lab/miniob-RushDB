@@ -28,7 +28,11 @@ extern RC day(const vector<Value> &args, Value &result);
 
 extern RC date_format(const vector<Value> &args, Value &result);
 
-extern RC distance(const vector<Value> &args, Value &result);
+extern RC l2_distance(const vector<Value> &args, Value &result);
+
+extern RC cosine_distance(const vector<Value> &args, Value &result);
+
+extern RC inner_product(const vector<Value> &args, Value &result);
 
 extern RC string_to_vector(const vector<Value> &args, Value &result);
 
