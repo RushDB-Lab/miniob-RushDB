@@ -301,8 +301,8 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
     return RC::INVALID_ARGUMENT;
   }
 
-  auto v0_length = value0.get_vector().size();
-  auto v1_length = value1.get_vector().size();
+  auto v0_length = value0.get_vector_length();
+  auto v1_length = value1.get_vector_length();
   if (v0_length != v1_length) {
     return RC::VECTOR_LENGTG_ARE_INCONSISTENT;
   }

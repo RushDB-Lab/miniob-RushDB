@@ -32,7 +32,7 @@ Value::Value(bool val) { set_boolean(val); }
 
 Value::Value(const char *s, int len /*= 0*/) { set_string(s, len); }
 
-Value::Value(const vector<float> &values) { set_list(values); }
+Value::Value(const vector<float> &values) { set_vector(values); }
 
 Value::Value(const Value &other)
 {
@@ -246,11 +246,14 @@ void Value::set_vector(float *&array, size_t &length)
   own_data_ = true;
 }
 
-void Value::set_list(const vector<float> &val)
+void Value::set_vector(const vector<float> &val)
 {
-  attr_type_         = AttrType::VECTORS;
-  length_            = val.size() * sizeof(float);
-  value_.vector_value_ = new vector<float>(val);
+  attr_type_           = AttrType::VECTORS;
+  length_              = val.size() * sizeof(float);
+  value_.vector_value_ = new float[length_];
+  for (size_t i = 0; i < val.size(); i++) {
+    value_.vector_value_[i] = val[i];
+  }
 
   own_data_ = true;
 }
@@ -471,4 +474,16 @@ RC Value::borrow_text(const Value &v)
   value_.pointer_value_ = v.value_.pointer_value_;
   length_               = v.length_;
   return RC::SUCCESS;
+}
+
+int Value::get_vector_length() const
+{
+  assert(attr_type_ == AttrType::VECTORS);
+  return length_ / sizeof(float);
+}
+
+float Value::get_vector_element(int i) const
+{
+  assert(attr_type_ == AttrType::VECTORS);
+  return value_.vector_value_[i];
 }

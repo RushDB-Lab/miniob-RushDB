@@ -20,6 +20,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/type/data_type.h"
 #include "common/type/date_type.h"
 #include "common/type/text_type.h"
+#include <cassert>
 
 class NullValue
 {};
@@ -119,14 +120,15 @@ public:
    * 获取对应的值
    * 如果当前的类型与期望获取的类型不符，就会执行转换操作
    */
-  int                 get_int() const;
-  float               get_float() const;
-  string              get_string() const;
-  bool                get_boolean() const;
-  int                 get_date() const;
-  std::vector<float> &get_vector() const { return *value_.vector_value_; }
-  bool                is_null() const { return is_null_; }
-  inline bool         is_str() const { return attr_type_ == AttrType::CHARS; }
+  int         get_int() const;
+  float       get_float() const;
+  string      get_string() const;
+  bool        get_boolean() const;
+  int         get_date() const;
+  int         get_vector_length() const;
+  float       get_vector_element(int i) const;
+  bool        is_null() const { return is_null_; }
+  inline bool is_str() const { return attr_type_ == AttrType::CHARS; }
 
   static int implicit_cast_cost(AttrType from, AttrType to)
   {
@@ -143,7 +145,7 @@ private:
   void set_string(const char *s, int len = 0);
   void set_text(const char *s, int len = 65535);
   void set_vector(float *&array, size_t &length);
-  void set_list(const vector<float> &val);
+  void set_vector(const vector<float> &val);
   void set_string_from_other(const Value &other);
 
 private:
@@ -152,11 +154,11 @@ private:
 
   union Val
   {
-    int32_t             int_value_;
-    float               float_value_;
-    bool                bool_value_;
-    char               *pointer_value_;
-    std::vector<float> *vector_value_;
+    int32_t int_value_;
+    float   float_value_;
+    bool    bool_value_;
+    char   *pointer_value_;
+    float  *vector_value_;
   } value_ = {.int_value_ = 0};
 
   static_assert(sizeof(std::vector<Value> *) == sizeof(char *));
