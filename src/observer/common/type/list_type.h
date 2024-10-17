@@ -17,4 +17,9 @@ See the Mulan PSL v2 for more details. */
 #include "common/type/data_type.h"
 
 class ListType : public DataType
-{};
+{
+public:
+  ListType() : DataType(AttrType::LISTS) {};
+
+  RC to_string(const Value &val, string &result) const override;
+};

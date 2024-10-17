@@ -136,6 +136,7 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
         LIMIT
         NULLABLE
         HELP
+        QUOTE
         EXIT
         DOT
         INTO
@@ -634,6 +635,9 @@ nonnegative_value:
     }
     | LSBRACE value_list RSBRACE {
       $$ = new Value(ListValue(), *$2);
+    }
+    | QUOTE LSBRACE value_list RSBRACE QUOTE {
+      $$ = new Value(ListValue(), *$3);
     }
     ;
 

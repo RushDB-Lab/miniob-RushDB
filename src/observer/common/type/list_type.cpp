@@ -13,3 +13,21 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include "list_type.h"
+#include "cassert"
+#include "common/value.h"
+
+RC ListType::to_string(const Value &val, string &result) const
+{
+  assert(val.attr_type() == AttrType::LISTS);
+  auto &list = val.get_list();
+  result     = "[";
+  auto size  = list.size();
+  for (int i = 0; i < size; i++) {
+    result += list[i].to_string();
+    if (i < size - 1) {
+      result += ", ";
+    }
+  }
+  result += "]";
+  return RC::SUCCESS;
+}
