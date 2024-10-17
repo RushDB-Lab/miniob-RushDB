@@ -214,7 +214,7 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
 %type <relation_list>       rel_list
 %type <expression>          expression
 %type <expression>          where
-%type <expression>          aggr_func_expr
+%type <expression>          func_expr
 %type <expression>          sub_query_expr
 %type <expression_list>     expression_list
 %type <expression_list>     group_by
@@ -850,7 +850,7 @@ expression:
     | ID DOT '*' {
       $$ = new StarExpr($1);
     }
-    | aggr_func_expr {
+    | func_expr {
       $$ = $1;      // AggrFuncExpr
     }
     | sub_query_expr {
@@ -870,7 +870,7 @@ alias:
       $$ = $2;
     }
 
-aggr_func_expr:
+func_expr:
     ID LBRACE expression_list RBRACE
     {
         $$ = new UnboundFunctionExpr($1, std::move(*$3));

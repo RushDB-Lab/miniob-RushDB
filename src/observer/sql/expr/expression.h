@@ -559,6 +559,8 @@ public:
 
   AttrType value_type() const override;
 
+  std::unique_ptr<Expression> deep_copy() const;
+
   RC generate_select_stmt(Db *db, const std::unordered_map<std::string, BaseTable *> &tables);
 
   RC generate_logical_oper();
