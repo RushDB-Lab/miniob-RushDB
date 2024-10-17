@@ -32,7 +32,9 @@ Value::Value(bool val) { set_boolean(val); }
 
 Value::Value(const char *s, int len /*= 0*/) { set_string(s, len); }
 
-Value::Value(ListValue, const vector<Value> &values) { set_list(values); }
+Value::Value(const vector<Value> &values) { set_list(values); }
+
+Value::Value(const vector<float> &numbers) { set_vector(numbers); }
 
 Value::Value(const Value &other)
 {
@@ -236,13 +238,11 @@ void Value::set_text(const char *s, int len /*= 65535*/)
     value_.pointer_value_[len] = '\0';
   }
 }
-void Value::set_vector(float *&array, size_t &length)
-{
-  attr_type_            = AttrType::VECTORS;
-  length_               = length;
-  value_.pointer_value_ = reinterpret_cast<char *>(array);
 
-  own_data_ = true;
+void Value::set_vector(const std::vector<float> &numbers)
+{
+  attr_type_ = AttrType::VECTORS;
+  // TODO:
 }
 
 void Value::set_list(const vector<Value> &val)

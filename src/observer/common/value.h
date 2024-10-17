@@ -25,12 +25,6 @@ See the Mulan PSL v2 for more details. */
 class NullValue
 {};
 
-class VectorValue
-{};
-
-class ListValue
-{};
-
 /**
  * @brief 属性的值
  * @ingroup DataType
@@ -63,8 +57,8 @@ public:
   explicit Value(float val);
   explicit Value(bool val);
   explicit Value(const char *s, int len = 0);
-  explicit Value(ListValue, const vector<Value> &values);
-  explicit Value(VectorValue, const vector<Value> &values);
+  explicit Value(const vector<Value> &values);
+  explicit Value(const vector<float> &numbers);
 
   Value(const Value &other);
   Value(Value &&other);
@@ -152,7 +146,7 @@ private:
   void set_date(int val);
   void set_string(const char *s, int len = 0);
   void set_text(const char *s, int len = 65535);
-  void set_vector(float *&array, size_t &length);
+  void set_vector(const std::vector<float> &numbers);
   void set_list(const vector<Value> &val);
   void set_string_from_other(const Value &other);
 
@@ -167,6 +161,7 @@ private:
     bool                bool_value_;
     char               *pointer_value_;
     std::vector<Value> *list_value_;
+    std::vector<float> *vector_value_;
   } value_ = {.int_value_ = 0};
 
   static_assert(sizeof(std::vector<Value> *) == sizeof(char *));

@@ -189,6 +189,8 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
   bool                                       nullable_info;
   std::vector<std::string> *                 index_attr_list;
   bool                                       unique;
+  float                                      digits;
+  std::vector<float> *                       digits_list;
 }
 
 %token <number> NUMBER
@@ -199,6 +201,8 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
 
 /** type 定义了各种解析后的结果输出的是什么类型。类型对应了 union 中的定义的成员变量名称 **/
 %type <number>              type
+%type <digits>              digits
+%type <digits_list>         digits_list
 %type <value>               value
 %type <value>               nonnegative_value
 %type <string>              relation
@@ -220,7 +224,7 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
 %type <expression_list>     expression_list
 %type <expression_list>     group_by
 %type <expression>          opt_having
-%type <set_clause>          setClause
+%type <set_clause>          set_clause
 %type <set_clauses>         set_clauses
 %type <join_clauses>        join_clauses
 %type <orderby_unit>        sort_unit
@@ -587,8 +591,48 @@ values_list:
       delete $4;
     }
 
+digits:
+    NUMBER
+    {
+      $$ = float($1);
+    }
+    | '-' NUMBER
+    {
+      $$ = float(-$2);
+    }
+    | FLOAT
+    {
+      $$ = $1;
+    }
+    | '-' FLOAT
+    {
+      $$ = $2;
+    }
+    ;
+
+
+digits_list:
+    /* empty */
+    {
+      $$ = new std::vector<float>();
+    }
+    | digits
+    {
+      $$ = new std::vector<float>();
+      $$->push_back($1);
+    }
+    | digits_list COMMA digits
+    {
+      $$->push_back($3);
+    }
+    ;
+
 value_list:
-      value
+    /* empty */
+    {
+      $$ = new std::vector<Value>;
+    }
+    | value
     {
       $$ = new std::vector<Value>;
       $$->emplace_back(*$1);
@@ -634,10 +678,10 @@ nonnegative_value:
       $$ = new Value(NullValue());
     }
     | LSBRACE value_list RSBRACE {
-      $$ = new Value(ListValue(), *$2);
+      $$ = new Value(*$2);
     }
-    | QUOTE LSBRACE value_list RSBRACE QUOTE {
-      $$ = new Value(ListValue(), *$3);
+    | QUOTE LSBRACE digits_list RSBRACE QUOTE {
+      $$ = new Value(*$3);
     }
     ;
 
@@ -679,18 +723,18 @@ update_stmt:      /*  update 语句的语法解析树*/
     ;
 
 set_clauses:
-      setClause
+      set_clause
     {
       $$ = new std::vector<SetClauseSqlNode>;
       $$->emplace_back(std::move(*$1));
     }
-    | set_clauses COMMA setClause
+    | set_clauses COMMA set_clause
     {
       $$->emplace_back(std::move(*$3));
     }
     ;
 
-setClause:
+set_clause:
       ID EQ expression
     {
       $$ = new SetClauseSqlNode;
