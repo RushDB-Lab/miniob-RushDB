@@ -320,7 +320,8 @@ RC vector_to_string(const vector<Value> &args, Value &result)
   if (args[0].attr_type() != AttrType::VECTORS) {
     return RC::INVALID_ARGUMENT;
   }
-  return Value::cast_to(args[0], AttrType::CHARS, result);
+  result = Value(args[0].to_string().c_str());
+  return RC::SUCCESS;
 }
 
 RC vector_dim(const vector<Value> &args, Value &result)
