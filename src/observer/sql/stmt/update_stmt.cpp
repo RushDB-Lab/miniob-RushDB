@@ -12,15 +12,14 @@ See the Mulan PSL v2 for more details. */
 // Created by Wangyunlai on 2022/5/22.
 //
 
-#include "sql/stmt/update_stmt.h"
-#include "sql/stmt/filter_stmt.h"
-
 #include <common/log/log.h>
 #include <storage/db/db.h>
 
-#include <utility>
+#include "sql/stmt/update_stmt.h"
+#include "sql/stmt/filter_stmt.h"
+#include "storage/table/view.h"
 
-UpdateStmt::UpdateStmt(Table *table, std::vector<FieldMeta> field_metas,
+UpdateStmt::UpdateStmt(BaseTable *table, std::vector<FieldMeta> field_metas,
     std::vector<std::unique_ptr<Expression>> values, FilterStmt *filter_stmt)
     : table_(table), field_metas_(std::move(field_metas)), values_(std::move(values)), filter_stmt_(filter_stmt)
 {}
@@ -45,10 +44,15 @@ RC UpdateStmt::create(Db *db, UpdateSqlNode &update_sql, Stmt *&stmt)
   }
 
   // check whether the table exists
-  Table *table = db->find_table(table_name);
+  auto table = db->find_table(table_name);
   if (nullptr == table) {
     LOG_WARN("no such table. db=%s, table_name=%s", db->name(), table_name);
     return RC::SCHEMA_TABLE_NOT_EXIST;
+  }
+
+  if (table->type() == TableType::View && !table->is_mutable()) {
+    LOG_ERROR("The target table %s of the UPDATE is not updatable", table->name());
+    return RC::READ_ONLY_VIEW_UPDATE_ERROR;
   }
 
   auto                                     table_meta = table->table_meta();
@@ -65,9 +69,14 @@ RC UpdateStmt::create(Db *db, UpdateSqlNode &update_sql, Stmt *&stmt)
       return RC::SCHEMA_FIELD_NOT_EXIST;
     }
 
+    if (!field_meta->is_mutable()) {
+      LOG_ERROR("Column '%s' is not updateable", field_meta->name());
+      return RC::EXPRESSION_FIELD_NOT_UPDATEABLE;
+    }
+
     // check whether the value is valid
-    std::unordered_map<std::string, Table *> table_map;
-    table_map.insert(std::pair<std::string, Table *>(std::string(table_name), table));
+    std::unordered_map<std::string, BaseTable *> table_map;
+    table_map.insert(std::pair(std::string(table_name), table));
 
     vector<unique_ptr<Expression>> expressions;
     BinderContext                  binder_context;
@@ -92,11 +101,11 @@ RC UpdateStmt::create(Db *db, UpdateSqlNode &update_sql, Stmt *&stmt)
     values.emplace_back(std::move(expressions[0]));
   }
 
-  std::unordered_map<std::string, Table *> table_map;
-  table_map.insert(std::pair<std::string, Table *>(std::string(table_name), table));
+  std::unordered_map<std::string, BaseTable *> table_map;
+  table_map.insert(std::pair(std::string(table_name), table));
 
   FilterStmt *filter_stmt = nullptr;
-  rc                      = FilterStmt::create(db, table, &table_map, update_sql.conditions, filter_stmt);
+  rc                      = FilterStmt::create(db, table, {}, &table_map, update_sql.conditions, filter_stmt);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to create filter statement. rc=%d:%s", rc, strrc(rc));
     return rc;

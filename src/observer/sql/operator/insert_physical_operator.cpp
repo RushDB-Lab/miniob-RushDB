@@ -17,7 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/table/table.h"
 #include "storage/trx/trx.h"
 
-InsertPhysicalOperator::InsertPhysicalOperator(Table *table, const std::vector<std::vector<Value>> &values_list)
+InsertPhysicalOperator::InsertPhysicalOperator(BaseTable *table, const std::vector<std::vector<Value>> &values_list)
     : table_(table), values_list_(values_list)
 {}
 

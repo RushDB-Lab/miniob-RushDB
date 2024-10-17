@@ -117,6 +117,7 @@ public:
    */
   virtual const char *name() const { return name_.c_str(); }
   virtual const char *alias() const { return alias_.c_str(); }
+  bool                has_alias() const { return !alias_.empty(); }
   virtual void        set_name(std::string name) { name_ = std::move(name); }
   virtual void        set_alias(std::string alias) { alias_ = std::move(alias); }
   virtual bool        name_empty() { return name_.empty(); }
@@ -196,7 +197,7 @@ class FieldExpr : public Expression
 {
 public:
   FieldExpr() = default;
-  FieldExpr(const Table *table, const FieldMeta *field) : field_(table, field) {}
+  FieldExpr(const BaseTable *table, const FieldMeta *field) : field_(table, field) {}
   explicit FieldExpr(const Field &field) : field_(field) {}
 
   virtual ~FieldExpr() = default;
@@ -218,8 +219,11 @@ public:
 
   RC get_value(const Tuple &tuple, Value &value) override;
 
+  void set_table_alias(std::string table_alias) { table_alias_ = std::move(table_alias); }
+
 private:
-  Field field_;
+  Field       field_;
+  std::string table_alias_;
 };
 
 /**
@@ -555,7 +559,10 @@ public:
 
   AttrType value_type() const override;
 
-  RC generate_select_stmt(Db *db, const std::unordered_map<std::string, Table *> &tables);
+  std::unique_ptr<Expression> deep_copy() const;
+
+  RC generate_select_stmt(Db *db, const std::unordered_map<std::string, BaseTable *> &tables);
+
   RC generate_logical_oper();
   RC generate_physical_oper();
 

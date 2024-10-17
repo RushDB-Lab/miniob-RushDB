@@ -24,29 +24,37 @@ public:
   BinderContext()          = default;
   virtual ~BinderContext() = default;
 
-  void add_table(Table *table) { query_tables_.push_back(table); }
+  void add_table(BaseTable *table) { query_tables_.emplace_back(table); }
   void add_db(Db *db) { db_ = db; }
 
-  void set_tables(std::unordered_map<std::string, Table *> *tables) { tables_ = tables; }
+  void set_tables(std::unordered_map<std::string, BaseTable *> *tables) { tables_ = tables; }
 
   Db *get_db() const { return db_; }
 
-  Table *find_table(const char *table_name) const;
+  BaseTable *find_table(const char *table_name) const;
 
-  const std::vector<Table *>               &query_tables() const { return query_tables_; }
-  std::unordered_map<std::string, Table *> &table_map() { return *tables_; }
+  const std::vector<BaseTable *>               &query_tables() const { return query_tables_; }
+  std::unordered_map<std::string, BaseTable *> &table_map() { return *tables_; }
+
+  // 对于 update delete 目前还不支持给表取别名，所以是空的
+  bool has_tables_alias() { return !tables_alias_.empty(); }
+
+  const std::vector<std::string> &alias() { return tables_alias_; }
+
+  void set_alias(std::vector<std::string> alias) { tables_alias_ = std::move(alias); }
 
 private:
   Db *db_;
 
 public:
-  [[nodiscard]] Table *default_table() const { return default_table_; }
-  void                 set_default_table(Table *default_table) { default_table_ = default_table; }
+  [[nodiscard]] BaseTable *default_table() const { return default_table_; }
+  void                     set_default_table(BaseTable *default_table) { default_table_ = default_table; }
 
 private:
-  Table                                    *default_table_;
-  std::vector<Table *>                      query_tables_;
-  std::unordered_map<std::string, Table *> *tables_;
+  BaseTable                                    *default_table_;
+  std::vector<BaseTable *>                      query_tables_;
+  std::vector<std::string>                      tables_alias_;
+  std::unordered_map<std::string, BaseTable *> *tables_;
 };
 
 /**
@@ -85,6 +93,9 @@ private:
       std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions);
   RC bind_exprlist_expression(
       std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &bound_expressions);
+
+  void wildcard_fields(BaseTable *table, std::string table_alias, vector<unique_ptr<Expression>> &expressions,
+      bool multi_tables = false);
 
 private:
   bool           multi_tables_;

@@ -44,10 +44,10 @@ public:
   VacuousTrx()          = default;
   virtual ~VacuousTrx() = default;
 
-  RC insert_record(Table *table, Record &record) override;
-  RC delete_record(Table *table, Record &record) override;
-  RC update_record(Table *table, Record &old_record, Record &new_record) override;
-  RC visit_record(Table *table, Record &record, ReadWriteMode mode) override;
+  RC insert_record(BaseTable *table, Record &record) override;
+  RC delete_record(BaseTable *table, Record &record) override;
+  RC update_record(BaseTable *table, Record &old_record, Record &new_record) override;
+  RC visit_record(BaseTable *table, Record &record, ReadWriteMode mode) override;
   RC start_if_need() override;
   RC commit() override;
   RC rollback() override;

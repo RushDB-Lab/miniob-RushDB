@@ -1,5 +1,5 @@
 -- echo INITIALIZATION
-CREATE TABLE Index_table_1(id int, age int)
+CREATE TABLE Index_table_1(id int, age int);
 insert into Index_table_1 values (1,1);
 insert into Index_table_1 values (2,2);
 insert into Index_table_1 values (3,3);
