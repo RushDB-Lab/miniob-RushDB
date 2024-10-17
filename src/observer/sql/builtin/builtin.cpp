@@ -9,6 +9,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
 #include "builtin.h"
+#include "sql/parser/parse_defs.h"
 
 namespace builtin {
 
@@ -250,14 +251,8 @@ RC date_format(const vector<Value> &args, Value &result)
 }
 
 namespace vector_distance {
-enum class Type
-{
-  L2,
-  COSINE,
-  INNER,
-};
 
-RC distance(const std::vector<Value> &args, Value &result, Type type)
+RC distance(const std::vector<Value> &args, Value &result, VectorDistanceType type)
 {
   if (args.size() != 2) {
     return RC::INVALID_ARGUMENT;
@@ -300,7 +295,7 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
 
   // TODO: 计算结果并赋值给result
   switch (type) {
-    case Type::L2: {
+    case VectorDistanceType::L2: {
       /*
        * l2_distance
        * 语法：l2_distance(vector A, vector B)
@@ -308,7 +303,7 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
        */
       return RC::INTERNAL;
     }
-    case Type::COSINE: {
+    case VectorDistanceType::COSINE: {
       /*
        * cosine_distance：
        * 语法：cosine_distance(vector A, vector B)
@@ -317,7 +312,7 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
        */
       return RC::INTERNAL;
     }
-    case Type::INNER: {
+    case VectorDistanceType::INNER: {
       /*
        * inner_product：
        * 语法：inner_product(vector A, vector B)
@@ -334,17 +329,17 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
 
 RC l2_distance(const vector<Value> &args, Value &result)
 {
-  return vector_distance::distance(args, result, vector_distance::Type::L2);
+  return vector_distance::distance(args, result, VectorDistanceType::L2);
 }
 
 RC cosine_distance(const vector<Value> &args, Value &result)
 {
-  return vector_distance::distance(args, result, vector_distance::Type::COSINE);
+  return vector_distance::distance(args, result, VectorDistanceType::COSINE);
 }
 
 RC inner_product(const vector<Value> &args, Value &result)
 {
-  return vector_distance::distance(args, result, vector_distance::Type::INNER);
+  return vector_distance::distance(args, result, VectorDistanceType::INNER);
 }
 
 RC string_to_vector(const vector<Value> &args, Value &result)

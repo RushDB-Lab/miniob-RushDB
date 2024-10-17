@@ -153,6 +153,15 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
         INNER
         JOIN
         VIEW
+        WITH
+        DISTANCE
+        TYPE
+        LISTS
+        PROBES
+        IVFFLAT
+        L2_DISTANCE
+        COSINE_DISTANCE
+        INNER_PRODUCT
         EQ
         LT
         GT
@@ -188,6 +197,9 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
   bool                                       nullable_info;
   std::vector<std::string> *                 index_attr_list;
   bool                                       unique;
+  enum VectorDistanceType                    vector_distance_type;
+  enum IndexType                             index_type;
+  VectorIndexConfig *                        vector_index_config;
 }
 
 %token <number> NUMBER
@@ -228,6 +240,9 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
 %type <limited_info>        opt_limit
 %type <index_attr_list>     attr_list
 %type <unique>              opt_unique
+%type <index_type>          index_type
+%type <vector_distance_type> vector_distance_type
+%type <vector_index_config>  vector_index_config
 %type <sql_node>            calc_stmt
 %type <sql_node>            select_stmt
 %type <sql_node>            insert_stmt
@@ -375,11 +390,63 @@ create_index_stmt:
       free($4);
       free($6);
     }
+    | CREATE VECTOR_T INDEX ID ON ID LBRACE attr_list RBRACE WITH vector_index_config
+    {
+      $$ = new ParsedSqlNode(SCF_CREATE_INDEX);
+      CreateIndexSqlNode &create_index = $$->create_index;
+      create_index.unique = false; // 向量索引不支持
+      create_index.index_name = $4;
+      create_index.relation_name = $6;
+      create_index.attribute_name.swap(*$8); // $8 是 vector<string> 类型
+      create_index.vector_index_config = std::move(*$11);
+      delete $8; // 释放指针
+      free($4);
+      free($6);
+    }
     ;
 
 opt_unique:
     UNIQUE { $$ = true; }
     | /* 空 */ { $$ = false; }
+    ;
+
+index_type:
+      IVFFLAT
+    {
+      $$ = IndexType::VectorIVFFlatIndex;
+    }
+    ;
+
+vector_index_config:
+      LBRACE DISTANCE EQ vector_distance_type COMMA TYPE EQ index_type RBRACE
+    {
+      $$ = new VectorIndexConfig;
+      $$->distance_type = $4;
+      $$->index_type = $8;
+    }
+    | LBRACE DISTANCE EQ vector_distance_type COMMA TYPE EQ index_type COMMA LISTS EQ value COMMA PROBES EQ value RBRACE
+    {
+      $$ = new VectorIndexConfig;
+      $$->distance_type = $4;
+      $$->index_type = $8;
+      $$->lists = std::move(*$12);
+      $$->probes = std::move(*$16);
+    }
+    ;
+
+vector_distance_type:
+      L2_DISTANCE
+    {
+      $$ = VectorDistanceType::L2;
+    }
+    | COSINE_DISTANCE
+    {
+      $$ = VectorDistanceType::COSINE;
+    }
+    | INNER_PRODUCT
+    {
+      $$ = VectorDistanceType::INNER;
+    }
     ;
 
 attr_list:

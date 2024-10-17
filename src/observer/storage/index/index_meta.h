@@ -64,6 +64,7 @@ public:
   }
 
   [[nodiscard]] const char              *name() const { return name_.c_str(); }
+  IndexType                              type() const { return type_; }
   [[nodiscard]] int                      fields_total_len() const { return fields_total_len_; }
   [[nodiscard]] const vector<FieldMeta> &fields() const { return fields_; }
   [[nodiscard]] bool                     unique() const { return unique_; }
@@ -71,6 +72,7 @@ public:
 
 private:
   string            name_;
+  IndexType         type_;
   int               fields_total_len_ = 0;
   vector<int>       fields_offset_;
   vector<FieldMeta> fields_;

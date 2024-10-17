@@ -251,6 +251,28 @@ struct DropTableSqlNode
   std::string relation_name;  ///< 要删除的表名
 };
 
+enum class VectorDistanceType
+{
+  L2,
+  COSINE,
+  INNER,
+};
+
+enum class IndexType
+{
+  BPlusTreeIndex,
+  VectorIVFFlatIndex,  // 目前就支持以上两种
+  VectorHNSWIndex
+};
+
+struct VectorIndexConfig
+{
+  VectorDistanceType distance_type;                           ///< 距离度量
+  IndexType          index_type = IndexType::BPlusTreeIndex;  ///< 索引类型，非向量索引情况默认为 b+ 树
+  Value              lists;                                   ///< 列表数量
+  Value              probes;                                  ///< 探测次数
+};
+
 /**
  * @brief 描述一个create index语句
  * @ingroup SQLParser
@@ -259,10 +281,11 @@ struct DropTableSqlNode
  */
 struct CreateIndexSqlNode
 {
-  bool                     unique;          ///< unique index
-  std::string              index_name;      ///< Index name
-  std::string              relation_name;   ///< Relation name
-  std::vector<std::string> attribute_name;  ///< Attribute name
+  bool                     unique;               ///< unique index
+  std::string              index_name;           ///< Index name
+  std::string              relation_name;        ///< Relation name
+  std::vector<std::string> attribute_name;       ///< Attribute name
+  VectorIndexConfig        vector_index_config;  ///< 向量索引还有一些额外参数
 };
 
 /**

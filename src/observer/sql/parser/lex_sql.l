@@ -134,6 +134,15 @@ FORMAT                                  RETURN_TOKEN(FORMAT);
 INNER                                   RETURN_TOKEN(INNER);
 JOIN                                    RETURN_TOKEN(JOIN);
 VIEW                                    RETURN_TOKEN(VIEW);
+WITH                                    RETURN_TOKEN(WITH);
+DISTANCE                                RETURN_TOKEN(DISTANCE);
+TYPE                                    RETURN_TOKEN(TYPE);
+LISTS                                   RETURN_TOKEN(LISTS);
+PROBES                                  RETURN_TOKEN(PROBES);
+IVFFLAT                                 RETURN_TOKEN(IVFFLAT);
+L2_DISTANCE                             RETURN_TOKEN(L2_DISTANCE);
+COSINE_DISTANCE                         RETURN_TOKEN(COSINE_DISTANCE);
+INNER_PRODUCT                           RETURN_TOKEN(INNER_PRODUCT);
 "("                                     RETURN_TOKEN(LBRACE);
 ")"                                     RETURN_TOKEN(RBRACE);
 
