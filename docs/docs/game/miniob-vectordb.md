@@ -46,17 +46,21 @@ INSERT INTO items VALUES (1, '[1,2,3]');
 select embedding + '[1.5,2.3,3.3]', embedding - '[1,2,3]', '[1,2,3]' - embedding from items where embedding > '[0,0,0]';
 ```
 其中，算术运算为逐个元素运算，如 `[1,2,3] + [1,1,1] = [2,3,4]`；比较运算为逐个元素的字典序比较，如`[1,2,3]<[1,2,4], [2,1,2]>[1,2,2]`
+
 * 支持距离表达式计算：
   * l2_distance
     *  语法：l2_distance(vector A, vector B)
     * 计算公式：$[ D = \sqrt{\sum_{i=1}^{n} (A_{i} - B_{i})^2} ]$
+
   * cosine_distance：
     * 语法：cosine_distance(vector A, vector B)
     * 计算公式：$[ D = \frac{\mathbf{A} \cdot \mathbf{B}}{|\mathbf{A}| |\mathbf{B}|} = \frac{\sum_{i=1}^{n} A_i B_i}{\sqrt{\sum_{i=1}^{n} A_i^2} \sqrt{\sum_{i=1}^{n} B_i^2}} ]$
+
   * inner_product：
     * 语法：inner_product(vector A, vector B)
     * 计算公式：$[ D = \mathbf{A} \cdot \mathbf{B} = a_1 b_1 + a_2 b_2 + ... + a_n b_n = \sum_{i=1}^{n} a_i b_i ]$
-  * 距离表达式的计算精度为保留2位小数。 
+
+  * 距离表达式的计算精度为保留2位小数。
 
 ### 题目二：向量类型扩展
 
@@ -84,7 +88,7 @@ IVF-Flat 是一种常见的高效近似最近邻（Approximate Nearest Neighbor�
 ![ivfflat](images/ivfflat.png)
 以图像搜索为例的 IVF-Flat 向量索引工作流程如下：
 1. 首先使用 K-Means 算法将所有图像的特征向量分成 1000 个簇。每个簇表示一部分相似的图片。例如，簇 1 可能包含大部分是风景图像的向量，簇 2 可能包含大部分是人物图像的向量，以此类推。对于每个簇，向量索引都维护一个倒排文件索引，存储属于这个簇的所有图像的索引。
-比如，簇 1 对应的倒排文件索引可能包括 [image_23, image_45, image_78...]，这些是属于簇 1 的图像的索引。
+   比如，簇 1 对应的倒排文件索引可能包括 [image_23, image_45, image_78...]，这些是属于簇 1 的图像的索引。
 1. 查询过程：用户指定一张新图像进行搜索。首先，将这张图片通过同样的特征提取模型转换成一个高维向量。然后，通过计算这个向量与1000个质心的距离，找到离它最近的几个质心（假设是前5个）。在这几个质心对应的簇中，你进一步进行精确的向量搜索，找到最相似的图像。
 
 
@@ -151,23 +155,23 @@ SELECT * FROM TAB_VEC ORDER BY L2_DISTANCE(B, '[1,2,3]') LIMIT 1;
 ```
 git clone https://github.com/nautaa/ann-benchmarks.git -b miniob_ann
 ```
-1. 安装所需 python 依赖
+2. 安装所需 python 依赖
 ```
 cd ann-benchmarks/
 pip install -r requirements.txt
 ```
-1. 以 mysql 通讯协议且监听 unix socket 的方式启动 miniob.
+3. 以 mysql 通讯协议且监听 unix socket 的方式启动 miniob.
 ```bash
 # 示例命令
 /root/miniob/build_release/bin/observer -s /tmp/miniob.sock -P mysql 
 ```
-1. 运行 ann-benchmark.
-注意：需要将 `algorithms/miniob/config.yml` 中的 `arg_groups: [{unix_socket: "/tmp/miniob.sock"}]` 修改为 miniob 实际使用的 unix socket 文件地址
+4. 运行 ann-benchmark.
+   注意：需要将 `algorithms/miniob/config.yml` 中的 `arg_groups: [{unix_socket: "/tmp/miniob.sock"}]` 修改为 miniob 实际使用的 unix socket 文件地址
 ```bash
 # 示例命令
 python3 run.py --dataset fashion-mnist-784-euclidean --docker-tag ann-benchmarks-miniob --local --timeout 100 --runs 1
 ```
-1. 生成运行结果.
+5. 生成运行结果.
 ```bash
 # 示例命令
 python3 plot.py --dataset fashion-mnist-784-euclidean
