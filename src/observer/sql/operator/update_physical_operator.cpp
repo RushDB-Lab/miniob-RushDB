@@ -54,7 +54,7 @@ RC UpdatePhysicalOperator::open(Trx *trx)
   Value              value;
   std::vector<Value> real_values(values_.size());
   SubQueryExpr      *sub_query_expr = nullptr;
-  for (int i = 0; i < values_.size(); ++i) {
+  for (size_t i = 0; i < values_.size(); ++i) {
     auto &value_expr = values_[i];
     auto &field_meta = field_metas_[i];
 
@@ -126,7 +126,7 @@ RC UpdatePhysicalOperator::open(Trx *trx)
     // rid 得手动拷贝
     new_record.set_rid(old_record.rid());
     new_record.copy_data(old_record.data(), old_record.len());
-    for (int i = 0; i < field_metas_.size(); ++i) {
+    for (size_t i = 0; i < field_metas_.size(); ++i) {
       if (field_metas_[i].nullable()) {
         auto null_offset = field_metas_[i].offset() + field_metas_[i].len() - 1;
         if (real_values[i].is_null()) {

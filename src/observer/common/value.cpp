@@ -30,7 +30,16 @@ Value::Value(float val) { set_float(val); }
 
 Value::Value(bool val) { set_boolean(val); }
 
-Value::Value(const char *s, int len /*= 0*/) { set_string(s, len); }
+Value::Value(const char *s, int len /*= 0*/)
+{
+  if (OB_SUCC(parse_vector_from_string(s, value_.vector_value_, length_))) {
+    set_vector();
+  } else {
+    set_string(s, len);
+  }
+}
+
+Value::Value(const vector<float> &values) { set_vector(values); }
 
 Value::Value(const Value &other)
 {
@@ -152,8 +161,8 @@ void Value::set_data(char *data, int length)
       length_           = length;
     } break;
     case AttrType::VECTORS: {
-      value_.pointer_value_ = data;
-      length_               = length;
+      value_.vector_value_ = (float *)data;
+      length_              = length;
     } break;
     default: {
       LOG_WARN("unknown data type: %d", attr_type_);
@@ -192,7 +201,11 @@ void Value::set_date(int val)
   value_.int_value_ = val;
   length_           = sizeof(val);
 }
-
+void Value::set_vector()
+{
+  attr_type_ = AttrType::VECTORS;
+  own_data_  = true;
+}
 void Value::set_string(const char *s, int len /*= 0*/)
 {
   reset();
@@ -234,11 +247,24 @@ void Value::set_text(const char *s, int len /*= 65535*/)
     value_.pointer_value_[len] = '\0';
   }
 }
-void Value::set_vector(float *&array, size_t &length)
+
+void Value::set_vector(float *array, int length)
 {
-  attr_type_            = AttrType::VECTORS;
-  length_               = length;
-  value_.pointer_value_ = reinterpret_cast<char *>(array);
+  attr_type_           = AttrType::VECTORS;
+  length_              = length;
+  value_.vector_value_ = array;
+
+  own_data_ = true;
+}
+
+void Value::set_vector(const vector<float> &val)
+{
+  attr_type_           = AttrType::VECTORS;
+  length_              = val.size() * sizeof(float);
+  value_.vector_value_ = new float[length_];
+  for (size_t i = 0; i < val.size(); i++) {
+    value_.vector_value_[i] = val[i];
+  }
 
   own_data_ = true;
 }
@@ -283,10 +309,12 @@ void Value::set_string_from_other(const Value &other)
 const char *Value::data() const
 {
   switch (attr_type_) {
-    case AttrType::VECTORS:
     case AttrType::CHARS:
     case AttrType::TEXTS: {
       return value_.pointer_value_;
+    } break;
+    case AttrType::VECTORS: {
+      return (char *)value_.vector_value_;
     } break;
     default: {
       return (const char *)&value_;
@@ -461,10 +489,14 @@ RC Value::borrow_text(const Value &v)
   return RC::SUCCESS;
 }
 
-int Value::get_vector_length() const { return length_ / sizeof(float); }
+int Value::get_vector_length() const
+{
+  assert(attr_type_ == AttrType::VECTORS);
+  return length_ / sizeof(float);
+}
 
 float Value::get_vector_element(int i) const
 {
-  auto ptr = value_.pointer_value_ + sizeof(float) * i;
-  return *(float *)(ptr);
+  assert(attr_type_ == AttrType::VECTORS);
+  return value_.vector_value_[i];
 }
