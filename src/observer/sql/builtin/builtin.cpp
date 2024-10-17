@@ -41,10 +41,28 @@ RC round(const vector<Value> &args, Value &result)
     }
     decimals = args[1].get_int();
   }
-  number       = args[0].get_float();
-  float factor = std::pow(10.f, static_cast<float>(decimals));
-  float round  = std::round(number * factor) / factor;
-  result       = Value(round);
+  number = args[0].get_float();
+
+  double round;
+  double factor       = std::pow(10.0, decimals);
+  double scaledNumber = number * factor;
+
+  // 获取整数部分和小数部分
+  double integerPart;
+  double fractionalPart = std::modf(scaledNumber, &integerPart);
+
+  // 如果小数部分刚好是 0.5，进行银行家舍入
+  if (fractionalPart == 0.5 || fractionalPart == -0.5) {
+    if (static_cast<long long>(integerPart) % 2 == 0) {
+      round = integerPart / factor;  // 偶数，直接舍去小数
+    } else {
+      round = (integerPart + (number > 0 ? 1 : -1)) / factor;  // 奇数，舍入到偶数
+    }
+  } else {
+    round = std::round(scaledNumber) / factor;  // 否则使用普通的四舍五入
+  }
+
+  result = Value(static_cast<float>(round));
   return RC::SUCCESS;
 }
 
