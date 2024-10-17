@@ -31,7 +31,7 @@ See the Mulan PSL v2 for more details. */
 
 RC FieldExpr::get_value(const Tuple &tuple, Value &value)
 {
-  return tuple.find_cell(TupleCellSpec(table_name(), field_name()), value);
+  return tuple.find_cell(TupleCellSpec(table_name(), field_name(), table_alias_.c_str()), value);
 }
 
 bool FieldExpr::equal(const Expression &other) const
@@ -248,7 +248,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
     return rc;
   }
   DEFER(if (nullptr != left_subquery_expr) left_subquery_expr->close();
-      if (nullptr != right_subquery_expr) right_subquery_expr->close(););
+        if (nullptr != right_subquery_expr) right_subquery_expr->close(););
 
   // Get the value of the left expression
   rc = left_->get_value(tuple, left_value);
@@ -746,7 +746,7 @@ SubQueryExpr::SubQueryExpr(SelectSqlNode &select_node) : sql_node_(select_node) 
 
 SubQueryExpr::~SubQueryExpr() = default;
 
-RC SubQueryExpr::generate_select_stmt(Db *db, const std::unordered_map<std::string, Table *> &tables)
+RC SubQueryExpr::generate_select_stmt(Db *db, const std::unordered_map<std::string, BaseTable *> &tables)
 {
   // 仿照普通 select 的执行流程，tables 用来传递别名
   Stmt *stmt = nullptr;

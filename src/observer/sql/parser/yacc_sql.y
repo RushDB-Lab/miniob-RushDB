@@ -145,13 +145,14 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
         SET
         ON
         LOAD
-        DATA
+        // DATA
         INFILE
         EXPLAIN
         STORAGE
         FORMAT
         INNER
         JOIN
+        VIEW
         EQ
         LT
         GT
@@ -239,11 +240,13 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
 %type <sql_node>            create_index_stmt
 %type <sql_node>            drop_index_stmt
 %type <sql_node>            show_index_stmt
+%type <sql_node>            create_view_stmt
+%type <sql_node>            drop_view_stmt
 %type <sql_node>            sync_stmt
 %type <sql_node>            begin_stmt
 %type <sql_node>            commit_stmt
 %type <sql_node>            rollback_stmt
-%type <sql_node>            load_data_stmt
+// %type <sql_node>            load_data_stmt
 %type <sql_node>            explain_stmt
 %type <sql_node>            set_variable_stmt
 %type <sql_node>            help_stmt
@@ -280,11 +283,13 @@ command_wrapper:
   | create_index_stmt
   | drop_index_stmt
   | show_index_stmt
+  | create_view_stmt
+  | drop_view_stmt
   | sync_stmt
   | begin_stmt
   | commit_stmt
   | rollback_stmt
-  | load_data_stmt
+//  | load_data_stmt
   | explain_stmt
   | set_variable_stmt
   | help_stmt
@@ -424,6 +429,36 @@ create_table_stmt:    /*create table 语句的语法解析树*/
       $$ = create_table_sql_node($3, nullptr, nullptr, $4, $5);
     }
     ;
+
+create_view_stmt:
+      CREATE VIEW ID AS select_stmt
+    {
+      $$ = new ParsedSqlNode(SCF_CREATE_VIEW);
+      CreateViewSqlNode &create_view = $$->create_view;
+      create_view.relation_name = $3;
+      create_view.create_view_select = std::make_unique<SelectSqlNode>(std::move($5->selection));
+      free($3);
+    }
+    | CREATE VIEW ID LBRACE attr_list RBRACE AS select_stmt
+    {
+      $$ = new ParsedSqlNode(SCF_CREATE_VIEW);
+      CreateViewSqlNode &create_view = $$->create_view;
+      create_view.relation_name = $3;
+      create_view.attribute_names = std::move(*$5);
+      create_view.create_view_select = std::make_unique<SelectSqlNode>(std::move($8->selection));
+      free($3);
+    }
+    ;
+
+drop_view_stmt:
+      DROP VIEW ID
+    {
+      $$ = new ParsedSqlNode(SCF_DROP_VIEW);
+      $$->drop_view.relation_name = $3;
+      free($3);
+    }
+    ;
+
 attr_def_list:
     /* empty */
     {
@@ -524,6 +559,17 @@ insert_stmt:        /*insert   语句的语法解析树*/
       if ($5 != nullptr) {
         $$->insertion.values_list.swap(*$5);
         delete $5;
+      }
+      free($3);
+    }
+    | INSERT INTO ID LBRACE attr_list RBRACE VALUES values_list
+    {
+      $$ = new ParsedSqlNode(SCF_INSERT);
+      $$->insertion.relation_name = $3;
+      $$->insertion.attr_names = std::move(*$5);
+      if ($8 != nullptr) {
+        $$->insertion.values_list.swap(*$8);
+        delete $8;
       }
       free($3);
     }
@@ -1033,7 +1079,7 @@ opt_limit:
     }
     ;
 
-load_data_stmt:
+/* load_data_stmt:
     LOAD DATA INFILE SSS INTO TABLE ID 
     {
       char *tmp_file_name = common::substr($4, 1, strlen($4) - 2);
@@ -1044,7 +1090,7 @@ load_data_stmt:
       free($7);
       free(tmp_file_name);
     }
-    ;
+    ;*/
 
 explain_stmt:
     EXPLAIN command_wrapper

@@ -26,19 +26,20 @@ const static Json::StaticString FIELD_LEN("len");
 const static Json::StaticString FIELD_VISIBLE("visible");
 const static Json::StaticString FIELD_FIELD_ID("FIELD_id");
 const static Json::StaticString FIELD_NULLABLE("nullable");
+const static Json::StaticString FIELD_MUTABLE("mutable");
 
 FieldMeta::FieldMeta() : attr_type_(AttrType::UNDEFINED), attr_offset_(-1), attr_len_(0), visible_(false), field_id_(0)
 {}
 
-FieldMeta::FieldMeta(
-    const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id, bool nullable)
+FieldMeta::FieldMeta(const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id,
+    bool nullable, bool is_mutable)
 {
-  [[maybe_unused]] RC rc = this->init(name, attr_type, attr_offset, attr_len, visible, field_id, nullable);
+  [[maybe_unused]] RC rc = this->init(name, attr_type, attr_offset, attr_len, visible, field_id, nullable, is_mutable);
   ASSERT(rc == RC::SUCCESS, "failed to init field meta. rc=%s", strrc(rc));
 }
 
-RC FieldMeta::init(
-    const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id, bool nullable)
+RC FieldMeta::init(const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id,
+    bool nullable, bool is_mutable)
 {
   if (common::is_blank(name)) {
     LOG_WARN("Name cannot be empty");
@@ -58,6 +59,7 @@ RC FieldMeta::init(
   visible_     = visible;
   field_id_    = field_id;
   nullable_    = nullable;
+  mutable_     = is_mutable;
 
   LOG_INFO("Init a field with name=%s", name);
   return RC::SUCCESS;
@@ -77,10 +79,13 @@ int FieldMeta::field_id() const { return field_id_; }
 
 bool FieldMeta::nullable() const { return nullable_; }
 
+bool FieldMeta::is_mutable() const { return mutable_; }
+
 void FieldMeta::desc(std::ostream &os) const
 {
   os << "field name=" << name_ << ", type=" << attr_type_to_string(attr_type_) << ", len=" << attr_len_
-     << ", visible=" << (visible_ ? "yes" : "no") << ", nullable=" << (nullable_ ? "yes" : "no");
+     << ", visible=" << (visible_ ? "yes" : "no") << ", nullable=" << (nullable_ ? "yes" : "no")
+     << ", mutable=" << (mutable_ ? "yes" : "no");
 }
 
 void FieldMeta::to_json(Json::Value &json_value) const
@@ -92,6 +97,7 @@ void FieldMeta::to_json(Json::Value &json_value) const
   json_value[FIELD_VISIBLE]  = visible_;
   json_value[FIELD_FIELD_ID] = field_id_;
   json_value[FIELD_NULLABLE] = nullable_;
+  json_value[FIELD_MUTABLE]  = mutable_;
 }
 
 RC FieldMeta::from_json(const Json::Value &json_value, FieldMeta &field)
@@ -108,6 +114,7 @@ RC FieldMeta::from_json(const Json::Value &json_value, FieldMeta &field)
   const Json::Value &visible_value  = json_value[FIELD_VISIBLE];
   const Json::Value &field_id_value = json_value[FIELD_FIELD_ID];
   const Json::Value &nullable_value = json_value[FIELD_NULLABLE];
+  const Json::Value &mutable_value  = json_value[FIELD_MUTABLE];
 
   if (!name_value.isString()) {
     LOG_ERROR("Field name is not a string. json value=%s", name_value.toStyledString().c_str());
@@ -140,17 +147,23 @@ RC FieldMeta::from_json(const Json::Value &json_value, FieldMeta &field)
     return RC::INTERNAL;
   }
 
+  if (!mutable_value.isBool()) {
+    LOG_ERROR("Mutable id is not a bool value. json value=%s", mutable_value.toStyledString().c_str());
+    return RC::INTERNAL;
+  }
+
   AttrType type = attr_type_from_string(type_value.asCString());
   if (AttrType::UNDEFINED == type) {
     LOG_ERROR("Got invalid field type. type=%d", type);
     return RC::INTERNAL;
   }
 
-  const char *name     = name_value.asCString();
-  int         offset   = offset_value.asInt();
-  int         len      = len_value.asInt();
-  bool        visible  = visible_value.asBool();
-  int         field_id = field_id_value.asInt();
-  int         nullable = nullable_value.asBool();
-  return field.init(name, type, offset, len, visible, field_id, nullable);
+  const char *name       = name_value.asCString();
+  int         offset     = offset_value.asInt();
+  int         len        = len_value.asInt();
+  bool        visible    = visible_value.asBool();
+  int         field_id   = field_id_value.asInt();
+  bool        nullable   = nullable_value.asBool();
+  bool        is_mutable = mutable_value.asBool();
+  return field.init(name, type, offset, len, visible, field_id, nullable, is_mutable);
 }

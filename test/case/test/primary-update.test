@@ -1,5 +1,5 @@
 -- echo initialization
-CREATE TABLE Update_table_1(id int, t_name char, col1 int, col2 int);
+CREATE TABLE Update_table_1(id int, t_name char(4), col1 int, col2 int);
 CREATE INDEX index_id on Update_table_1(id);
 INSERT INTO Update_table_1 VALUES (1,'N1',1,1);
 INSERT INTO Update_table_1 VALUES (2,'N2',1,1);

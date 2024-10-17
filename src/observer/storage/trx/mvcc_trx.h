@@ -76,9 +76,9 @@ public:
   MvccTrx(MvccTrxKit &trx_kit, LogHandler &log_handler, int32_t trx_id);  // used for recover
   ~MvccTrx() override;
 
-  RC insert_record(Table *table, Record &record) override;
-  RC delete_record(Table *table, Record &record) override;
-  RC update_record(Table *table, Record &old_record, Record &new_record) override;
+  RC insert_record(BaseTable *table, Record &record) override;
+  RC delete_record(BaseTable *table, Record &record) override;
+  RC update_record(BaseTable *table, Record &old_record, Record &new_record) override;
 
   /**
    * @brief 当访问到某条数据时，使用此函数来判断是否可见，或者是否有访问冲突
@@ -90,7 +90,7 @@ public:
    *                 - RECORD_INVISIBLE 此数据对当前事务不可见，应该跳过
    *                 - LOCKED_CONCURRENCY_CONFLICT 与其它事务有冲突
    */
-  RC visit_record(Table *table, Record &record, ReadWriteMode mode) override;
+  RC visit_record(BaseTable *table, Record &record, ReadWriteMode mode) override;
 
   RC start_if_need() override;
   RC commit() override;
@@ -102,7 +102,7 @@ public:
 
 private:
   RC   commit_with_trx_id(int32_t commit_id);
-  void trx_fields(Table *table, Field &begin_xid_field, Field &end_xid_field) const;
+  void trx_fields(BaseTable *table, Field &begin_xid_field, Field &end_xid_field) const;
 
 private:
   static const int32_t MAX_TRX_ID = numeric_limits<int32_t>::max();

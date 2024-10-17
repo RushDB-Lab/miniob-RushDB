@@ -1,5 +1,5 @@
 -- echo initialization
-CREATE TABLE insert_table(id int, t_name char, col1 int, col2 int);
+CREATE TABLE insert_table(id int, t_name char(4), col1 int, col2 int);
 CREATE TABLE insert_table2(id int, t_name char(6), col1 int, col2 int);
 
 -- echo 1. insert

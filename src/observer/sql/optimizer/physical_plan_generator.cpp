@@ -49,6 +49,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/optimizer/physical_plan_generator.h"
 #include "sql/operator/update_logical_operator.h"
 #include "sql/operator/update_physical_operator.h"
+#include "sql/operator/view_scan_physical_operator.h"
 
 using namespace std;
 
@@ -141,45 +142,50 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
 {
   vector<unique_ptr<Expression>> &predicates = table_get_oper.predicates();
   // 看看是否有可以用于索引查找的表达式
-  Table *table = table_get_oper.table();
+  auto base_table = table_get_oper.table();
 
   Index     *index      = nullptr;
   ValueExpr *value_expr = nullptr;
-  for (auto &expr : predicates) {
-    if (expr->type() == ExprType::COMPARISON) {
-      auto comparison_expr = dynamic_cast<ComparisonExpr *>(expr.get());
+  Table     *table      = nullptr;
 
-      // 简单处理，就找等值查询
-      if (comparison_expr->comp() != EQUAL_TO) {
-        continue;
-      }
+  if (base_table->type() == TableType::Table) {
+    table = dynamic_cast<Table *>(base_table);
+    for (auto &expr : predicates) {
+      if (expr->type() == ExprType::COMPARISON) {
+        auto comparison_expr = dynamic_cast<ComparisonExpr *>(expr.get());
 
-      unique_ptr<Expression> &left_expr  = comparison_expr->left();
-      unique_ptr<Expression> &right_expr = comparison_expr->right();
-      // 左右比较的一边最少是一个值
-      if (left_expr->type() != ExprType::VALUE && right_expr->type() != ExprType::VALUE) {
-        continue;
-      }
+        // 简单处理，就找等值查询
+        if (comparison_expr->comp() != EQUAL_TO) {
+          continue;
+        }
 
-      FieldExpr *field_expr = nullptr;
-      if (left_expr->type() == ExprType::FIELD) {
-        ASSERT(right_expr->type() == ExprType::VALUE, "right expr should be a value expr while left is field expr");
-        field_expr = dynamic_cast<FieldExpr *>(left_expr.get());
-        value_expr = dynamic_cast<ValueExpr *>(right_expr.get());
-      } else if (right_expr->type() == ExprType::FIELD) {
-        ASSERT(left_expr->type() == ExprType::VALUE, "left expr should be a value expr while right is a field expr");
-        field_expr = dynamic_cast<FieldExpr *>(right_expr.get());
-        value_expr = dynamic_cast<ValueExpr *>(left_expr.get());
-      }
+        unique_ptr<Expression> &left_expr  = comparison_expr->left();
+        unique_ptr<Expression> &right_expr = comparison_expr->right();
+        // 左右比较的一边最少是一个值
+        if (left_expr->type() != ExprType::VALUE && right_expr->type() != ExprType::VALUE) {
+          continue;
+        }
 
-      if (field_expr == nullptr) {
-        continue;
-      }
+        FieldExpr *field_expr = nullptr;
+        if (left_expr->type() == ExprType::FIELD) {
+          ASSERT(right_expr->type() == ExprType::VALUE, "right expr should be a value expr while left is field expr");
+          field_expr = dynamic_cast<FieldExpr *>(left_expr.get());
+          value_expr = dynamic_cast<ValueExpr *>(right_expr.get());
+        } else if (right_expr->type() == ExprType::FIELD) {
+          ASSERT(left_expr->type() == ExprType::VALUE, "left expr should be a value expr while right is a field expr");
+          field_expr = dynamic_cast<FieldExpr *>(right_expr.get());
+          value_expr = dynamic_cast<ValueExpr *>(left_expr.get());
+        }
 
-      const Field &field = field_expr->field();
-      index              = table->find_index_by_field(field.field_name());
-      if (nullptr != index) {
-        break;
+        if (field_expr == nullptr) {
+          continue;
+        }
+
+        const Field &field = field_expr->field();
+        index              = table->find_index_by_field(field.field_name());
+        if (nullptr != index) {
+          break;
+        }
       }
     }
   }
@@ -189,6 +195,7 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
 
     const Value               &value           = value_expr->get_value();
     IndexScanPhysicalOperator *index_scan_oper = new IndexScanPhysicalOperator(table,
+        std::move(table_get_oper.table_alias()),
         index,
         table_get_oper.read_write_mode(),
         &value,
@@ -198,12 +205,24 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
 
     index_scan_oper->set_predicates(std::move(predicates));
     oper = unique_ptr<PhysicalOperator>(index_scan_oper);
-    LOG_TRACE("use index scan");
+    LOG_TRACE("Index scan used on table: {}", table->name());
   } else {
-    auto table_scan_oper = new TableScanPhysicalOperator(table, table_get_oper.read_write_mode());
-    table_scan_oper->set_predicates(std::move(predicates));
-    oper = unique_ptr<PhysicalOperator>(table_scan_oper);
-    LOG_TRACE("use table scan");
+    if (base_table->type() == TableType::Table) {
+      auto table_scan_oper = std::make_unique<TableScanPhysicalOperator>(
+          table, std::move(table_get_oper.table_alias()), table_get_oper.read_write_mode());
+      table_scan_oper->set_predicates(std::move(predicates));
+      oper = std::move(table_scan_oper);
+      LOG_TRACE("Table scan used on table: {}", table->name());
+    } else if (base_table->type() == TableType::View) {
+      auto view            = dynamic_cast<View *>(base_table);
+      auto table_scan_oper = std::make_unique<ViewScanPhysicalOperator>(view, std::move(table_get_oper.table_alias()));
+      table_scan_oper->set_predicates(std::move(predicates));
+      oper = std::move(table_scan_oper);
+      LOG_TRACE("View scan used on view: {}", view->name());
+    } else {
+      LOG_ERROR("Unsupported table type: {}", base_table->type());
+      return RC::UNKNOWN_TABLE_TYPE;
+    }
   }
 
   return RC::SUCCESS;
@@ -454,12 +473,16 @@ RC PhysicalPlanGenerator::create_plan(LimitLogicalOperator &logical_oper, unique
 RC PhysicalPlanGenerator::create_vec_plan(TableGetLogicalOperator &table_get_oper, unique_ptr<PhysicalOperator> &oper)
 {
   vector<unique_ptr<Expression>> &predicates = table_get_oper.predicates();
-  Table                          *table      = table_get_oper.table();
-  TableScanVecPhysicalOperator   *table_scan_oper =
-      new TableScanVecPhysicalOperator(table, table_get_oper.read_write_mode());
-  table_scan_oper->set_predicates(std::move(predicates));
-  oper = unique_ptr<PhysicalOperator>(table_scan_oper);
-  LOG_TRACE("use vectorized table scan");
+  BaseTable                      *base_table = table_get_oper.table();
+  Table                          *table      = nullptr;
+  if (base_table->type() == TableType::Table) {
+    table = static_cast<Table *>(base_table);
+    TableScanVecPhysicalOperator *table_scan_oper =
+        new TableScanVecPhysicalOperator(table, table_get_oper.read_write_mode());
+    table_scan_oper->set_predicates(std::move(predicates));
+    oper = unique_ptr<PhysicalOperator>(table_scan_oper);
+    LOG_TRACE("use vectorized table scan");
+  }
 
   return RC::SUCCESS;
 }
@@ -489,8 +512,6 @@ RC PhysicalPlanGenerator::create_vec_plan(GroupByLogicalOperator &logical_oper, 
 
   oper = std::move(physical_oper);
   return rc;
-
-  return RC::SUCCESS;
 }
 
 RC PhysicalPlanGenerator::create_vec_plan(ProjectLogicalOperator &project_oper, unique_ptr<PhysicalOperator> &oper)

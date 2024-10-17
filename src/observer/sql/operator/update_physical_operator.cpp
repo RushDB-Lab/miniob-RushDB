@@ -38,6 +38,7 @@ RC UpdatePhysicalOperator::open(Trx *trx)
 
     RowTuple *row_tuple = static_cast<RowTuple *>(tuple);
     Record   &record    = row_tuple->record();
+    record.set_base_rids(tuple->base_rids());
     records_.emplace_back(std::move(record));
   }
 

@@ -28,6 +28,11 @@ string table_meta_file(const char *base_dir, const char *table_name)
   return filesystem::path(base_dir) / (string(table_name) + TABLE_META_SUFFIX);
 }
 
+string vtable_meta_file(const char *base_dir, const char *table_name)
+{
+  return filesystem::path(base_dir) / (string(table_name) + VTABLE_META_SUFFIX);
+}
+
 string table_data_file(const char *base_dir, const char *table_name)
 {
   return filesystem::path(base_dir) / (string(table_name) + TABLE_DATA_SUFFIX);

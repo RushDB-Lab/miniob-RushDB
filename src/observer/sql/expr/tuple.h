@@ -154,6 +154,17 @@ public:
     result = 0;
     return rc;
   }
+
+  void reset() { base_rids_.clear(); }
+
+  void set_base_rids(std::vector<std::pair<BaseTable *, RID>> &base_rids) { base_rids_ = std::move(base_rids); }
+
+  std::vector<std::pair<BaseTable *, RID>> &base_rids() { return base_rids_; }
+
+  void append_base_rids(BaseTable *base_table, RID rid) { base_rids_.emplace_back(base_table, rid); }
+
+private:
+  std::vector<std::pair<BaseTable *, RID>> base_rids_;
 };
 
 /**
@@ -165,7 +176,7 @@ class RowTuple : public Tuple
 {
 public:
   RowTuple() = default;
-  virtual ~RowTuple()
+  ~RowTuple() override
   {
     for (FieldExpr *spec : speces_) {
       delete spec;
@@ -175,7 +186,7 @@ public:
 
   void set_record(Record *record) { this->record_ = record; }
 
-  void set_schema(const Table *table, const std::vector<FieldMeta> *fields)
+  void set_schema(const BaseTable *table, const std::vector<FieldMeta> *fields)
   {
     table_ = table;
     // fix:join当中会多次调用右表的open,open当中会调用set_scheme，从而导致tuple当中会存储
@@ -189,6 +200,8 @@ public:
       speces_.push_back(new FieldExpr(table, &field));
     }
   }
+
+  void set_table_alias(std::string &alias) { table_alias_ = std::move(alias); }
 
   int cell_num() const override { return speces_.size(); }
 
@@ -229,6 +242,14 @@ public:
   {
     const char *table_name = spec.table_name();
     const char *field_name = spec.field_name();
+    const char *alias      = spec.alias();
+
+    if (!common::is_blank(alias)) {
+      if (0 != strcmp(alias, table_alias_.c_str())) {
+        return RC::NOTFOUND;
+      }
+    }
+
     if (0 != strcmp(table_name, table_->name())) {
       return RC::NOTFOUND;
     }
@@ -265,15 +286,17 @@ public:
     for (auto &spec_ : speces_) {
       copy->speces_.push_back(new FieldExpr(*spec_));
     }
-    copy->record_ = new Record(record_->clone());
-    copy->table_  = table_;
+    copy->record_      = new Record(record_->clone());
+    copy->table_       = table_;
+    copy->table_alias_ = table_alias_;
     return copy;
   }
 
 private:
   Record                  *record_ = nullptr;
-  const Table             *table_  = nullptr;
+  const BaseTable         *table_  = nullptr;
   std::vector<FieldExpr *> speces_;
+  std::string              table_alias_;
 };
 
 /**
@@ -435,6 +458,10 @@ public:
   void set_left(Tuple *left) { left_ = left; }
   void set_right(Tuple *right) { right_ = right; }
 
+  std::vector<std::pair<BaseTable *, RID>> &left_base_rids() { return left_->base_rids(); }
+
+  std::vector<std::pair<BaseTable *, RID>> &right_base_rids() { return right_->base_rids(); }
+
   int cell_num() const override { return left_->cell_num() + right_->cell_num(); }
 
   RC cell_at(int index, Value &value) const override
@@ -490,4 +517,53 @@ public:
 private:
   Tuple *left_  = nullptr;
   Tuple *right_ = nullptr;
+};
+
+/**
+ * @brief 一些常量值组成的Tuple,用于 orderby 算子中
+ * @ingroup Tuple
+ */
+class SplicedTuple : public Tuple
+{
+public:
+  SplicedTuple()          = default;
+  virtual ~SplicedTuple() = default;
+
+  void set_cells(const std::vector<Value> &cells) { cells_ = cells; }
+
+  int cell_num() const override { return cells_.size(); }
+
+  RC cell_at(int index, Value &cell) const override
+  {
+    if (index < 0 || index >= cell_num()) {
+      return RC::NOTFOUND;
+    }
+
+    cell = cells_[index];
+    return RC::SUCCESS;
+  }
+
+  RC find_cell(const TupleCellSpec &spec, Value &cell) const override
+  {
+    assert(false);
+    return RC::INTERNAL;
+  }
+
+  RC init(const std::vector<Expression *> &exprs)
+  {
+    exprs_ = exprs;
+    return RC::SUCCESS;
+  }
+
+  RC spec_at(int index, TupleCellSpec &spec) const override
+  {
+    assert(false);
+    return RC::INTERNAL;
+  }
+
+  std::vector<Expression *> &exprs() { return exprs_; }
+
+private:
+  std::vector<Value>        cells_;
+  std::vector<Expression *> exprs_;
 };

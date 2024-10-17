@@ -41,10 +41,28 @@ RC round(const vector<Value> &args, Value &result)
     }
     decimals = args[1].get_int();
   }
-  number       = args[0].get_float();
-  float factor = std::pow(10.f, static_cast<float>(decimals));
-  float round  = std::round(number * factor) / factor;
-  result       = Value(round);
+  number = args[0].get_float();
+
+  double round;
+  double factor       = std::pow(10.0, decimals);
+  double scaledNumber = number * factor;
+
+  // 获取整数部分和小数部分
+  double integer_part;
+  double fractional_part = std::modf(scaledNumber, &integer_part);
+
+  // 如果小数部分刚好是 0.5，进行银行家舍入
+  if (fractional_part == 0.5 || fractional_part == -0.5) {
+    if (static_cast<long long>(integer_part) % 2 == 0) {
+      round = integer_part / factor;  // 偶数，直接舍去小数
+    } else {
+      round = (integer_part + (number > 0 ? 1 : -1)) / factor;  // 奇数，舍入到偶数
+    }
+  } else {
+    round = std::round(scaledNumber) / factor;  // 否则使用普通的四舍五入
+  }
+
+  result = Value(static_cast<float>(round));
   return RC::SUCCESS;
 }
 
@@ -302,7 +320,8 @@ RC vector_to_string(const vector<Value> &args, Value &result)
   if (args[0].attr_type() != AttrType::VECTORS) {
     return RC::INVALID_ARGUMENT;
   }
-  return Value::cast_to(args[0], AttrType::CHARS, result);
+  result = Value(args[0].to_string().c_str());
+  return RC::SUCCESS;
 }
 
 RC vector_dim(const vector<Value> &args, Value &result)

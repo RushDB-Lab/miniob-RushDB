@@ -158,6 +158,7 @@ struct CalcSqlNode
 struct InsertSqlNode
 {
   std::string                     relation_name;  ///< Relation to insert into
+  std::vector<std::string>        attr_names;     ///< attribute names
   std::vector<std::vector<Value>> values_list;    ///< 要插入的值列表
 };
 
@@ -199,10 +200,11 @@ struct UpdateSqlNode
  */
 struct AttrInfoSqlNode
 {
-  AttrType    type;      ///< Type of attribute
-  std::string name;      ///< Attribute name
-  size_t      length;    ///< Length of attribute
-  bool        nullable;  ///< 字段是否可以为空
+  AttrType    type;             ///< Type of attribute
+  std::string name;             ///< Attribute name
+  size_t      length;           ///< Length of attribute
+  bool        nullable;         ///< 字段是否可以为空
+  bool        mutable_ = true;  ///< 视图字段是否是可插入修改的
 };
 
 /**
@@ -216,6 +218,28 @@ struct CreateTableSqlNode
   std::vector<AttrInfoSqlNode>   attr_infos;           ///< attributes
   std::string                    storage_format;       ///< storage format
   std::unique_ptr<SelectSqlNode> create_table_select;  ///< create table select
+};
+
+/**
+ * @brief 描述一个create view语句
+ * @ingroup SQLParser
+ * @details 这里也做了很多简化。
+ */
+struct CreateViewSqlNode
+{
+  std::string                    relation_name;       ///< Relation name
+  std::vector<std::string>       attribute_names;     ///< attribute names
+  std::unique_ptr<SelectSqlNode> create_view_select;  ///< create table select
+};
+
+/**
+ * @brief 描述一个drop view语句
+ * @ingroup SQLParser
+ * @details 这里也做了很多简化。
+ */
+struct DropViewSqlNode
+{
+  std::string relation_name;  ///< Relation name
 };
 
 /**
@@ -338,6 +362,8 @@ enum SqlCommandFlag
   SCF_SYNC,
   SCF_SHOW_TABLES,
   SCF_DESC_TABLE,
+  SCF_CREATE_VIEW,
+  SCF_DROP_VIEW,
   SCF_BEGIN,  ///< 事务开始语句，可以在这里扩展只读事务
   SCF_COMMIT,
   SCF_CLOG_SYNC,
@@ -368,6 +394,8 @@ public:
   DropIndexSqlNode    drop_index;
   ShowIndexSqlNode    show_index;
   DescTableSqlNode    desc_table;
+  CreateViewSqlNode   create_view;
+  DropViewSqlNode     drop_view;
   LoadDataSqlNode     load_data;
   ExplainSqlNode      explain;
   SetVariableSqlNode  set_variable;

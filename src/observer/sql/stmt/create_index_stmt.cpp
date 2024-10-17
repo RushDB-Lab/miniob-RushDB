@@ -33,12 +33,19 @@ RC CreateIndexStmt::create(Db *db, const CreateIndexSqlNode &create_index, Stmt 
   }
 
   // check whether the table exists
-  Table *table = db->find_table(table_name);
-  if (nullptr == table) {
+  BaseTable *base_table = db->find_table(table_name);
+  if (nullptr == base_table) {
     LOG_WARN("no such table. db=%s, table_name=%s", db->name(), table_name);
     return RC::SCHEMA_TABLE_NOT_EXIST;
   }
 
+  if (base_table->type() != TableType::Table) {
+    LOG_WARN("table %s is not BASE TABLE. db=%s",
+             table_name, db->name());
+    return RC::CREATE_INDEX_ON_NON_TABLE_TYPE;
+  }
+
+  Table            *table = static_cast<Table *>(base_table);
   vector<FieldMeta> field_metas;
   RC                rc = table->table_meta().get_field_metas(create_index.attribute_name, field_metas);
   if (OB_FAIL(rc)) {
