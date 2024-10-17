@@ -34,6 +34,7 @@ TupleCellSpec::TupleCellSpec(const char *table_name, const char *field_name, con
       alias_ = table_name_ + "." + field_name_;
     }
   }
+  init_hash();
 }
 
 TupleCellSpec::TupleCellSpec(const char *alias)
@@ -41,6 +42,7 @@ TupleCellSpec::TupleCellSpec(const char *alias)
   if (alias) {
     alias_ = alias;
   }
+  init_hash();
 }
 
-TupleCellSpec::TupleCellSpec(const string &alias) : alias_(alias) {}
+TupleCellSpec::TupleCellSpec(const string &alias) : alias_(alias) { init_hash(); }

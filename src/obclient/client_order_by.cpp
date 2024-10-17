@@ -1,18 +1,4 @@
-/* Copyright (c) 2021 OceanBase and/or its affiliates. All rights reserved.
-miniob is licensed under Mulan PSL v2.
-You can use this software according to the terms and conditions of the Mulan PSL v2.
-You may obtain a copy of Mulan PSL v2 at:
-         http://license.coscl.org.cn/MulanPSL2
-THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-See the Mulan PSL v2 for more details. */
-
-//
-// Created by Longda on 2021
-//
-
-#if 1
+#if 0
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -36,6 +22,8 @@ See the Mulan PSL v2 for more details. */
 #include "readline/history.h"
 #include "readline/readline.h"
 #endif
+
+const int TABLE_RECORD_NUMBER = 20;
 
 #define MAX_MEM_BUFFER_SIZE 131072
 #define PORT_DEFAULT 6789
@@ -65,8 +53,6 @@ char *my_readline(const char *prompt)
     if (time(NULL) - last_history_write_time > 5) {
       write_history(HISTORY_FILE.c_str());
     }
-    // append_history doesn't work on some readlines
-    // append_history(1, HISTORY_FILE.c_str());
   }
   return line;
 }
@@ -89,10 +75,6 @@ char *my_readline(const char *prompt)
 }
 #endif  // USE_READLINE
 
-/* this function config a exit-cmd list, strncasecmp func truncate the command from terminal according to the number,
-   'strncasecmp("exit", cmd, 4)' means that obclient read command string from terminal, truncate it to 4 chars from
-   the beginning, then compare the result with 'exit', if they match, exit the obclient.
-*/
 bool is_exit_command(const char *cmd)
 {
   return 0 == strncasecmp("exit", cmd, 4) || 0 == strncasecmp("bye", cmd, 3) || 0 == strncasecmp("\\q", cmd, 2);
@@ -158,6 +140,43 @@ Learn more about MiniOB at https://github.com/oceanbase/miniob
 
 )";
 
+// Function to send SQL query and receive response
+void send_sql(int sockfd, const char *sql)
+{
+  char send_buf[MAX_MEM_BUFFER_SIZE];
+  printf("Sending SQL: %s\n", sql);
+
+  if (write(sockfd, sql, strlen(sql) + 1) == -1) {
+    fprintf(stderr, "send error: %d:%s \n", errno, strerror(errno));
+    exit(1);
+  }
+
+  memset(send_buf, 0, sizeof(send_buf));
+  int len = 0;
+  while ((len = recv(sockfd, send_buf, MAX_MEM_BUFFER_SIZE, 0)) > 0) {
+    bool msg_end = false;
+    for (int i = 0; i < len; i++) {
+      if (0 == send_buf[i]) {
+        msg_end = true;
+        break;
+      }
+      printf("%c", send_buf[i]);
+    }
+    if (msg_end) {
+      break;
+    }
+    memset(send_buf, 0, MAX_MEM_BUFFER_SIZE);
+  }
+
+  if (len < 0) {
+    fprintf(stderr, "Connection was broken: %s\n", strerror(errno));
+    exit(1);
+  } else if (len == 0) {
+    printf("Connection closed by server.\n");
+    exit(1);
+  }
+}
+
 int main(int argc, char *argv[])
 {
   printf("%s", startup_tips);
@@ -175,9 +194,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  const char *prompt_str = "miniob > ";
-
-  int sockfd, send_bytes;
+  int sockfd;
 
   if (unix_socket_path != nullptr) {
     sockfd = init_unix_sock(unix_socket_path);
@@ -188,64 +205,63 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  char send_buf[MAX_MEM_BUFFER_SIZE];
+  // Send CREATE TABLE statements
+  send_sql(sockfd, "CREATE TABLE big_order_by_0 (id INT, addr CHAR(100), num INT, price FLOAT, birthday DATE);");
+  send_sql(sockfd, "CREATE TABLE big_order_by_1 (id INT, addr CHAR(100), num INT, price FLOAT, birthday DATE);");
+  send_sql(sockfd, "CREATE TABLE big_order_by_2 (id INT, addr CHAR(100), num INT, price FLOAT, birthday DATE);");
+  send_sql(sockfd, "CREATE TABLE big_order_by_3 (id INT, addr CHAR(100), num INT, price FLOAT, birthday DATE);");
 
-  char *input_command = nullptr;
-  while ((input_command = my_readline(prompt_str)) != nullptr) {
-    if (common::is_blank(input_command)) {
-      free(input_command);
-      input_command = nullptr;
-      continue;
-    }
+  // Insert data (for simplicity, inserting a small amount of random data)
+  for (int i = 1; i <= TABLE_RECORD_NUMBER; i++) {
+    char insert_sql[512];
+    snprintf(insert_sql,
+        sizeof(insert_sql),
+        "INSERT INTO big_order_by_0 VALUES (%d, 'addr%d', %d, %.2f, '2022-01-01');",
+        i,
+        i,
+        rand() % 1000,
+        (float)(rand() % 10000) / 100);
+    send_sql(sockfd, insert_sql);
 
-    if (is_exit_command(input_command)) {
-      free(input_command);
-      input_command = nullptr;
-      break;
-    }
+    snprintf(insert_sql,
+        sizeof(insert_sql),
+        "INSERT INTO big_order_by_1 VALUES (%d, 'addr%d', %d, %.2f, '2022-01-01');",
+        i,
+        i,
+        rand() % 1000,
+        (float)(rand() % 10000) / 100);
+    send_sql(sockfd, insert_sql);
 
-    if ((send_bytes = write(sockfd, input_command, strlen(input_command) + 1)) == -1) {  // TODO writen
-      fprintf(stderr, "send error: %d:%s \n", errno, strerror(errno));
-      exit(1);
-    }
-    free(input_command);
-    input_command = nullptr;
+    snprintf(insert_sql,
+        sizeof(insert_sql),
+        "INSERT INTO big_order_by_2 VALUES (%d, 'addr%d', %d, %.2f, '2022-01-01');",
+        i,
+        i,
+        rand() % 1000,
+        (float)(rand() % 10000) / 100);
+    send_sql(sockfd, insert_sql);
 
-    memset(send_buf, 0, sizeof(send_buf));
-
-    int len = 0;
-    while ((len = recv(sockfd, send_buf, MAX_MEM_BUFFER_SIZE, 0)) > 0) {
-      bool msg_end = false;
-      for (int i = 0; i < len; i++) {
-        if (0 == send_buf[i]) {
-          msg_end = true;
-          break;
-        }
-        printf("%c", send_buf[i]);
-      }
-      if (msg_end) {
-        break;
-      }
-      memset(send_buf, 0, MAX_MEM_BUFFER_SIZE);
-    }
-
-    if (len < 0) {
-      fprintf(stderr, "Connection was broken: %s\n", strerror(errno));
-      break;
-    }
-    if (0 == len) {
-      printf("Connection has been closed\n");
-      break;
-    }
+    snprintf(insert_sql,
+        sizeof(insert_sql),
+        "INSERT INTO big_order_by_3 VALUES (%d, 'addr%d', %d, %.2f, '2022-01-01');",
+        i,
+        i,
+        rand() % 1000,
+        (float)(rand() % 10000) / 100);
+    send_sql(sockfd, insert_sql);
   }
 
-  if (input_command != nullptr) {
-    free(input_command);
-    input_command = nullptr;
-  }
+  // Send the ORDER BY query
+  const char *order_by_sql = "SELECT * FROM big_order_by_0, big_order_by_1, big_order_by_2, big_order_by_3 "
+                             "ORDER BY big_order_by_0.addr, big_order_by_2.num, big_order_by_0.price, "
+                             "big_order_by_3.id, big_order_by_1.id, big_order_by_1.num, big_order_by_0.id, "
+                             "big_order_by_0.birthday;";
+  send_sql(sockfd, order_by_sql);
+
+  // Close the socket
   close(sockfd);
 
   return 0;
 }
 
-#endif
+#endif  // #if 0

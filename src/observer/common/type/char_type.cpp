@@ -78,8 +78,8 @@ RC CharType::cast_to(const Value &val, AttrType type, Value &result, bool allow_
       }
       result.set_float(float_val);
     } break;
-    case AttrType::VECTOR: {
-      float *array = nullptr;
+    case AttrType::VECTORS: {
+      float *array  = nullptr;
       size_t length = 0;
 
       // 解析字符串为 float 数组
@@ -88,8 +88,8 @@ RC CharType::cast_to(const Value &val, AttrType type, Value &result, bool allow_
         return rc;
       }
 
-      result.set_vector(array,length);
-    }break;
+      result.set_vector(array, length);
+    } break;
     default: return RC::UNIMPLEMENTED;
   }
   return RC::SUCCESS;

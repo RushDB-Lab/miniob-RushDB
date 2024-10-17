@@ -8,24 +8,19 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
-//
-// Created by Wangyunlai on 2024/05/30.
-//
+#include "limit_physical_operator.h"
 
-#pragma once
+RC LimitPhysicalOperator::open(Trx *trx) { return children_[0]->open(trx); }
 
-#include <functional>
-#include <memory>
-
-#include "common/rc.h"
-
-class Expression;
-
-class ExpressionIterator
+RC LimitPhysicalOperator::next()
 {
-public:
-  static RC iterate_child_expr(Expression &expr, const std::function<RC(std::unique_ptr<Expression> &)> &callback);
-  static RC condition_iterate_expr(std::unique_ptr<Expression> &expr);
-  static RC having_condition_iterate_expr(
-      std::unique_ptr<Expression> &expr, std::vector<Expression *> &bound_expressions);
-};
+  if (pos_ == limit_) {
+    return RC::RECORD_EOF;
+  }
+  pos_++;
+  return children_[0]->next();
+}
+
+RC LimitPhysicalOperator::close() { return children_[0]->close(); }
+
+Tuple *LimitPhysicalOperator::current_tuple() { return children_[0]->current_tuple(); }

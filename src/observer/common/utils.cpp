@@ -81,7 +81,6 @@ RC parse_vector_from_string(const char *str, float *&array, size_t &length)
   }
 
   // 分配数组内存
-  //f
   array  = new float[count];
   length = count * sizeof(float);
 

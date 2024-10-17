@@ -91,39 +91,40 @@ extern int yydebug;
     NOT = 292,                     /* NOT  */
     UNIQUE = 293,                  /* UNIQUE  */
     NULL_T = 294,                  /* NULL_T  */
-    NULLABLE = 295,                /* NULLABLE  */
-    HELP = 296,                    /* HELP  */
-    EXIT = 297,                    /* EXIT  */
-    DOT = 298,                     /* DOT  */
-    INTO = 299,                    /* INTO  */
-    VALUES = 300,                  /* VALUES  */
-    FROM = 301,                    /* FROM  */
-    WHERE = 302,                   /* WHERE  */
-    AND = 303,                     /* AND  */
-    OR = 304,                      /* OR  */
-    SET = 305,                     /* SET  */
-    ON = 306,                      /* ON  */
-    LOAD = 307,                    /* LOAD  */
-    DATA = 308,                    /* DATA  */
-    INFILE = 309,                  /* INFILE  */
-    EXPLAIN = 310,                 /* EXPLAIN  */
-    STORAGE = 311,                 /* STORAGE  */
-    FORMAT = 312,                  /* FORMAT  */
-    INNER = 313,                   /* INNER  */
-    JOIN = 314,                    /* JOIN  */
-    EQ = 315,                      /* EQ  */
-    LT = 316,                      /* LT  */
-    GT = 317,                      /* GT  */
-    LE = 318,                      /* LE  */
-    GE = 319,                      /* GE  */
-    NE = 320,                      /* NE  */
-    LIKE = 321,                    /* LIKE  */
-    IS = 322,                      /* IS  */
-    NUMBER = 323,                  /* NUMBER  */
-    FLOAT = 324,                   /* FLOAT  */
-    ID = 325,                      /* ID  */
-    SSS = 326,                     /* SSS  */
-    UMINUS = 327                   /* UMINUS  */
+    LIMIT = 295,                   /* LIMIT  */
+    NULLABLE = 296,                /* NULLABLE  */
+    HELP = 297,                    /* HELP  */
+    EXIT = 298,                    /* EXIT  */
+    DOT = 299,                     /* DOT  */
+    INTO = 300,                    /* INTO  */
+    VALUES = 301,                  /* VALUES  */
+    FROM = 302,                    /* FROM  */
+    WHERE = 303,                   /* WHERE  */
+    AND = 304,                     /* AND  */
+    OR = 305,                      /* OR  */
+    SET = 306,                     /* SET  */
+    ON = 307,                      /* ON  */
+    LOAD = 308,                    /* LOAD  */
+    DATA = 309,                    /* DATA  */
+    INFILE = 310,                  /* INFILE  */
+    EXPLAIN = 311,                 /* EXPLAIN  */
+    STORAGE = 312,                 /* STORAGE  */
+    FORMAT = 313,                  /* FORMAT  */
+    INNER = 314,                   /* INNER  */
+    JOIN = 315,                    /* JOIN  */
+    EQ = 316,                      /* EQ  */
+    LT = 317,                      /* LT  */
+    GT = 318,                      /* GT  */
+    LE = 319,                      /* LE  */
+    GE = 320,                      /* GE  */
+    NE = 321,                      /* NE  */
+    LIKE = 322,                    /* LIKE  */
+    IS = 323,                      /* IS  */
+    NUMBER = 324,                  /* NUMBER  */
+    FLOAT = 325,                   /* FLOAT  */
+    ID = 326,                      /* ID  */
+    SSS = 327,                     /* SSS  */
+    UMINUS = 328                   /* UMINUS  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -132,7 +133,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 164 "yacc_sql.y"
+#line 165 "yacc_sql.y"
 
   ParsedSqlNode *                            sql_node;
   Value *                                    value;
@@ -151,6 +152,7 @@ union YYSTYPE
   std::vector<RelationNode> *                relation_list;
   OrderBySqlNode *                           orderby_unit;
   std::vector<OrderBySqlNode> *              orderby_list;
+  LimitSqlNode *                             limited_info;
   char *                                     string;
   int                                        number;
   float                                      floats;
@@ -158,7 +160,7 @@ union YYSTYPE
   std::vector<std::string> *                 index_attr_list;
   bool                                       unique;
 
-#line 162 "yacc_sql.hpp"
+#line 164 "yacc_sql.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;

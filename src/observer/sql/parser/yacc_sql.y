@@ -131,6 +131,7 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
         NOT
         UNIQUE
         NULL_T
+        LIMIT
         NULLABLE
         HELP
         EXIT
@@ -179,6 +180,7 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
   std::vector<RelationNode> *                relation_list;
   OrderBySqlNode *                           orderby_unit;
   std::vector<OrderBySqlNode> *              orderby_list;
+  LimitSqlNode *                             limited_info;
   char *                                     string;
   int                                        number;
   float                                      floats;
@@ -211,17 +213,18 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
 %type <relation_list>       rel_list
 %type <expression>          expression
 %type <expression>          where
-%type <expression>          aggr_func_expr
+%type <expression>          func_expr
 %type <expression>          sub_query_expr
 %type <expression_list>     expression_list
 %type <expression_list>     group_by
 %type <expression>          opt_having
 %type <set_clause>          setClause
-%type <set_clauses>         setClauses
-%type <join_clauses>        joinClauses
+%type <set_clauses>         set_clauses
+%type <join_clauses>        join_clauses
 %type <orderby_unit>        sort_unit
 %type <orderby_list>        sort_list
 %type <orderby_list>        opt_order_by
+%type <limited_info>        opt_limit
 %type <index_attr_list>     attr_list
 %type <unique>              opt_unique
 %type <sql_node>            calc_stmt
@@ -446,8 +449,10 @@ attr_def:
       $$->type = (AttrType)$2;
       if ($$->type == AttrType::CHARS) {
         $$->length = $4;
-      } else {             //vector
-        $$->length = 4*$4;
+      } else if ($$->type == AttrType::VECTORS) {
+        $$->length = sizeof(float) * $4;
+      } else {
+        ASSERT(false, "$$->type is invalid.");
       }
       $$->nullable = $6;
       if ($$->nullable) {
@@ -461,13 +466,15 @@ attr_def:
       $$->type = (AttrType)$2;
       $$->name = $1;
       if ($$->type == AttrType::INTS) {
-        $$->length = 4;
+        $$->length = sizeof(int);
       } else if ($$->type == AttrType::FLOATS) {
-        $$->length = 4;
+        $$->length = sizeof(float);
       } else if ($$->type == AttrType::DATES) {
-        $$->length = 4;
+        $$->length = sizeof(int);
       } else if ($$->type == AttrType::CHARS) {
-        $$->length = 4;
+        $$->length = sizeof(char);
+      } else if ($$->type == AttrType::VECTORS) {
+        $$->length = sizeof(float) * 1;
       } else if ($$->type == AttrType::TEXTS) {
         $$->length = 65535;
       } else {
@@ -506,7 +513,7 @@ type:
     | FLOAT_T    { $$ = static_cast<int>(AttrType::FLOATS); }
     | DATE_T     { $$ = static_cast<int>(AttrType::DATES);  }
     | TEXT_T     { $$ = static_cast<int>(AttrType::TEXTS);  }
-    | VECTOR_T   { $$ = static_cast<int>(AttrType::VECTOR);  }
+    | VECTOR_T   { $$ = static_cast<int>(AttrType::VECTORS);  }
     ;
 
 insert_stmt:        /*insert   语句的语法解析树*/
@@ -607,7 +614,7 @@ delete_stmt:    /*  delete 语句的语法解析树*/
     ;
 
 update_stmt:      /*  update 语句的语法解析树*/
-    UPDATE ID SET setClauses where
+    UPDATE ID SET set_clauses where
     {
       $$ = new ParsedSqlNode(SCF_UPDATE);
       $$->update.relation_name = $2;
@@ -620,13 +627,13 @@ update_stmt:      /*  update 语句的语法解析树*/
     }
     ;
 
-setClauses:
+set_clauses:
       setClause
     {
       $$ = new std::vector<SetClauseSqlNode>;
       $$->emplace_back(std::move(*$1));
     }
-    | setClauses COMMA setClause
+    | set_clauses COMMA setClause
     {
       $$->emplace_back(std::move(*$3));
     }
@@ -643,7 +650,7 @@ setClause:
     ;
 
 select_stmt:
-    SELECT expression_list FROM rel_list where group_by opt_having opt_order_by
+    SELECT expression_list FROM rel_list where group_by opt_having opt_order_by opt_limit
     {
       $$ = new ParsedSqlNode(SCF_SELECT);
       if ($2 != nullptr) {
@@ -675,8 +682,13 @@ select_stmt:
         $$->selection.order_by.swap(*$8);
         delete $8;
       }
+
+      if ($9 != nullptr) {
+        $$->selection.limit = std::make_unique<LimitSqlNode>(*$9);
+        delete $9;
+      }
     }
-    | SELECT expression_list FROM relation INNER JOIN joinClauses where group_by
+    | SELECT expression_list FROM relation INNER JOIN join_clauses where group_by
     {
       $$ = new ParsedSqlNode(SCF_SELECT);
       if ($2 != nullptr) {
@@ -792,7 +804,7 @@ expression:
     | ID DOT '*' {
       $$ = new StarExpr($1);
     }
-    | aggr_func_expr {
+    | func_expr {
       $$ = $1;      // AggrFuncExpr
     }
     | sub_query_expr {
@@ -812,7 +824,7 @@ alias:
       $$ = $2;
     }
 
-aggr_func_expr:
+func_expr:
     ID LBRACE expression_list RBRACE
     {
         $$ = new UnboundFunctionExpr($1, std::move(*$3));
@@ -874,7 +886,7 @@ rel_list:
     }
     ;
 
-joinClauses:
+join_clauses:
       relation ON condition
     {
       $$ = new JoinSqlNode;
@@ -882,7 +894,7 @@ joinClauses:
       $$->conditions = std::unique_ptr<Expression>($3);
       free($1);
     }
-    | relation ON condition INNER JOIN joinClauses
+    | relation ON condition INNER JOIN join_clauses
     {
       $$ = $6;
       $$->relations.emplace_back($1);
@@ -1009,6 +1021,18 @@ opt_having:
     }
     ;
 
+opt_limit:
+    /* empty */
+    {
+      $$ = nullptr;
+    }
+    | LIMIT NUMBER
+    {
+      $$ = new LimitSqlNode();
+      $$->number = $2;
+    }
+    ;
+
 load_data_stmt:
     LOAD DATA INFILE SSS INTO TABLE ID 
     {
@@ -1041,8 +1065,8 @@ set_variable_stmt:
     }
     ;
 
-opt_semicolon: /*empty*/
-     SEMICOLON
+opt_semicolon:
+    SEMICOLON
     ;
 %%
 //_____________________________________________________________________

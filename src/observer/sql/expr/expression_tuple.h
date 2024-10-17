@@ -85,6 +85,15 @@ private:
     return rc;
   }
 
+  Tuple *copy() const override
+  {
+    auto copy = new ExpressionTuple(expressions_);
+    if (child_tuple_) {
+      copy->child_tuple_ = child_tuple_->copy();
+    }
+    return copy;
+  }
+
 private:
   const std::vector<ExprPointerType> &expressions_;
   const Tuple                        *child_tuple_ = nullptr;
