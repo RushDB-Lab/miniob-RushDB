@@ -105,7 +105,7 @@ public:
   {
     auto  field_number  = index_.fields().size();
     auto &fields_offset = index_.fields_offset();
-    for (int i = 0; i < field_number; i++) {
+    for (size_t i = 0; i < field_number; i++) {
       int   offset = fields_offset[i];
       auto &field  = index_.fields()[i];
       if (field.nullable()) {
