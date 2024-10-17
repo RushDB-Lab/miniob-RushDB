@@ -117,6 +117,8 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
         UPDATE
         LBRACE
         RBRACE
+        LSBRACE
+        RSBRACE
         COMMA
         TRX_BEGIN
         TRX_COMMIT
@@ -629,6 +631,9 @@ nonnegative_value:
     }
     | NULL_T {
       $$ = new Value(NullValue());
+    }
+    | LSBRACE value_list RSBRACE {
+      $$ = new Value(ListValue(), *$2);
     }
     ;
 

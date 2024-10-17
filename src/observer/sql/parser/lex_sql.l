@@ -135,6 +135,8 @@ JOIN                                    RETURN_TOKEN(JOIN);
 VIEW                                    RETURN_TOKEN(VIEW);
 "("                                     RETURN_TOKEN(LBRACE);
 ")"                                     RETURN_TOKEN(RBRACE);
+"["                                     RETURN_TOKEN(LSBRACE);
+"]"                                     RETURN_TOKEN(RSBRACE);
 
 ","                                     RETURN_TOKEN(COMMA);
 "="                                     RETURN_TOKEN(EQ);
