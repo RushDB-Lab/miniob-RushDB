@@ -21,6 +21,8 @@ See the Mulan PSL v2 for more details. */
 #include "json/json.h"
 
 static const Json::StaticString FIELD_TABLE_ID("table_id");
+static const Json::StaticString FIELD_TABLE_TYPE("table_type");
+static const Json::StaticString FIELD_TABLE_MUTABLE("table_mutable");
 static const Json::StaticString FIELD_TABLE_NAME("table_name");
 static const Json::StaticString FIELD_STORAGE_FORMAT("storage_format");
 static const Json::StaticString FIELD_FIELDS("fields");
@@ -28,6 +30,8 @@ static const Json::StaticString FIELD_INDEXES("indexes");
 
 TableMeta::TableMeta(const TableMeta &other)
     : table_id_(other.table_id_),
+      table_type_(other.table_type_),
+      mutable_(other.mutable_),
       name_(other.name_),
       fields_(other.fields_),
       indexes_(other.indexes_),
@@ -43,8 +47,8 @@ void TableMeta::swap(TableMeta &other) noexcept
   std::swap(record_size_, other.record_size_);
 }
 
-RC TableMeta::init(int32_t table_id, const char *name, const std::vector<FieldMeta> *trx_fields,
-    span<const AttrInfoSqlNode> attributes, StorageFormat storage_format)
+RC TableMeta::init(int32_t table_id, TableType table_type, bool is_mutable, const char *name,
+    const std::vector<FieldMeta> *trx_fields, span<const AttrInfoSqlNode> attributes, StorageFormat storage_format)
 {
   if (common::is_blank(name)) {
     LOG_ERROR("Name cannot be empty");
@@ -105,6 +109,8 @@ RC TableMeta::init(int32_t table_id, const char *name, const std::vector<FieldMe
   record_size_ = field_offset;
 
   table_id_       = table_id;
+  table_type_     = table_type;
+  mutable_        = is_mutable;
   name_           = name;
   storage_format_ = storage_format;
   LOG_INFO("Sussessfully initialized table meta. table id=%d, name=%s", table_id, name);
@@ -124,6 +130,7 @@ const FieldMeta *TableMeta::trx_field() const { return &fields_[0]; }
 span<const FieldMeta> TableMeta::trx_fields() const { return span<const FieldMeta>(fields_.data(), sys_field_num()); }
 
 const FieldMeta *TableMeta::field(int index) const { return &fields_[index]; }
+
 const FieldMeta *TableMeta::field(const char *name) const
 {
   if (nullptr == name) {
@@ -164,6 +171,7 @@ const FieldMeta *TableMeta::find_field_by_offset(int offset) const
   }
   return nullptr;
 }
+
 int TableMeta::field_num() const { return fields_.size(); }
 
 int TableMeta::sys_field_num() const { return static_cast<int>(trx_fields_.size()); }
@@ -188,6 +196,8 @@ int TableMeta::serialize(std::ostream &ss) const
 {
   Json::Value table_value;
   table_value[FIELD_TABLE_ID]       = table_id_;
+  table_value[FIELD_TABLE_TYPE]     = static_cast<int>(table_type_);
+  table_value[FIELD_TABLE_MUTABLE]  = mutable_;
   table_value[FIELD_TABLE_NAME]     = name_;
   table_value[FIELD_STORAGE_FORMAT] = static_cast<int>(storage_format_);
 
@@ -239,6 +249,22 @@ int TableMeta::deserialize(std::istream &is)
 
   int32_t table_id = table_id_value.asInt();
 
+  const Json::Value &table_type_value = table_value[FIELD_TABLE_TYPE];
+  if (!table_type_value.isInt()) {
+    LOG_ERROR("Invalid table type. json value=%s", table_id_value.toStyledString().c_str());
+    return -1;
+  }
+
+  int32_t table_type = table_type_value.asInt();
+
+  const Json::Value &table_mutable_value = table_value[FIELD_TABLE_MUTABLE];
+  if (!table_mutable_value.isBool()) {
+    LOG_ERROR("Invalid table mutable. json value=%s", table_id_value.toStyledString().c_str());
+    return -1;
+  }
+
+  bool table_mutable = table_mutable_value.asBool();
+
   const Json::Value &table_name_value = table_value[FIELD_TABLE_NAME];
   if (!table_name_value.isString()) {
     LOG_ERROR("Invalid table name. json value=%s", table_name_value.toStyledString().c_str());
@@ -280,6 +306,8 @@ int TableMeta::deserialize(std::istream &is)
   std::sort(fields.begin(), fields.end(), comparator);
 
   table_id_       = table_id;
+  table_type_     = static_cast<TableType>(table_type);
+  mutable_        = table_mutable;
   storage_format_ = static_cast<StorageFormat>(storage_format);
   name_.swap(table_name);
   fields_.swap(fields);

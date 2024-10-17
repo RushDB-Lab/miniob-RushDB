@@ -62,7 +62,7 @@ public:
    * @param meta_file 保存表元数据的文件完整路径
    * @param base_dir 表所在的文件夹，表记录数据文件、索引数据文件存放位置
    */
-  RC open(Db *db, const char *meta_file, const char *base_dir);
+  RC open(Db *db, const char *meta_file, const char *base_dir) override;
 
   /**
    * @brief 在当前的表中插入一条记录

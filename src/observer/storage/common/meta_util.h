@@ -17,11 +17,15 @@ See the Mulan PSL v2 for more details. */
 
 static constexpr const char *DB_META_SUFFIX          = ".db";
 static constexpr const char *TABLE_META_SUFFIX       = ".table";
+static constexpr const char *VTABLE_META_SUFFIX      = ".vtable";
 static constexpr const char *TABLE_META_FILE_PATTERN = ".*\\.table$";
-static constexpr const char *TABLE_DATA_SUFFIX       = ".data";
-static constexpr const char *TABLE_INDEX_SUFFIX      = ".index";
+static constexpr const char *VTABLE_META_FILE_PATTERN =
+    ".*\\.vtable$";  // 视图的 meta 命名和基表不一样，用于持久化时做区分
+static constexpr const char *TABLE_DATA_SUFFIX  = ".data";
+static constexpr const char *TABLE_INDEX_SUFFIX = ".index";
 
 string db_meta_file(const char *base_dir, const char *db_name);
 string table_meta_file(const char *base_dir, const char *table_name);
+string vtable_meta_file(const char *base_dir, const char *table_name);
 string table_data_file(const char *base_dir, const char *table_name);
 string table_index_file(const char *base_dir, const char *table_name, const char *index_name);

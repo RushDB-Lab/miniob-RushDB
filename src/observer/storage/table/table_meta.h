@@ -24,6 +24,13 @@ See the Mulan PSL v2 for more details. */
 #include "storage/field/field_meta.h"
 #include "storage/index/index_meta.h"
 
+enum class TableType
+{
+  Unknown,
+  Table,
+  View
+};
+
 /**
  * @brief 表元数据
  *
@@ -38,13 +45,16 @@ public:
 
   void swap(TableMeta &other) noexcept;
 
-  RC init(int32_t table_id, const char *name, const std::vector<FieldMeta> *trx_fields,
-      std::span<const AttrInfoSqlNode> attributes, StorageFormat storage_format);
+  RC init(int32_t table_id, TableType table_type, bool is_mutable, const char *name,
+      const std::vector<FieldMeta> *trx_fields, std::span<const AttrInfoSqlNode> attributes,
+      StorageFormat storage_format);
 
   RC add_index(const IndexMeta &index);
 
 public:
   int32_t             table_id() const { return table_id_; }
+  TableType           table_type() const { return table_type_; }
+  bool                is_mutable() const { return mutable_; }
   const char         *name() const;
   const FieldMeta    *trx_field() const;
   const FieldMeta    *field(int index) const;
@@ -72,7 +82,10 @@ public:
   void desc(std::ostream &os) const;
 
 protected:
-  int32_t                table_id_ = -1;
+  int32_t   table_id_   = -1;
+  TableType table_type_ = TableType::Unknown;
+  bool mutable_ = true;  // 当前仅对视图可用，是否是只读视图，即包括聚合函数或 groupby having 语句
+
   std::string            name_;
   std::vector<FieldMeta> trx_fields_;
   std::vector<FieldMeta> fields_;  // 包含sys_fields

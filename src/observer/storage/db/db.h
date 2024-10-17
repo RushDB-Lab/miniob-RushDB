@@ -68,8 +68,16 @@ public:
   RC create_table(const char *table_name, span<const AttrInfoSqlNode> attributes,
       StorageFormat storage_format = StorageFormat::ROW_FORMAT);
 
-  RC create_table(const char *table_name, std::vector<std::string> attr_names, SelectStmt *select_stmt,
-      StorageFormat storage_format);
+  /**
+   * @brief 创建一个视图
+   * @param table_name 表名
+   * @param attr_names 表的属性
+   * @param select_sql 查询 sql
+   * @param select_stmt 查询 stmt
+   * @param storage_format 表的存储格式
+   */
+  RC create_table(const char *table_name, std::vector<std::string> attr_names, std::string select_sql,
+      SelectStmt *select_stmt, StorageFormat storage_format);
 
   RC drop_table(const char *table_name);
 

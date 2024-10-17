@@ -17,12 +17,26 @@
 #include "session/session.h"
 #include "sql/stmt/create_table_stmt.h"
 #include "storage/db/db.h"
-#include "sql/optimizer/logical_plan_generator.h"
-#include "sql/operator/logical_operator.h"
-#include "sql/operator/project_logical_operator.h"
-#include "sql/optimizer/physical_plan_generator.h"
 #include "storage/trx/trx.h"
 #include "sql/stmt/create_view_stmt.h"
+
+// 提取 AS 后的 SQL 语句
+std::string extract_select_sql(const std::string &createViewSql)
+{
+  std::string lowerSql = createViewSql;
+  common::str_to_lower(lowerSql);
+
+  std::string asToken = " as ";
+
+  auto pos = lowerSql.find(asToken);
+  if (pos == std::string::npos) {
+    return "";
+  }
+
+  // 计算实际 SQL 句子的起始位置
+  auto actualPos = pos + asToken.length();
+  return createViewSql.substr(actualPos);
+}
 
 RC CreateViewExecutor::execute(SQLStageEvent *sql_event)
 {
@@ -40,8 +54,16 @@ RC CreateViewExecutor::execute(SQLStageEvent *sql_event)
     "create view executor can not run this command: %d",
     static_cast<int>(stmt->type()));
 
-  rc = session->get_current_db()->create_table(
-      table_name, std::move(create_view_stmt->attr_names()), select_stmt, StorageFormat::ROW_FORMAT);
+  auto select_sql = extract_select_sql(sql_event->sql());
+  if (select_sql.empty()) {
+    return RC::SQL_SYNTAX;
+  }
+
+  rc = session->get_current_db()->create_table(table_name,
+      std::move(create_view_stmt->attr_names()),
+      std::move(select_sql),
+      select_stmt,
+      StorageFormat::ROW_FORMAT);
   if (OB_FAIL(rc)) {
     return rc;
   }

@@ -163,8 +163,8 @@ RC Db::create_table(const char *table_name, span<const AttrInfoSqlNode> attribut
   return RC::SUCCESS;
 }
 
-RC Db::create_table(const char *table_name, std::vector<std::string> attr_names, SelectStmt *select_stmt,
-    const StorageFormat storage_format)
+RC Db::create_table(const char *table_name, std::vector<std::string> attr_names, std::string select_sql,
+    SelectStmt *select_stmt, const StorageFormat storage_format)
 {
   RC rc = RC::SUCCESS;
   // check table_name
@@ -174,7 +174,7 @@ RC Db::create_table(const char *table_name, std::vector<std::string> attr_names,
   }
 
   // 文件路径可以移到Table模块
-  string  table_file_path = table_meta_file(path_.c_str(), table_name);
+  string  table_file_path = vtable_meta_file(path_.c_str(), table_name);
   View   *table           = new View;
   int32_t table_id        = next_table_id_++;
   rc                      = table->create(this,
@@ -183,6 +183,7 @@ RC Db::create_table(const char *table_name, std::vector<std::string> attr_names,
       table_name,
       path_.c_str(),
       std::move(attr_names),
+      std::move(select_sql),
       select_stmt,
       storage_format);
   if (rc != RC::SUCCESS) {
@@ -241,7 +242,8 @@ BaseTable *Db::find_table(int32_t table_id) const
 
 RC Db::open_all_tables()
 {
-  vector<string> table_meta_files;
+  std::vector<string>      table_meta_files;
+  std::vector<std::string> view_meta_files;
 
   int ret = list_file(path_.c_str(), TABLE_META_FILE_PATTERN, table_meta_files);
   if (ret < 0) {
@@ -249,10 +251,16 @@ RC Db::open_all_tables()
     return RC::IOERR_READ;
   }
 
+  ret = list_file(path_.c_str(), VTABLE_META_FILE_PATTERN, view_meta_files);
+  if (ret < 0) {
+    LOG_ERROR("Failed to list view meta files under %s.", path_.c_str());
+    return RC::IOERR_READ;
+  }
+
   RC rc = RC::SUCCESS;
   for (const string &filename : table_meta_files) {
-    Table *table = new Table();
-    rc           = table->open(this, filename.c_str(), path_.c_str());
+    BaseTable *table = new Table();
+    rc               = table->open(this, filename.c_str(), path_.c_str());
     if (rc != RC::SUCCESS) {
       delete table;
       LOG_ERROR("Failed to open table. filename=%s", filename.c_str());
@@ -270,8 +278,48 @@ RC Db::open_all_tables()
     if (table->table_id() >= next_table_id_) {
       next_table_id_ = table->table_id() + 1;
     }
+
     opened_tables_[table->name()] = table;
     LOG_INFO("Open table: %s, file: %s", table->name(), filename.c_str());
+  }
+
+  for (const string &filename : view_meta_files) {
+    BaseTable *table = new View();
+    // 视图的 open 只是初始化了元数据和查询 sql，成员变量未初始化
+    rc = table->open(this, filename.c_str(), path_.c_str());
+    if (rc != RC::SUCCESS) {
+      delete table;
+      LOG_ERROR("Failed to open table. filename=%s", filename.c_str());
+      return rc;
+    }
+
+    if (opened_tables_.count(table->name()) != 0) {
+      LOG_ERROR("Duplicate table with difference file name. table=%s, the other filename=%s",
+          table->name(), filename.c_str());
+      // 在这里原本先删除table后调用table->name()方法，犯了use-after-free的错误
+      delete table;
+      return RC::INTERNAL;
+    }
+
+    if (table->table_id() >= next_table_id_) {
+      next_table_id_ = table->table_id() + 1;
+    }
+
+    opened_tables_[table->name()] = table;
+    LOG_INFO("Open table: %s, file: %s", table->name(), filename.c_str());
+  }
+
+  // 在所有表都载入后，对于视图要手动调一下 init，初始化成员变量
+  for (auto &[_, table] : opened_tables_) {
+    if (table->type() == TableType::View) {
+      auto view = dynamic_cast<View *>(table);
+      rc        = view->init_member();
+      if (OB_FAIL(rc)) {
+        LOG_ERROR("Failed to initialize view: %s", table->name());
+        return rc;
+      }
+      LOG_INFO("Successfully initialized view: %s", table->name());
+    }
   }
 
   LOG_INFO("All table have been opened. num=%d", opened_tables_.size());
