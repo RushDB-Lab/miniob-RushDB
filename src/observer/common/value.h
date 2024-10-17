@@ -20,8 +20,15 @@ See the Mulan PSL v2 for more details. */
 #include "common/type/data_type.h"
 #include "common/type/date_type.h"
 #include "common/type/text_type.h"
+#include "common/type/list_type.h"
 
 class NullValue
+{};
+
+class VectorValue
+{};
+
+class ListValue
 {};
 
 /**
@@ -43,6 +50,7 @@ public:
   friend class NullType;
   friend class TextType;
   friend class VectorType;
+  friend class ListType;
 
   Value() = default;
 
@@ -55,6 +63,8 @@ public:
   explicit Value(float val);
   explicit Value(bool val);
   explicit Value(const char *s, int len = 0);
+  explicit Value(ListValue, const vector<Value> &values);
+  explicit Value(VectorValue, const vector<Value> &values);
 
   Value(const Value &other);
   Value(Value &&other);
@@ -118,15 +128,15 @@ public:
    * 获取对应的值
    * 如果当前的类型与期望获取的类型不符，就会执行转换操作
    */
-  int         get_int() const;
-  float       get_float() const;
-  string      get_string() const;
-  bool        get_boolean() const;
-  int         get_date() const;
-  int         get_vector_length() const;
-  float       get_vector_element(int i) const;
-  bool        is_null() const { return is_null_; }
-  inline bool is_str() const { return attr_type_ == AttrType::CHARS; }
+  int                 get_int() const;
+  float               get_float() const;
+  string              get_string() const;
+  bool                get_boolean() const;
+  int                 get_date() const;
+  int                 get_vector_length() const;
+  std::vector<Value> &get_list() const { return *value_.list_value_; }
+  bool                is_null() const { return is_null_; }
+  inline bool         is_str() const { return attr_type_ == AttrType::CHARS; }
 
   static int implicit_cast_cost(AttrType from, AttrType to)
   {
@@ -143,6 +153,7 @@ private:
   void set_string(const char *s, int len = 0);
   void set_text(const char *s, int len = 65535);
   void set_vector(float *&array, size_t &length);
+  void set_list(const vector<Value> &val);
   void set_string_from_other(const Value &other);
 
 private:
@@ -151,11 +162,14 @@ private:
 
   union Val
   {
-    int32_t int_value_;
-    float   float_value_;
-    bool    bool_value_;
-    char   *pointer_value_;
+    int32_t             int_value_;
+    float               float_value_;
+    bool                bool_value_;
+    char               *pointer_value_;
+    std::vector<Value> *list_value_;
   } value_ = {.int_value_ = 0};
+
+  static_assert(sizeof(std::vector<Value> *) == sizeof(char *));
 
   /// 是否申请并占有内存, 目前对于 CHARS 类型 own_data_ 为true, 其余类型 own_data_ 为false
   bool own_data_ = false;
