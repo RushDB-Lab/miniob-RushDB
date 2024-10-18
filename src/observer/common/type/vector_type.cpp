@@ -62,8 +62,7 @@ RC  VectorType::to_string(const Value &val, std::string &result) const
     if (i != 0) {
       oss << ",";  // 在每个元素之间加逗号和空格
     }
-    float number = std::round(data[i] * 100.0) / 100.0;
-    oss << number;  // 控制浮点数输出格式，最多两位小数
+    oss << common::double_to_str(data[i]);
   }
 
   oss << "]";  // 关闭数组的方括号
