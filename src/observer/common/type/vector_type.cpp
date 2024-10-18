@@ -61,7 +61,7 @@ RC  VectorType::to_string(const Value &val, std::string &result) const
   // 遍历数组元素并拼接成字符串
   for (int i = 0; i < count; ++i) {
     if (i != 0) {
-      oss << ", ";  // 在每个元素之间加逗号和空格
+      oss << ",";  // 在每个元素之间加逗号和空格
     }
     oss << data[i];  // 将浮点数输出到字符串流
   }
