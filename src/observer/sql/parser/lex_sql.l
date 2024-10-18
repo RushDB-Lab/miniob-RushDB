@@ -133,6 +133,8 @@ FORMAT                                  RETURN_TOKEN(FORMAT);
 INNER                                   RETURN_TOKEN(INNER);
 JOIN                                    RETURN_TOKEN(JOIN);
 VIEW                                    RETURN_TOKEN(VIEW);
+TRUE                                    RETURN_TOKEN(TRUE);
+FALSE                                   RETURN_TOKEN(FALSE);
 "("                                     RETURN_TOKEN(LBRACE);
 ")"                                     RETURN_TOKEN(RBRACE);
 "["                                     RETURN_TOKEN(LSBRACE);
