@@ -16,15 +16,8 @@ See the Mulan PSL v2 for more details. */
 
 #include <utility>
 
-OrderByPhysicalOperator::OrderByPhysicalOperator(vector<OrderBySqlNode> order_by, vector<Expression *> exprs)
-    : order_by_(std::move(order_by)), exprs_(std::move(exprs))
+OrderByPhysicalOperator::OrderByPhysicalOperator(vector<OrderBySqlNode> order_by) : order_by_(std::move(order_by))
 {
-  vector<Expression *> expressions;
-  expressions.reserve(exprs_.size());
-  for (auto &expr : exprs_) {
-    expressions.push_back(expr);
-  }
-
   order_and_field_line = order_list([this](const order_line &cells_a, const order_line &cells_b) -> bool {
     auto  order_size   = order_by_.size();
     auto &order_line_a = cells_a.first;
