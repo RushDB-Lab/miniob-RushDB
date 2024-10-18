@@ -73,6 +73,13 @@ RC Table::create(Db *db, int32_t table_id, const char *path, const char *name, c
     LOG_WARN("Invalid arguments. table_name=%s, attribute_count=%d", name, attributes.size());
     return RC::INVALID_ARGUMENT;
   }
+  for (const auto &att : attributes) {
+    if (att.type == AttrType::VECTORS) {
+      if (att.length > 16000 * sizeof(float) + 1) {
+        return RC::INVALID_ARGUMENT;
+      }
+    }
+  }
 
   RC rc = RC::SUCCESS;
 
