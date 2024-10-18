@@ -4,7 +4,9 @@
 
 #include "common/type/vector_type.h"
 
-#include <common/value.h>
+#include "common/value.h"
+#include <iomanip>
+
 int VectorType::compare(const Value &left, const Value &right) const
 {
   // 获取左向量和右向量的指针
@@ -60,7 +62,7 @@ RC  VectorType::to_string(const Value &val, std::string &result) const
     if (i != 0) {
       oss << ",";  // 在每个元素之间加逗号和空格
     }
-    oss << data[i];  // 将浮点数输出到字符串流
+    oss << std::fixed << std::setprecision(2) << data[i];  // 控制浮点数输出格式，最多两位小数
   }
 
   oss << "]";  // 关闭数组的方括号
