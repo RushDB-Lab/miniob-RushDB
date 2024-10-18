@@ -9,7 +9,6 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
 #include "builtin.h"
-#include "sql/parser/parse_defs.h"
 
 namespace builtin {
 
@@ -261,7 +260,7 @@ RC date_format(const vector<Value> &args, Value &result)
 
 namespace vector_distance {
 
-RC distance(const std::vector<Value> &args, Value &result, VectorDistanceType type)
+RC distance(const std::vector<Value> &args, Value &result, NormalFunctionType type)
 {
   if (args.size() != 2) {
     return RC::INVALID_ARGUMENT;
@@ -303,7 +302,7 @@ RC distance(const std::vector<Value> &args, Value &result, VectorDistanceType ty
   }
 
   switch (type) {
-    case VectorDistanceType::L2: {
+    case NormalFunctionType::L2_DISTANCE: {
       /*
        * l2_distance
        * 语法：l2_distance(vector A, vector B)
@@ -319,7 +318,7 @@ RC distance(const std::vector<Value> &args, Value &result, VectorDistanceType ty
       result = Value(ans);
       return RC::SUCCESS;
     }
-    case VectorDistanceType::COSINE: {
+    case NormalFunctionType::COSINE_DISTANCE: {
       /*
        * cosine_distance：
        * 语法：cosine_distance(vector A, vector B)
@@ -347,7 +346,7 @@ RC distance(const std::vector<Value> &args, Value &result, VectorDistanceType ty
       result                  = Value(1 - cosine_similarity);
       return RC::SUCCESS;
     }
-    case VectorDistanceType::INNER: {
+    case NormalFunctionType::INNER_PRODUCT: {
       /*
        * inner_product：
        * 语法：inner_product(vector A, vector B)
@@ -373,17 +372,61 @@ RC distance(const std::vector<Value> &args, Value &result, VectorDistanceType ty
 
 RC l2_distance(const vector<Value> &args, Value &result)
 {
-  return vector_distance::distance(args, result, VectorDistanceType::L2);
+  return vector_distance::distance(args, result, NormalFunctionType::L2_DISTANCE);
 }
 
 RC cosine_distance(const vector<Value> &args, Value &result)
 {
-  return vector_distance::distance(args, result, VectorDistanceType::COSINE);
+  return vector_distance::distance(args, result, NormalFunctionType::COSINE_DISTANCE);
 }
 
 RC inner_product(const vector<Value> &args, Value &result)
 {
-  return vector_distance::distance(args, result, VectorDistanceType::INNER);
+  return vector_distance::distance(args, result, NormalFunctionType::INNER_PRODUCT);
+}
+
+// 向量索引调用以下方法
+// L2 距离（欧氏距离）
+float l2_distance(const std::vector<float> &a, const std::vector<float> &b)
+{
+  float sum = 0.0;
+  for (size_t i = 0; i < a.size(); ++i) {
+    float diff = a[i] - b[i];
+    sum += diff * diff;
+  }
+  return std::sqrt(sum);
+}
+
+// 余弦距离
+float cosine_distance(const std::vector<float> &a, const std::vector<float> &b)
+{
+  float dotProduct   = 0.0;
+  float normASquared = 0.0;
+  float normBSquared = 0.0;
+
+  for (size_t i = 0; i < a.size(); ++i) {
+    dotProduct += a[i] * b[i];
+    normASquared += a[i] * a[i];
+    normBSquared += b[i] * b[i];
+  }
+
+  float denom = std::sqrt(normASquared) * std::sqrt(normBSquared);
+  if (denom == 0.0) {
+    return 1.0;  // 避免除以 0 的情况
+  }
+
+  float cosineSimilarity = dotProduct / denom;
+  return 1.0 - cosineSimilarity;  // 将相似度转变为距离
+}
+
+// 内积
+float inner_product(const std::vector<float> &a, const std::vector<float> &b)
+{
+  float product = 0.0;
+  for (size_t i = 0; i < a.size(); ++i) {
+    product += a[i] * b[i];
+  }
+  return product;
 }
 
 RC string_to_vector(const vector<Value> &args, Value &result)

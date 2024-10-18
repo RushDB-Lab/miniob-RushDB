@@ -281,7 +281,11 @@ public:
     char *data = new char[data_len];
     memcpy(data, data_ + field_offset, data_len);
     value.set_data(data, data_len);
-    delete[] data;
+
+    // vector 不释放内存
+    if (!(field_meta.type() == AttrType::VECTORS)) {
+      delete[] data;
+    }
 
     return RC::SUCCESS;
   }

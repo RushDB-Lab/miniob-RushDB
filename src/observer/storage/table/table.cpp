@@ -33,6 +33,8 @@ See the Mulan PSL v2 for more details. */
 #include "storage/table/table.h"
 #include "storage/trx/trx.h"
 #include "storage/db/db.h"
+#include "storage/index/ivfflat_index.h"
+#include "sql/expr/expression.h"
 
 Table::~Table()
 {
@@ -333,7 +335,8 @@ RC Table::get_chunk_scanner(ChunkFileScanner &scanner, Trx *trx, ReadWriteMode m
   return rc;
 }
 
-RC Table::create_index(Trx *trx, const vector<FieldMeta> &field_meta, const char *index_name, bool unique)
+RC Table::create_index(
+    Trx *trx, IndexType index_type, const vector<FieldMeta> &field_meta, const char *index_name, bool unique)
 {
   if (common::is_blank(index_name)) {
     LOG_INFO("Invalid input arguments, table name is %s, index_name is blank or attribute_name is blank", name());
@@ -342,7 +345,7 @@ RC Table::create_index(Trx *trx, const vector<FieldMeta> &field_meta, const char
 
   IndexMeta new_index_meta;
 
-  RC rc = new_index_meta.init(index_name, field_meta, unique);
+  RC rc = new_index_meta.init(index_name, index_type, field_meta, unique);
   if (rc != RC::SUCCESS) {
     LOG_INFO("Failed to init IndexMeta in table:%s, index:%s",
              name(), new_index_meta.to_string().c_str());
@@ -389,6 +392,113 @@ RC Table::create_index(Trx *trx, const vector<FieldMeta> &field_meta, const char
   LOG_INFO("inserted all records into new index. table=%s, index=%s", name(), index_name);
 
   indexes_.push_back(index);
+
+  /// 接下来将这个索引放到表的元数据中
+  TableMeta new_table_meta(table_meta_);
+  rc = new_table_meta.add_index(new_index_meta);
+  if (rc != RC::SUCCESS) {
+    LOG_ERROR("Failed to add index (%s) on table (%s). error=%d:%s", index_name, name(), rc, strrc(rc));
+    return rc;
+  }
+
+  /// 内存中有一份元数据，磁盘文件也有一份元数据。修改磁盘文件时，先创建一个临时文件，写入完成后再rename为正式文件
+  /// 这样可以防止文件内容不完整
+  // 创建元数据临时文件
+  string  tmp_file = table_meta_file(base_dir_.c_str(), name()) + ".tmp";
+  fstream fs;
+  fs.open(tmp_file, ios_base::out | ios_base::binary | ios_base::trunc);
+  if (!fs.is_open()) {
+    LOG_ERROR("Failed to open file for write. file name=%s, errmsg=%s", tmp_file.c_str(), strerror(errno));
+    return RC::IOERR_OPEN;  // 创建索引中途出错，要做还原操作
+  }
+  if (new_table_meta.serialize(fs) < 0) {
+    LOG_ERROR("Failed to dump new table meta to file: %s. sys err=%d:%s", tmp_file.c_str(), errno, strerror(errno));
+    return RC::IOERR_WRITE;
+  }
+  fs.close();
+
+  // 覆盖原始元数据文件
+  string meta_file = table_meta_file(base_dir_.c_str(), name());
+
+  int ret = rename(tmp_file.c_str(), meta_file.c_str());
+  if (ret != 0) {
+    LOG_ERROR("Failed to rename tmp meta file (%s) to normal meta file (%s) while creating index (%s) on table (%s). "
+              "system error=%d:%s",
+              tmp_file.c_str(), meta_file.c_str(), index_name, name(), errno, strerror(errno));
+    return RC::IOERR_WRITE;
+  }
+
+  table_meta_.swap(new_table_meta);
+
+  LOG_INFO("Successfully added a new index (%s) on the table (%s)", index_name, name());
+  return rc;
+}
+
+RC Table::create_vector_index(Trx *trx, IndexType index_type, const vector<FieldMeta> &field_meta,
+    const char *index_name, NormalFunctionType distance_type, const std::vector<int> &options)
+{
+  if (common::is_blank(index_name)) {
+    LOG_INFO("Invalid input arguments, table name is %s, index_name is blank or attribute_name is blank", name());
+    return RC::INVALID_ARGUMENT;
+  }
+
+  IndexMeta new_index_meta;
+
+  RC rc = new_index_meta.init(index_name, index_type, field_meta);
+  if (rc != RC::SUCCESS) {
+    LOG_INFO("Failed to init IndexMeta in table:%s, index:%s",
+             name(), new_index_meta.to_string().c_str());
+    return rc;
+  }
+
+  // 创建索引相关数据
+  auto   index      = new IvfflatIndex();
+  string index_file = table_index_file(base_dir_.c_str(), name(), index_name);
+  rc                = index->create(this, index_file.c_str(), new_index_meta, field_meta[0]);
+  if (rc != RC::SUCCESS) {
+    delete index;
+    LOG_ERROR("Failed to create Ivfflat index. file name=%s, rc=%d:%s", index_file.c_str(), rc, strrc(rc));
+    return rc;
+  }
+
+  // 遍历当前的所有数据，插入这个索引
+  RecordFileScanner scanner;
+  rc = get_record_scanner(scanner, trx, ReadWriteMode::READ_ONLY);
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to create scanner while creating vector index. table=%s, index=%s, rc=%s",
+             name(), index_name, strrc(rc));
+    return rc;
+  }
+
+  // 一次性把某向量类型列数据都读出来
+  Record                                          record;
+  std::vector<std::pair<std::vector<float>, RID>> data;
+  while (OB_SUCC(rc = scanner.next(record))) {
+    Value value;
+    // 目前向量仅在一列上建立索引
+    rc = record.get_field(field_meta[0], value);
+    if (OB_FAIL(rc)) {
+      return rc;
+    }
+    data.emplace_back(value.get_vector(), record.rid());
+  }
+
+  if (RC::RECORD_EOF == rc) {
+    rc = RC::SUCCESS;
+  } else {
+    LOG_WARN("failed to get record while creating index. table=%s, index=%s, rc=%s",
+             name(), index_name, strrc(rc));
+    return rc;
+  }
+
+  scanner.close_scan();
+
+  // 建立向量索引
+  index->build_index(data, distance_type, options);
+
+  LOG_INFO("inserted all records into new index. table=%s, index=%s", name(), index_name);
+
+  indexes_.emplace_back(index);
 
   /// 接下来将这个索引放到表的元数据中
   TableMeta new_table_meta(table_meta_);
@@ -520,6 +630,7 @@ Index *Table::find_index(const char *index_name) const
   }
   return nullptr;
 }
+
 Index *Table::find_index_by_field(const char *field_name) const
 {
   for (const auto &index : indexes_) {
@@ -527,6 +638,23 @@ Index *Table::find_index_by_field(const char *field_name) const
       auto name = index->index_meta().fields().front().name();
       if (0 == strcmp(name, field_name)) {
         return index;
+      }
+    }
+  }
+  return nullptr;
+}
+
+// 对向量距离类型，索引字段进行检查
+Index *Table::find_vector_index(NormalFunctionType distance_fn, const char *field_name) const
+{
+  for (const auto &index : indexes_) {
+    if (index->is_vector_index()) {
+      auto vector_index = dynamic_cast<IvfflatIndex *>(index);
+      if (vector_index->distance_fn() == distance_fn) {
+        auto name = index->index_meta().fields().front().name();
+        if (0 == strcmp(name, field_name)) {
+          return index;
+        }
       }
     }
   }

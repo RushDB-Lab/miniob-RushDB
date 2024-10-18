@@ -20,6 +20,9 @@ std::string physical_operator_type_name(PhysicalOperatorType type)
     case PhysicalOperatorType::TABLE_SCAN: return "TABLE_SCAN";
     case PhysicalOperatorType::INDEX_SCAN: return "INDEX_SCAN";
     case PhysicalOperatorType::VIEW_SCAN: return "VIEW_SCAN";
+    case PhysicalOperatorType::VECTOR_INDEX_SCAN: return "VECTOR_INDEX_SCAN";
+    case PhysicalOperatorType::LIMIT: return "LIMIT";
+    case PhysicalOperatorType::ORDER_BY: return "ORDER_BY";
     case PhysicalOperatorType::NESTED_LOOP_JOIN: return "NESTED_LOOP_JOIN";
     case PhysicalOperatorType::EXPLAIN: return "EXPLAIN";
     case PhysicalOperatorType::PREDICATE: return "PREDICATE";

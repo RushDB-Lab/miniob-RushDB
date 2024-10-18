@@ -51,6 +51,8 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/update_physical_operator.h"
 #include "sql/operator/view_scan_physical_operator.h"
 
+#include <sql/operator/vector_scan_physical_operator.h>
+
 using namespace std;
 
 RC PhysicalPlanGenerator::create(LogicalOperator &logical_operator, unique_ptr<PhysicalOperator> &oper)
@@ -150,6 +152,22 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
 
   if (base_table->type() == TableType::Table) {
     table = dynamic_cast<Table *>(base_table);
+
+    // 是向量索引
+    if (table_get_oper.is_vector_scan()) {
+      auto vector_scan_oper = new VectorScanPhysicalOperator(table,
+          std::move(table_get_oper.table_alias()),
+          table_get_oper.index(),
+          table_get_oper.base_vector(),
+          table_get_oper.limit(),
+          table_get_oper.read_write_mode());
+
+      vector_scan_oper->set_predicates(std::move(predicates));
+      oper = unique_ptr<PhysicalOperator>(vector_scan_oper);
+      LOG_TRACE("Vector Index scan used on table: {}", table->name());
+      return RC::SUCCESS;
+    }
+
     for (auto &expr : predicates) {
       if (expr->type() == ExprType::COMPARISON) {
         auto comparison_expr = dynamic_cast<ComparisonExpr *>(expr.get());

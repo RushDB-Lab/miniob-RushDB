@@ -38,7 +38,7 @@ class IndexMeta
 public:
   IndexMeta() = default;
 
-  [[nodiscard]] RC init(const char *name, const vector<FieldMeta> &fields, bool unique);
+  [[nodiscard]] RC init(const char *name, IndexType index_type, const vector<FieldMeta> &fields, bool unique = false);
 
   void desc(ostream &os) const { os << to_string(); }
 
@@ -64,7 +64,7 @@ public:
   }
 
   [[nodiscard]] const char              *name() const { return name_.c_str(); }
-  IndexType                              type() const { return type_; }
+  IndexType                              index_type() const { return index_type_; }
   [[nodiscard]] int                      fields_total_len() const { return fields_total_len_; }
   [[nodiscard]] const vector<FieldMeta> &fields() const { return fields_; }
   [[nodiscard]] bool                     unique() const { return unique_; }
@@ -72,7 +72,7 @@ public:
 
 private:
   string            name_;
-  IndexType         type_;
+  IndexType         index_type_;
   int               fields_total_len_ = 0;
   vector<int>       fields_offset_;
   vector<FieldMeta> fields_;

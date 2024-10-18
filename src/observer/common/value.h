@@ -120,15 +120,16 @@ public:
    * 获取对应的值
    * 如果当前的类型与期望获取的类型不符，就会执行转换操作
    */
-  int         get_int() const;
-  float       get_float() const;
-  string      get_string() const;
-  bool        get_boolean() const;
-  int         get_date() const;
-  int         get_vector_length() const;
-  float       get_vector_element(int i) const;
-  bool        is_null() const { return is_null_; }
-  inline bool is_str() const { return attr_type_ == AttrType::CHARS; }
+  int                get_int() const;
+  float              get_float() const;
+  string             get_string() const;
+  bool               get_boolean() const;
+  int                get_date() const;
+  std::vector<float> get_vector() const;
+  int                get_vector_length() const;
+  float              get_vector_element(int i) const;
+  bool               is_null() const { return is_null_; }
+  inline bool        is_str() const { return attr_type_ == AttrType::CHARS; }
 
   static int implicit_cast_cost(AttrType from, AttrType to)
   {

@@ -10,9 +10,10 @@ See the Mulan PSL v2 for more details. */
 
 #include "index_meta.h"
 
-RC IndexMeta::init(const char *name, const vector<FieldMeta> &fields, bool unique)
+RC IndexMeta::init(const char *name, IndexType index_type, const vector<FieldMeta> &fields, bool unique)
 {
   name_             = name;
+  index_type_       = index_type;
   fields_total_len_ = 0;
   fields_           = fields;
   unique_           = unique;
@@ -42,6 +43,7 @@ string IndexMeta::to_string() const
 void IndexMeta::to_json(Json::Value &json_value) const
 {
   json_value["name"]             = name_;
+  json_value["index_type"]       = static_cast<int>(index_type_);
   json_value["fields_total_len"] = fields_total_len_;
   json_value["unique"]           = unique_;
 
@@ -62,12 +64,13 @@ void IndexMeta::to_json(Json::Value &json_value) const
 
 RC IndexMeta::from_json(const Json::Value &json_value, IndexMeta &index)
 {
-  if (!json_value.isMember("name") || !json_value.isMember("fields") || !json_value.isMember("fields_total_len") ||
-      !json_value.isMember("fields_offset")) {
+  if (!json_value.isMember("name") || !json_value.isMember("index_type") || !json_value.isMember("fields") ||
+      !json_value.isMember("fields_total_len") || !json_value.isMember("fields_offset")) {
     return RC::INVALID_ARGUMENT;
   }
 
   index.name_             = json_value["name"].asString();
+  index.index_type_       = static_cast<IndexType>(json_value["index_type"].asInt());
   index.fields_total_len_ = json_value["fields_total_len"].asInt();
   index.unique_           = json_value["unique"].asBool();
 

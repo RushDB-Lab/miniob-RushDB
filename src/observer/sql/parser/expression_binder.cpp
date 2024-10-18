@@ -518,7 +518,7 @@ RC ExpressionBinder::bind_function_expression(
     return RC::SUCCESS;
   }
 
-  NormalFunctionExpr::Type func_type;
+  NormalFunctionType func_type;
   rc = NormalFunctionExpr::type_from_string(function_name, func_type);
   if (OB_SUCC(rc)) {
     vector<unique_ptr<Expression>> child_bound_expressions;

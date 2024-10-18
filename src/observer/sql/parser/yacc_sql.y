@@ -432,6 +432,15 @@ vector_index_config:
       $$->probes = std::move(*$16);
       free($4);
     }
+    | LBRACE TYPE EQ index_type COMMA DISTANCE EQ ID COMMA LISTS EQ value COMMA PROBES EQ value RBRACE
+    {
+      $$ = new VectorIndexConfig;
+      $$->distance_fn = $8;
+      $$->index_type = $4;
+      $$->lists = std::move(*$12);
+      $$->probes = std::move(*$16);
+      free($8);
+    }
     ;
 
 attr_list:

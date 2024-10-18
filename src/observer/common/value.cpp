@@ -489,6 +489,16 @@ RC Value::borrow_text(const Value &v)
   return RC::SUCCESS;
 }
 
+std::vector<float> Value::get_vector() const
+{
+  assert(attr_type_ == AttrType::VECTORS);
+  std::vector<float> vector(get_vector_length());
+  for (int i = 0; i < vector.size(); ++i) {
+    vector[i] = get_vector_element(i);
+  }
+  return vector;
+}
+
 int Value::get_vector_length() const
 {
   assert(attr_type_ == AttrType::VECTORS);

@@ -251,13 +251,6 @@ struct DropTableSqlNode
   std::string relation_name;  ///< 要删除的表名
 };
 
-enum class VectorDistanceType
-{
-  L2,
-  COSINE,
-  INNER,
-};
-
 enum class IndexType
 {
   BPlusTreeIndex,

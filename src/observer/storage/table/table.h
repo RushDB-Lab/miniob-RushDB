@@ -17,6 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/table/base_table.h"
 #include "common/types.h"
 #include "common/lang/span.h"
+#include "sql/builtin/builtin.h"
 
 struct RID;
 class Record;
@@ -77,7 +78,11 @@ public:
 
   RC recover_insert_record(Record &record);
 
-  RC create_index(Trx *trx, const vector<FieldMeta> &field_meta, const char *index_name, bool unique);
+  RC create_index(
+      Trx *trx, IndexType index_type, const vector<FieldMeta> &field_meta, const char *index_name, bool unique);
+
+  RC create_vector_index(Trx *trx, IndexType index_type, const vector<FieldMeta> &field_meta, const char *index_name,
+      NormalFunctionType distance_type, const std::vector<int> &options);
 
   RC get_record_scanner(RecordFileScanner &scanner, Trx *trx, ReadWriteMode mode);
 
@@ -109,6 +114,7 @@ private:
 public:
   Index *find_index(const char *index_name) const;
   Index *find_index_by_field(const char *field_name) const;
+  Index *find_vector_index(NormalFunctionType distance_fn, const char *field_name) const;
 
 private:
   RecordFileHandler *record_handler_ = nullptr;  /// 记录操作

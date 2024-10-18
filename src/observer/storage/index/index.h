@@ -50,7 +50,7 @@ public:
     return RC::UNSUPPORTED;
   }
 
-  virtual bool is_vector_index() { return false; }
+  virtual bool is_vector_index() { return index_meta_.index_type() == IndexType::VectorIVFFlatIndex; }
 
   const IndexMeta &index_meta() const { return index_meta_; }
 
@@ -81,7 +81,10 @@ public:
    * @param right_inclusive 是否包含右边界
    */
   virtual IndexScanner *create_scanner(const char *left_key, int left_len, bool left_inclusive, const char *right_key,
-      int right_len, bool right_inclusive) = 0;
+      int right_len, bool right_inclusive)
+  {
+    return nullptr;
+  }
 
   /**
    * @brief 同步索引数据到磁盘

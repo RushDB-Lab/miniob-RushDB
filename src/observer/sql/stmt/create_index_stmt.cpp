@@ -60,6 +60,38 @@ RC CreateIndexStmt::create(Db *db, const CreateIndexSqlNode &create_index, Stmt 
     return RC::SCHEMA_INDEX_NAME_REPEAT;
   }
 
-  stmt = new CreateIndexStmt(table, field_metas, create_index.index_name, create_index.unique);
+  auto config = create_index.vector_index_config;
+
+  auto index_type = config.index_type;
+  if (index_type == IndexType::BPlusTreeIndex) {
+    stmt = new CreateIndexStmt(table, index_type, field_metas, create_index.index_name, create_index.unique);
+  } else if (index_type == IndexType::VectorIVFFlatIndex) {
+    // 解析距离度量方法，后续单独提取出去
+    auto               distance_type_str = common::str_to_lower(config.distance_fn);
+    NormalFunctionType distance_type;
+    if (distance_type_str == "l2_distance") {
+      distance_type = NormalFunctionType::L2_DISTANCE;
+    } else if (distance_type_str == "inner_product") {
+      distance_type = NormalFunctionType::INNER_PRODUCT;
+    } else if (distance_type_str == "cosine_distance") {
+      distance_type = NormalFunctionType::COSINE_DISTANCE;
+    } else {
+      return RC::UNSUPPORTED;
+    }
+
+    // 没有参数，使用默认参数
+    if (config.lists.attr_type() == AttrType::UNDEFINED && config.probes.attr_type() == AttrType::UNDEFINED) {
+      stmt = new CreateIndexStmt(table, index_type, field_metas, create_index.index_name, distance_type);
+    } else if (config.lists.attr_type() == AttrType::INTS && config.probes.attr_type() == AttrType::INTS) {
+      std::vector<int> options(2);
+      options[0] = config.lists.get_int();
+      options[1] = config.probes.get_int();
+      stmt       = new CreateIndexStmt(
+          table, index_type, field_metas, create_index.index_name, distance_type, std::move(options));
+    } else {
+      return RC::INVALID_ARGUMENT;
+    }
+  }
+
   return RC::SUCCESS;
 }
