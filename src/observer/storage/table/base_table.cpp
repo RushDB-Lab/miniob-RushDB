@@ -22,6 +22,9 @@ RC BaseTable::set_value_to_record(char *record_data, const Value &value, const F
     }
   }
   if (field->type() == AttrType::VECTORS) {
+    if (copy_len / sizeof(float) != data_len / sizeof(float)) {
+      return RC::VECTOR_DIM_MISMATCH;
+    }
     if (copy_len > data_len) {
       copy_len = data_len;
     }
