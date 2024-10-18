@@ -920,6 +920,7 @@ func_expr:
     ID LBRACE expression_list RBRACE
     {
         $$ = new UnboundFunctionExpr($1, std::move(*$3));
+        $$->set_name(token_name(sql_string, &@$));
     }
     ;
 

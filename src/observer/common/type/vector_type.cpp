@@ -43,7 +43,7 @@ RC VectorType::cast_to(const Value &val, AttrType type, Value &result, bool allo
 }
 RC VectorType::set_value_from_str(Value &val, const string &data) const
 {
-  return DataType::set_value_from_str(val, data);
+  return RC::UNIMPLEMENTED;
 }
 int VectorType::cast_cost(AttrType type) { return DataType::cast_cost(type); }
 RC  VectorType::to_string(const Value &val, std::string &result) const
