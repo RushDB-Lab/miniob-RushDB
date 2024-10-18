@@ -464,32 +464,16 @@ private:
 class NormalFunctionExpr : public UnboundFunctionExpr
 {
 public:
-  enum class Type
-  {
-    TYPEOF,
-    LENGTH,
-    ROUND,
-    YEAR,
-    MONTH,
-    DAY,
-    DATE_FORMAT,
-    L2_DISTANCE,
-    COSINE_DISTANCE,
-    INNER_PRODUCT,
-    STRING_TO_VECTOR,
-    VECTOR_TO_STRING,
-    VECTOR_DIM,
-  };
-
-  NormalFunctionExpr(Type type, const char *aggregate_name, std::vector<std::unique_ptr<Expression>> child)
+  NormalFunctionExpr(
+      builtin::NormalFunctionType type, const char *aggregate_name, std::vector<std::unique_ptr<Expression>> child)
       : ::UnboundFunctionExpr(aggregate_name, std::move(child)), type_(type)
   {}
 
-  static RC type_from_string(const char *type_str, Type &type);
+  static RC type_from_string(const char *type_str, builtin::NormalFunctionType &type);
 
   ExprType type() const override { return ExprType::NORMAL_FUNCTION; }
 
-  Type function_type() const { return type_; }
+  builtin::NormalFunctionType function_type() const { return type_; }
 
   AttrType value_type() const override;
 
@@ -497,24 +481,14 @@ public:
   RC try_get_value(Value &value) const override;
 
 private:
-  Type type_;
+  builtin::NormalFunctionType type_;
 };
 
 class AggregateFunctionExpr : public Expression
 {
 public:
-  enum class Type
-  {
-    COUNT,
-    SUM,
-    AVG,
-    MAX,
-    MIN,
-  };
-
-public:
-  AggregateFunctionExpr(Type type, Expression *child);
-  AggregateFunctionExpr(Type type, std::unique_ptr<Expression> child);
+  AggregateFunctionExpr(builtin::AggregateFunctionType type, Expression *child);
+  AggregateFunctionExpr(builtin::AggregateFunctionType type, std::unique_ptr<Expression> child);
   virtual ~AggregateFunctionExpr() = default;
 
   bool equal(const Expression &other) const override;
@@ -528,7 +502,7 @@ public:
 
   RC get_column(Chunk &chunk, Column &column) override;
 
-  Type aggregate_type() const { return aggregate_type_; }
+  builtin::AggregateFunctionType aggregate_type() const { return aggregate_type_; }
 
   std::unique_ptr<Expression> &child() { return child_; }
 
@@ -536,11 +510,11 @@ public:
 
   std::unique_ptr<Aggregator> create_aggregator() const;
 
-  static RC type_from_string(const char *type_str, Type &type);
+  static RC type_from_string(const char *type_str, builtin::AggregateFunctionType &type);
 
 private:
-  Type                        aggregate_type_;
-  std::unique_ptr<Expression> child_;
+  builtin::AggregateFunctionType aggregate_type_;
+  std::unique_ptr<Expression>    child_;
 };
 
 class SubQueryExpr : public Expression

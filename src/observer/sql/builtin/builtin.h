@@ -16,6 +16,32 @@ See the Mulan PSL v2 for more details. */
 
 namespace builtin {
 
+enum NormalFunctionType
+{
+  TYPEOF,
+  LENGTH,
+  ROUND,
+  YEAR,
+  MONTH,
+  DAY,
+  DATE_FORMAT,
+  L2_DISTANCE,
+  COSINE_DISTANCE,
+  INNER_PRODUCT,
+  STRING_TO_VECTOR,
+  VECTOR_TO_STRING,
+  VECTOR_DIM,
+};
+
+enum AggregateFunctionType
+{
+  COUNT,
+  SUM,
+  AVG,
+  MAX,
+  MIN,
+};
+
 extern RC _typeof(const vector<Value> &args, Value &result);
 
 extern RC length(const vector<Value> &args, Value &result);

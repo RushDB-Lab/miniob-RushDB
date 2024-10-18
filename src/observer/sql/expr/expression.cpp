@@ -666,9 +666,11 @@ UnboundFunctionExpr::UnboundFunctionExpr(const char *aggregate_name, std::vector
 {}
 
 ////////////////////////////////////////////////////////////////////////////////
-AggregateFunctionExpr::AggregateFunctionExpr(Type type, Expression *child) : aggregate_type_(type), child_(child) {}
+AggregateFunctionExpr::AggregateFunctionExpr(builtin::AggregateFunctionType type, Expression *child)
+    : aggregate_type_(type), child_(child)
+{}
 
-AggregateFunctionExpr::AggregateFunctionExpr(Type type, unique_ptr<Expression> child)
+AggregateFunctionExpr::AggregateFunctionExpr(builtin::AggregateFunctionType type, unique_ptr<Expression> child)
     : aggregate_type_(type), child_(std::move(child))
 {}
 
@@ -699,23 +701,23 @@ unique_ptr<Aggregator> AggregateFunctionExpr::create_aggregator() const
 {
   unique_ptr<Aggregator> aggregator;
   switch (aggregate_type_) {
-    case Type::SUM: {
+    case builtin::AggregateFunctionType::SUM: {
       aggregator = make_unique<SumAggregator>();
       break;
     }
-    case Type::COUNT: {
+    case builtin::AggregateFunctionType::COUNT: {
       aggregator = make_unique<CountAggregator>();
       break;
     }
-    case Type::AVG: {
+    case builtin::AggregateFunctionType::AVG: {
       aggregator = make_unique<AvgAggregator>();
       break;
     }
-    case Type::MAX: {
+    case builtin::AggregateFunctionType::MAX: {
       aggregator = make_unique<MaxAggregator>();
       break;
     }
-    case Type::MIN: {
+    case builtin::AggregateFunctionType::MIN: {
       aggregator = make_unique<MinAggregator>();
       break;
     }
@@ -732,13 +734,13 @@ RC AggregateFunctionExpr::get_value(const Tuple &tuple, Value &value)
   return tuple.find_cell(TupleCellSpec(name()), value);
 }
 
-RC AggregateFunctionExpr::type_from_string(const char *type_str, AggregateFunctionExpr::Type &type)
+RC AggregateFunctionExpr::type_from_string(const char *type_str, builtin::AggregateFunctionType &type)
 {
-  check_type("sum", Type::SUM);
-  check_type("avg", Type::AVG);
-  check_type("max", Type::MAX);
-  check_type("min", Type::MIN);
-  check_type("count", Type::COUNT);
+  check_type("sum", builtin::AggregateFunctionType::SUM);
+  check_type("avg", builtin::AggregateFunctionType::AVG);
+  check_type("max", builtin::AggregateFunctionType::MAX);
+  check_type("min", builtin::AggregateFunctionType::MIN);
+  check_type("count", builtin::AggregateFunctionType::COUNT);
   return RC::INVALID_ARGUMENT;
 }
 
@@ -864,21 +866,21 @@ ListExpr::ListExpr(std::vector<Expression *> &&exprs)
   exprs.clear();
 }
 
-RC NormalFunctionExpr::type_from_string(const char *type_str, NormalFunctionExpr::Type &type)
+RC NormalFunctionExpr::type_from_string(const char *type_str, builtin::NormalFunctionType &type)
 {
-  check_type("typeof", Type::TYPEOF);
-  check_type("day", Type::DAY);
-  check_type("month", Type::MONTH);
-  check_type("year", Type::YEAR);
-  check_type("date_format", Type::DATE_FORMAT);
-  check_type("length", Type::LENGTH);
-  check_type("round", Type::ROUND);
-  check_type("l2_distance", Type::L2_DISTANCE);
-  check_type("cosine_distance", Type::COSINE_DISTANCE);
-  check_type("inner_product", Type::INNER_PRODUCT);
-  check_type("string_to_vector", Type::STRING_TO_VECTOR);
-  check_type("vector_to_string", Type::VECTOR_TO_STRING);
-  check_type("vector_dim", Type::VECTOR_DIM);
+  check_type("typeof", builtin::NormalFunctionType::TYPEOF);
+  check_type("day", builtin::NormalFunctionType::DAY);
+  check_type("month", builtin::NormalFunctionType::MONTH);
+  check_type("year", builtin::NormalFunctionType::YEAR);
+  check_type("date_format", builtin::NormalFunctionType::DATE_FORMAT);
+  check_type("length", builtin::NormalFunctionType::LENGTH);
+  check_type("round", builtin::NormalFunctionType::ROUND);
+  check_type("l2_distance", builtin::NormalFunctionType::L2_DISTANCE);
+  check_type("cosine_distance", builtin::NormalFunctionType::COSINE_DISTANCE);
+  check_type("inner_product", builtin::NormalFunctionType::INNER_PRODUCT);
+  check_type("string_to_vector", builtin::NormalFunctionType::STRING_TO_VECTOR);
+  check_type("vector_to_string", builtin::NormalFunctionType::VECTOR_TO_STRING);
+  check_type("vector_dim", builtin::NormalFunctionType::VECTOR_DIM);
   return RC::INVALID_ARGUMENT;
 }
 
@@ -894,19 +896,19 @@ RC NormalFunctionExpr::get_value(const Tuple &tuple, Value &result)
     args_values_.push_back(value);
   }
   switch (type_) {
-    case Type::LENGTH: return builtin::length(args_values_, result);
-    case Type::ROUND: return builtin::round(args_values_, result);
-    case Type::DATE_FORMAT: return builtin::date_format(args_values_, result);
-    case Type::STRING_TO_VECTOR: return builtin::string_to_vector(args_values_, result);
-    case Type::VECTOR_TO_STRING: return builtin::vector_to_string(args_values_, result);
-    case Type::VECTOR_DIM: return builtin::vector_dim(args_values_, result);
-    case Type::YEAR: return builtin::year(args_values_, result);
-    case Type::MONTH: return builtin::month(args_values_, result);
-    case Type::DAY: return builtin::day(args_values_, result);
-    case Type::L2_DISTANCE: return builtin::l2_distance(args_values_, result);
-    case Type::COSINE_DISTANCE: return builtin::cosine_distance(args_values_, result);
-    case Type::INNER_PRODUCT: return builtin::inner_product(args_values_, result);
-    case Type::TYPEOF: return builtin::_typeof(args_values_, result);
+    case builtin::NormalFunctionType::LENGTH: return builtin::length(args_values_, result);
+    case builtin::NormalFunctionType::ROUND: return builtin::round(args_values_, result);
+    case builtin::NormalFunctionType::DATE_FORMAT: return builtin::date_format(args_values_, result);
+    case builtin::NormalFunctionType::STRING_TO_VECTOR: return builtin::string_to_vector(args_values_, result);
+    case builtin::NormalFunctionType::VECTOR_TO_STRING: return builtin::vector_to_string(args_values_, result);
+    case builtin::NormalFunctionType::VECTOR_DIM: return builtin::vector_dim(args_values_, result);
+    case builtin::NormalFunctionType::YEAR: return builtin::year(args_values_, result);
+    case builtin::NormalFunctionType::MONTH: return builtin::month(args_values_, result);
+    case builtin::NormalFunctionType::DAY: return builtin::day(args_values_, result);
+    case builtin::NormalFunctionType::L2_DISTANCE: return builtin::l2_distance(args_values_, result);
+    case builtin::NormalFunctionType::COSINE_DISTANCE: return builtin::cosine_distance(args_values_, result);
+    case builtin::NormalFunctionType::INNER_PRODUCT: return builtin::inner_product(args_values_, result);
+    case builtin::NormalFunctionType::TYPEOF: return builtin::_typeof(args_values_, result);
   }
   return RC::INTERNAL;
 }
@@ -923,19 +925,19 @@ RC NormalFunctionExpr::try_get_value(Value &result) const
     args_values_.push_back(value);
   }
   switch (type_) {
-    case Type::LENGTH: return builtin::length(args_values_, result);
-    case Type::ROUND: return builtin::round(args_values_, result);
-    case Type::DATE_FORMAT: return builtin::date_format(args_values_, result);
-    case Type::STRING_TO_VECTOR: return builtin::string_to_vector(args_values_, result);
-    case Type::VECTOR_TO_STRING: return builtin::vector_to_string(args_values_, result);
-    case Type::VECTOR_DIM: return builtin::vector_dim(args_values_, result);
-    case Type::YEAR: return builtin::year(args_values_, result);
-    case Type::MONTH: return builtin::month(args_values_, result);
-    case Type::DAY: return builtin::day(args_values_, result);
-    case Type::L2_DISTANCE: return builtin::l2_distance(args_values_, result);
-    case Type::COSINE_DISTANCE: return builtin::cosine_distance(args_values_, result);
-    case Type::INNER_PRODUCT: return builtin::inner_product(args_values_, result);
-    case Type::TYPEOF: return builtin::_typeof(args_values_, result);
+    case builtin::NormalFunctionType::LENGTH: return builtin::length(args_values_, result);
+    case builtin::NormalFunctionType::ROUND: return builtin::round(args_values_, result);
+    case builtin::NormalFunctionType::DATE_FORMAT: return builtin::date_format(args_values_, result);
+    case builtin::NormalFunctionType::STRING_TO_VECTOR: return builtin::string_to_vector(args_values_, result);
+    case builtin::NormalFunctionType::VECTOR_TO_STRING: return builtin::vector_to_string(args_values_, result);
+    case builtin::NormalFunctionType::VECTOR_DIM: return builtin::vector_dim(args_values_, result);
+    case builtin::NormalFunctionType::YEAR: return builtin::year(args_values_, result);
+    case builtin::NormalFunctionType::MONTH: return builtin::month(args_values_, result);
+    case builtin::NormalFunctionType::DAY: return builtin::day(args_values_, result);
+    case builtin::NormalFunctionType::L2_DISTANCE: return builtin::l2_distance(args_values_, result);
+    case builtin::NormalFunctionType::COSINE_DISTANCE: return builtin::cosine_distance(args_values_, result);
+    case builtin::NormalFunctionType::INNER_PRODUCT: return builtin::inner_product(args_values_, result);
+    case builtin::NormalFunctionType::TYPEOF: return builtin::_typeof(args_values_, result);
   }
   return RC::INTERNAL;
 }
@@ -943,19 +945,19 @@ RC NormalFunctionExpr::try_get_value(Value &result) const
 AttrType NormalFunctionExpr::value_type() const
 {
   switch (type_) {
-    case Type::LENGTH: return AttrType::INTS;
-    case Type::ROUND: return AttrType::FLOATS;
-    case Type::DATE_FORMAT: return AttrType::CHARS;
-    case Type::STRING_TO_VECTOR: return AttrType::VECTORS;
-    case Type::VECTOR_TO_STRING: return AttrType::CHARS;
-    case Type::VECTOR_DIM: return AttrType::INTS;
-    case Type::YEAR: return AttrType::INTS;
-    case Type::MONTH: return AttrType::INTS;
-    case Type::DAY: return AttrType::INTS;
-    case Type::L2_DISTANCE: return AttrType::FLOATS;
-    case Type::COSINE_DISTANCE: return AttrType::FLOATS;
-    case Type::INNER_PRODUCT: return AttrType::FLOATS;
-    case Type::TYPEOF: return AttrType::CHARS;
+    case builtin::NormalFunctionType::LENGTH: return AttrType::INTS;
+    case builtin::NormalFunctionType::ROUND: return AttrType::FLOATS;
+    case builtin::NormalFunctionType::DATE_FORMAT: return AttrType::CHARS;
+    case builtin::NormalFunctionType::STRING_TO_VECTOR: return AttrType::VECTORS;
+    case builtin::NormalFunctionType::VECTOR_TO_STRING: return AttrType::CHARS;
+    case builtin::NormalFunctionType::VECTOR_DIM: return AttrType::INTS;
+    case builtin::NormalFunctionType::YEAR: return AttrType::INTS;
+    case builtin::NormalFunctionType::MONTH: return AttrType::INTS;
+    case builtin::NormalFunctionType::DAY: return AttrType::INTS;
+    case builtin::NormalFunctionType::L2_DISTANCE: return AttrType::FLOATS;
+    case builtin::NormalFunctionType::COSINE_DISTANCE: return AttrType::FLOATS;
+    case builtin::NormalFunctionType::INNER_PRODUCT: return AttrType::FLOATS;
+    case builtin::NormalFunctionType::TYPEOF: return AttrType::CHARS;
   }
   return AttrType::UNDEFINED;
 }

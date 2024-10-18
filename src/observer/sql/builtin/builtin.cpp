@@ -259,14 +259,8 @@ RC date_format(const vector<Value> &args, Value &result)
 }
 
 namespace vector_distance {
-enum class Type
-{
-  L2,
-  COSINE,
-  INNER,
-};
 
-RC distance(const std::vector<Value> &args, Value &result, Type type)
+RC distance(const std::vector<Value> &args, Value &result, NormalFunctionType type)
 {
   if (args.size() != 2) {
     return RC::INVALID_ARGUMENT;
@@ -308,7 +302,7 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
   }
 
   switch (type) {
-    case Type::L2: {
+    case NormalFunctionType::L2_DISTANCE: {
       /*
        * l2_distance
        * 语法：l2_distance(vector A, vector B)
@@ -324,7 +318,7 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
       result = Value(ans);
       return RC::SUCCESS;
     }
-    case Type::COSINE: {
+    case NormalFunctionType::COSINE_DISTANCE: {
       /*
        * cosine_distance：
        * 语法：cosine_distance(vector A, vector B)
@@ -352,7 +346,7 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
       result                  = Value(1 - cosine_similarity);
       return RC::SUCCESS;
     }
-    case Type::INNER: {
+    case NormalFunctionType::INNER_PRODUCT: {
       /*
        * inner_product：
        * 语法：inner_product(vector A, vector B)
@@ -378,17 +372,17 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
 
 RC l2_distance(const vector<Value> &args, Value &result)
 {
-  return vector_distance::distance(args, result, vector_distance::Type::L2);
+  return vector_distance::distance(args, result, NormalFunctionType::L2_DISTANCE);
 }
 
 RC cosine_distance(const vector<Value> &args, Value &result)
 {
-  return vector_distance::distance(args, result, vector_distance::Type::COSINE);
+  return vector_distance::distance(args, result, NormalFunctionType::COSINE_DISTANCE);
 }
 
 RC inner_product(const vector<Value> &args, Value &result)
 {
-  return vector_distance::distance(args, result, vector_distance::Type::INNER);
+  return vector_distance::distance(args, result, NormalFunctionType::INNER_PRODUCT);
 }
 
 RC string_to_vector(const vector<Value> &args, Value &result)
