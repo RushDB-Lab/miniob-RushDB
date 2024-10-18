@@ -33,7 +33,8 @@ RC InsertPhysicalOperator::open(Trx *trx)
     }
   }
 
-  for (size_t i = 0; i < records.size(); ++i) {
+  int size = static_cast<int>(records.size());
+  for (int i = 0; i < size; ++i) {
     rc = trx->insert_record(table_, records[i]);
     if (rc != RC::SUCCESS) {
       LOG_WARN("failed to insert record by transaction. rc=%s", strrc(rc));

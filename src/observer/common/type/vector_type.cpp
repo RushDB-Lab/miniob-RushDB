@@ -4,7 +4,9 @@
 
 #include "common/type/vector_type.h"
 
-#include <common/value.h>
+#include "common/value.h"
+#include <iomanip>
+
 int VectorType::compare(const Value &left, const Value &right) const
 {
   // 获取左向量和右向量的指针
@@ -41,10 +43,7 @@ RC VectorType::cast_to(const Value &val, AttrType type, Value &result, bool allo
   }
   return RC::INTERNAL;
 }
-RC VectorType::set_value_from_str(Value &val, const string &data) const
-{
-  return DataType::set_value_from_str(val, data);
-}
+RC  VectorType::set_value_from_str(Value &val, const string &data) const { return RC::UNIMPLEMENTED; }
 int VectorType::cast_cost(AttrType type) { return DataType::cast_cost(type); }
 RC  VectorType::to_string(const Value &val, std::string &result) const
 {
@@ -61,9 +60,9 @@ RC  VectorType::to_string(const Value &val, std::string &result) const
   // 遍历数组元素并拼接成字符串
   for (int i = 0; i < count; ++i) {
     if (i != 0) {
-      oss << ", ";  // 在每个元素之间加逗号和空格
+      oss << ",";  // 在每个元素之间加逗号和空格
     }
-    oss << data[i];  // 将浮点数输出到字符串流
+    oss << common::double_to_str(data[i]);
   }
 
   oss << "]";  // 关闭数组的方括号

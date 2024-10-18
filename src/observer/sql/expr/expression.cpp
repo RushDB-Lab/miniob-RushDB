@@ -663,11 +663,7 @@ RC ArithmeticExpr::try_get_value(Value &value) const
 
 UnboundFunctionExpr::UnboundFunctionExpr(const char *aggregate_name, std::vector<std::unique_ptr<Expression>> child)
     : function_name_(aggregate_name), args_(std::move(child))
-{
-  if (::Expression::name_empty()) {
-    Expression::set_name(to_string());
-  }
-}
+{}
 
 ////////////////////////////////////////////////////////////////////////////////
 AggregateFunctionExpr::AggregateFunctionExpr(Type type, Expression *child) : aggregate_type_(type), child_(child) {}

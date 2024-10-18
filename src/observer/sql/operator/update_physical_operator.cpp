@@ -54,7 +54,8 @@ RC UpdatePhysicalOperator::open(Trx *trx)
   Value              value;
   std::vector<Value> real_values(values_.size());
   SubQueryExpr      *sub_query_expr = nullptr;
-  for (size_t i = 0; i < values_.size(); ++i) {
+  int                size           = static_cast<int>(values_.size());
+  for (int i = 0; i < size; ++i) {
     auto &value_expr = values_[i];
     auto &field_meta = field_metas_[i];
 

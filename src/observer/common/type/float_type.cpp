@@ -45,10 +45,6 @@ RC FloatType::multiply(const Value &left, const Value &right, Value &result) con
 
 RC FloatType::divide(const Value &left, const Value &right, Value &result) const
 {
-  if (right.get_float() < 0.0001 && right.get_float() > -0.0001) {
-    result.set_null();
-    return RC::SUCCESS;
-  }
   if (right.get_float() > -EPSILON && right.get_float() < EPSILON) {
     result.set_null();
     return RC::SUCCESS;

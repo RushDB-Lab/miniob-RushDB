@@ -267,10 +267,10 @@ enum class IndexType
 
 struct VectorIndexConfig
 {
-  VectorDistanceType distance_type;                           ///< 距离度量
-  IndexType          index_type = IndexType::BPlusTreeIndex;  ///< 索引类型，非向量索引情况默认为 b+ 树
-  Value              lists;                                   ///< 列表数量
-  Value              probes;                                  ///< 探测次数
+  std::string distance_fn;                             ///< 距离度量方法
+  IndexType   index_type = IndexType::BPlusTreeIndex;  ///< 索引类型，非向量索引情况默认为 b+ 树
+  Value       lists;                                   ///< 列表数量
+  Value       probes;                                  ///< 探测次数
 };
 
 /**

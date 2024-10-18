@@ -160,9 +160,6 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
         LISTS
         PROBES
         IVFFLAT
-        L2_DISTANCE
-        COSINE_DISTANCE
-        INNER_PRODUCT
         EQ
         LT
         GT
@@ -198,7 +195,6 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
   bool                                       nullable_info;
   std::vector<std::string> *                 index_attr_list;
   bool                                       unique;
-  enum VectorDistanceType                    vector_distance_type;
   enum IndexType                             index_type;
   VectorIndexConfig *                        vector_index_config;
   float                                      digits;
@@ -246,8 +242,7 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
 %type <index_attr_list>     attr_list
 %type <unique>              opt_unique
 %type <index_type>          index_type
-%type <vector_distance_type> vector_distance_type
-%type <vector_index_config>  vector_index_config
+%type <vector_index_config> vector_index_config
 %type <sql_node>            calc_stmt
 %type <sql_node>            select_stmt
 %type <sql_node>            insert_stmt
@@ -421,34 +416,21 @@ index_type:
     ;
 
 vector_index_config:
-      LBRACE DISTANCE EQ vector_distance_type COMMA TYPE EQ index_type RBRACE
+      LBRACE DISTANCE EQ ID COMMA TYPE EQ index_type RBRACE
     {
       $$ = new VectorIndexConfig;
-      $$->distance_type = $4;
+      $$->distance_fn = $4;
       $$->index_type = $8;
+      free($4);
     }
-    | LBRACE DISTANCE EQ vector_distance_type COMMA TYPE EQ index_type COMMA LISTS EQ value COMMA PROBES EQ value RBRACE
+    | LBRACE DISTANCE EQ ID COMMA TYPE EQ index_type COMMA LISTS EQ value COMMA PROBES EQ value RBRACE
     {
       $$ = new VectorIndexConfig;
-      $$->distance_type = $4;
+      $$->distance_fn = $4;
       $$->index_type = $8;
       $$->lists = std::move(*$12);
       $$->probes = std::move(*$16);
-    }
-    ;
-
-vector_distance_type:
-      L2_DISTANCE
-    {
-      $$ = VectorDistanceType::L2;
-    }
-    | COSINE_DISTANCE
-    {
-      $$ = VectorDistanceType::COSINE;
-    }
-    | INNER_PRODUCT
-    {
-      $$ = VectorDistanceType::INNER;
+      free($4);
     }
     ;
 
@@ -986,6 +968,7 @@ func_expr:
     ID LBRACE expression_list RBRACE
     {
         $$ = new UnboundFunctionExpr($1, std::move(*$3));
+        $$->set_name(token_name(sql_string, &@$));
     }
     ;
 
