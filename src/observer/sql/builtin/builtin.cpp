@@ -343,12 +343,12 @@ RC distance(const std::vector<Value> &args, Value &result, Type type)
         norm_v1 += v1 * v1;      // 计算 v1 的模长平方
       }
 
-      if (norm_v0 == 0.0 || norm_v1 == 0.0) {
+      if (fabs(norm_v0) < EPSILON || fabs(norm_v1) < EPSILON) {
         result = Value(NullValue());
-        return RC::SUCCESS;  // 避免除以 0 的情况
+        return RC::SUCCESS;
       }
 
-      float cosine_similarity = dot_product / (sqrt(norm_v0) * sqrt(norm_v1));
+      float cosine_similarity = dot_product / (std::sqrt(norm_v0) * sqrt(norm_v1));
       result                  = Value(cosine_similarity);
       return RC::SUCCESS;
     }
