@@ -35,7 +35,7 @@ AggregateVecPhysicalOperator::AggregateVecPhysicalOperator(vector<Expression *> 
     ASSERT(expr->type() == ExprType::AGGREGATION, "expected an aggregation expression");
     auto *aggregate_expr = static_cast<AggregateFunctionExpr *>(expr);
 
-    if (aggregate_expr->aggregate_type() == AggregateFunctionExpr::Type::SUM) {
+    if (aggregate_expr->aggregate_type() == AggregateFunctionType::SUM) {
       if (aggregate_expr->value_type() == AttrType::INTS) {
         void *aggr_value                     = malloc(sizeof(SumState<int>));
         ((SumState<int> *)aggr_value)->value = 0;
@@ -70,7 +70,7 @@ RC AggregateVecPhysicalOperator::open(Trx *trx)
       value_expressions_[aggr_idx]->get_column(chunk_, column);
       ASSERT(aggregate_expressions_[aggr_idx]->type() == ExprType::AGGREGATION, "expect aggregate expression");
       auto *aggregate_expr = static_cast<AggregateFunctionExpr *>(aggregate_expressions_[aggr_idx]);
-      if (aggregate_expr->aggregate_type() == AggregateFunctionExpr::Type::SUM) {
+      if (aggregate_expr->aggregate_type() == AggregateFunctionType::SUM) {
         if (aggregate_expr->value_type() == AttrType::INTS) {
           update_aggregate_state<SumState<int>, int>(aggr_values_.at(aggr_idx), column);
         } else if (aggregate_expr->value_type() == AttrType::FLOATS) {

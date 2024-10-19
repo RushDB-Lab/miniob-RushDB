@@ -96,8 +96,8 @@ public:
 
 private:
   /// group by values -> aggregate values
-  StandardHashTable                        aggr_values_;
-  std::vector<AggregateFunctionExpr::Type> aggr_types_;
+  StandardHashTable                  aggr_values_;
+  std::vector<AggregateFunctionType> aggr_types_;
 };
 
 /**

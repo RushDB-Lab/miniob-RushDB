@@ -20,6 +20,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/type/data_type.h"
 #include "common/type/date_type.h"
 #include "common/type/text_type.h"
+#include "common/type/boolean_type.h"
 #include "common/utils.h"
 
 class NullValue

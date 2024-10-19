@@ -429,11 +429,11 @@ RC check_aggregate_expression(AggregateFunctionExpr &expression)
   }
 
   // 校验数据类型与聚合类型是否匹配
-  AggregateFunctionExpr::Type aggregate_type   = expression.aggregate_type();
-  AttrType                    child_value_type = child_expression->value_type();
+  AggregateFunctionType aggregate_type   = expression.aggregate_type();
+  AttrType              child_value_type = child_expression->value_type();
   switch (aggregate_type) {
-    case AggregateFunctionExpr::Type::SUM:
-    case AggregateFunctionExpr::Type::AVG: {
+    case AggregateFunctionType::SUM:
+    case AggregateFunctionType::AVG: {
       // 仅支持数值类型
       if (child_value_type != AttrType::INTS && child_value_type != AttrType::FLOATS) {
         LOG_WARN("invalid child value type for aggregate expression: %d", static_cast<int>(child_value_type));
@@ -441,10 +441,10 @@ RC check_aggregate_expression(AggregateFunctionExpr &expression)
       }
     } break;
 
-    case AggregateFunctionExpr::Type::COUNT:
+    case AggregateFunctionType::COUNT:
 
-    case AggregateFunctionExpr::Type::MAX:
-    case AggregateFunctionExpr::Type::MIN: {
+    case AggregateFunctionType::MAX:
+    case AggregateFunctionType::MIN: {
       // 任何类型都支持
     } break;
   }
@@ -472,10 +472,10 @@ RC ExpressionBinder::bind_function_expression(
     return RC::SUCCESS;
   }
 
-  auto                        unbound_function_expr = static_cast<UnboundFunctionExpr *>(expr.get());
-  const char                 *function_name         = unbound_function_expr->function_name();
-  AggregateFunctionExpr::Type aggregate_type;
-  RC                          rc = AggregateFunctionExpr::type_from_string(function_name, aggregate_type);
+  auto                  unbound_function_expr = static_cast<UnboundFunctionExpr *>(expr.get());
+  const char           *function_name         = unbound_function_expr->function_name();
+  AggregateFunctionType aggregate_type;
+  RC                    rc = AggregateFunctionExpr::type_from_string(function_name, aggregate_type);
   if (OB_SUCC(rc)) {
     if (unbound_function_expr->args().size() != 1) {
       return RC::INVALID_ARGUMENT;
@@ -483,7 +483,7 @@ RC ExpressionBinder::bind_function_expression(
     unique_ptr<Expression>        &child_expr = unbound_function_expr->args().front();
     vector<unique_ptr<Expression>> child_bound_expressions;
 
-    if (child_expr->type() == ExprType::STAR && aggregate_type == AggregateFunctionExpr::Type::COUNT) {
+    if (child_expr->type() == ExprType::STAR && aggregate_type == AggregateFunctionType::COUNT) {
       ValueExpr *value_expr = new ValueExpr(Value(1));
       child_expr.reset(value_expr);
       // count(*) 输出星号

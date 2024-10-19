@@ -8,27 +8,21 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
-//
-// Created by HuXin on 24-10-9.
-//
-
 #pragma once
 
-#include "sql/operator/logical_operator.h"
+#include "common/rc.h"
+#include "common/type/data_type.h"
 
-/**
- * @brief 逻辑算子
- * @ingroup LogicalOperator
- */
-class OrderByLogicalOperator : public LogicalOperator
+//
+// Created by 胡鑫 on 24-10-19.
+//
+
+class BooleanType : public DataType
 {
 public:
-  OrderByLogicalOperator(std::vector<OrderBySqlNode> order_by) : order_by_(std::move(order_by)) {}
+  BooleanType() : DataType(AttrType::BOOLEANS) {}
 
-  LogicalOperatorType type() const override { return LogicalOperatorType::ORDER_BY; }
+  virtual ~BooleanType() = default;
 
-  std::vector<OrderBySqlNode> &order_by() { return order_by_; }
-
-private:
-  std::vector<OrderBySqlNode> order_by_;
+  RC to_string(const Value &val, string &result) const override;
 };

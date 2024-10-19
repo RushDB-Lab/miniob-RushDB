@@ -265,7 +265,7 @@ int main(int argc, char *argv[])
   const char *order_by_sql = "SELECT * FROM big_order_by_0, big_order_by_1, big_order_by_2, big_order_by_3 "
                              "ORDER BY big_order_by_0.addr, big_order_by_2.num, big_order_by_0.price, "
                              "big_order_by_3.id, big_order_by_1.id, big_order_by_1.num, big_order_by_0.id, "
-                             "big_order_by_0.birthday;";
+                             "big_order_by_0.birthday LIMIT 1;";
   send_sql(sockfd, order_by_sql);
 
   // Close the socket

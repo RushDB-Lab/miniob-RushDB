@@ -9,26 +9,14 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
 //
-// Created by HuXin on 24-10-9.
+// Created by 胡鑫 on 24-10-19.
 //
 
-#pragma once
+#include "boolean_type.h"
+#include "common/value.h"
 
-#include "sql/operator/logical_operator.h"
-
-/**
- * @brief 逻辑算子
- * @ingroup LogicalOperator
- */
-class OrderByLogicalOperator : public LogicalOperator
+RC BooleanType::to_string(const Value &val, string &result) const
 {
-public:
-  OrderByLogicalOperator(std::vector<OrderBySqlNode> order_by) : order_by_(std::move(order_by)) {}
-
-  LogicalOperatorType type() const override { return LogicalOperatorType::ORDER_BY; }
-
-  std::vector<OrderBySqlNode> &order_by() { return order_by_; }
-
-private:
-  std::vector<OrderBySqlNode> order_by_;
-};
+  result = val.get_boolean() ? "TRUE" : "FALSE";
+  return RC::SUCCESS;
+}

@@ -125,6 +125,8 @@ ParsedSqlNode *create_table_sql_node(char *table_name,
         TRX_ROLLBACK
         INT_T
         IN
+        TRUE
+        FALSE
         STRING_T
         FLOAT_T
         DATE_T
@@ -730,6 +732,12 @@ nonnegative_value:
       $$ = new Value(tmp);
       free(tmp);
       free($1);
+    }
+    | TRUE {
+      $$ = new Value(true);
+    }
+    | FALSE {
+      $$ = new Value(false);
     }
     | NULL_T {
       $$ = new Value(NullValue());

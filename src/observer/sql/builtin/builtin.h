@@ -12,7 +12,15 @@ See the Mulan PSL v2 for more details. */
 
 #include "common/value.h"
 #include "common/utils.h"
-#include <cmath>
+
+enum AggregateFunctionType
+{
+  COUNT,
+  SUM,
+  AVG,
+  MAX,
+  MIN,
+};
 
 enum class NormalFunctionType
 {

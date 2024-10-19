@@ -493,18 +493,8 @@ private:
 class AggregateFunctionExpr : public Expression
 {
 public:
-  enum class Type
-  {
-    COUNT,
-    SUM,
-    AVG,
-    MAX,
-    MIN,
-  };
-
-public:
-  AggregateFunctionExpr(Type type, Expression *child);
-  AggregateFunctionExpr(Type type, std::unique_ptr<Expression> child);
+  AggregateFunctionExpr(AggregateFunctionType type, Expression *child);
+  AggregateFunctionExpr(AggregateFunctionType type, std::unique_ptr<Expression> child);
   virtual ~AggregateFunctionExpr() = default;
 
   bool equal(const Expression &other) const override;
@@ -518,7 +508,7 @@ public:
 
   RC get_column(Chunk &chunk, Column &column) override;
 
-  Type aggregate_type() const { return aggregate_type_; }
+  AggregateFunctionType aggregate_type() const { return aggregate_type_; }
 
   std::unique_ptr<Expression> &child() { return child_; }
 
@@ -526,10 +516,10 @@ public:
 
   std::unique_ptr<Aggregator> create_aggregator() const;
 
-  static RC type_from_string(const char *type_str, Type &type);
+  static RC type_from_string(const char *type_str, AggregateFunctionType &type);
 
 private:
-  Type                        aggregate_type_;
+  AggregateFunctionType       aggregate_type_;
   std::unique_ptr<Expression> child_;
 };
 

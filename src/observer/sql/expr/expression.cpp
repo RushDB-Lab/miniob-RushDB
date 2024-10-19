@@ -666,9 +666,11 @@ UnboundFunctionExpr::UnboundFunctionExpr(const char *aggregate_name, std::vector
 {}
 
 ////////////////////////////////////////////////////////////////////////////////
-AggregateFunctionExpr::AggregateFunctionExpr(Type type, Expression *child) : aggregate_type_(type), child_(child) {}
+AggregateFunctionExpr::AggregateFunctionExpr(AggregateFunctionType type, Expression *child)
+    : aggregate_type_(type), child_(child)
+{}
 
-AggregateFunctionExpr::AggregateFunctionExpr(Type type, unique_ptr<Expression> child)
+AggregateFunctionExpr::AggregateFunctionExpr(AggregateFunctionType type, unique_ptr<Expression> child)
     : aggregate_type_(type), child_(std::move(child))
 {}
 
@@ -699,23 +701,23 @@ unique_ptr<Aggregator> AggregateFunctionExpr::create_aggregator() const
 {
   unique_ptr<Aggregator> aggregator;
   switch (aggregate_type_) {
-    case Type::SUM: {
+    case AggregateFunctionType::SUM: {
       aggregator = make_unique<SumAggregator>();
       break;
     }
-    case Type::COUNT: {
+    case AggregateFunctionType::COUNT: {
       aggregator = make_unique<CountAggregator>();
       break;
     }
-    case Type::AVG: {
+    case AggregateFunctionType::AVG: {
       aggregator = make_unique<AvgAggregator>();
       break;
     }
-    case Type::MAX: {
+    case AggregateFunctionType::MAX: {
       aggregator = make_unique<MaxAggregator>();
       break;
     }
-    case Type::MIN: {
+    case AggregateFunctionType::MIN: {
       aggregator = make_unique<MinAggregator>();
       break;
     }
@@ -732,13 +734,13 @@ RC AggregateFunctionExpr::get_value(const Tuple &tuple, Value &value)
   return tuple.find_cell(TupleCellSpec(name()), value);
 }
 
-RC AggregateFunctionExpr::type_from_string(const char *type_str, AggregateFunctionExpr::Type &type)
+RC AggregateFunctionExpr::type_from_string(const char *type_str, AggregateFunctionType &type)
 {
-  check_type("sum", Type::SUM);
-  check_type("avg", Type::AVG);
-  check_type("max", Type::MAX);
-  check_type("min", Type::MIN);
-  check_type("count", Type::COUNT);
+  check_type("sum", AggregateFunctionType::SUM);
+  check_type("avg", AggregateFunctionType::AVG);
+  check_type("max", AggregateFunctionType::MAX);
+  check_type("min", AggregateFunctionType::MIN);
+  check_type("count", AggregateFunctionType::COUNT);
   return RC::INVALID_ARGUMENT;
 }
 

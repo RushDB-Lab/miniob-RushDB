@@ -98,7 +98,7 @@ RC ScalarGroupByPhysicalOperator::next()
   }
   if (group_value_ == nullptr || emitted_) {
     auto *aggregate_expr = static_cast<AggregateFunctionExpr *>(aggregate_expressions_[0]);
-    if (aggregate_expr->aggregate_type() == AggregateFunctionExpr::Type::COUNT) {
+    if (aggregate_expr->aggregate_type() == AggregateFunctionType::COUNT) {
       Value val(0);
       auto  Vlist = make_unique<ValueListTuple>();
       Vlist->set_cells(std::vector<Value>{val});

@@ -139,6 +139,8 @@ TYPE                                    RETURN_TOKEN(TYPE);
 LISTS                                   RETURN_TOKEN(LISTS);
 PROBES                                  RETURN_TOKEN(PROBES);
 IVFFLAT                                 RETURN_TOKEN(IVFFLAT);
+TRUE                                    RETURN_TOKEN(TRUE);
+FALSE                                   RETURN_TOKEN(FALSE);
 "("                                     RETURN_TOKEN(LBRACE);
 ")"                                     RETURN_TOKEN(RBRACE);
 "["                                     RETURN_TOKEN(LSBRACE);
