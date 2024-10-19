@@ -248,7 +248,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
     return rc;
   }
   DEFER(if (nullptr != left_subquery_expr) left_subquery_expr->close();
-        if (nullptr != right_subquery_expr) right_subquery_expr->close(););
+      if (nullptr != right_subquery_expr) right_subquery_expr->close(););
 
   // Get the value of the left expression
   rc = left_->get_value(tuple, left_value);
