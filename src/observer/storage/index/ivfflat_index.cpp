@@ -14,6 +14,8 @@
 
 #include "storage/index/ivfflat_index.h"
 
+#define MAX_ITERATIONS 5
+
 using Vector = std::vector<float>;
 
 void vector_add(Vector &a, const Vector &b)
@@ -139,18 +141,21 @@ RC IvfflatIndex::build_index(
   }
 
   // 迭代更新质心直到收敛
-  bool changed = true;
-  while (changed) {
+  size_t cnt     = 0;  // 迭代次数
+  bool   changed = true;
+  while (changed && cnt < MAX_ITERATIONS) {
     changed            = false;
     auto new_centroids = find_centroids(initial_data, centroids_, distance_fn_);
 
     // 检查质心是否发生变化
     for (size_t i = 0; i < lists_; i++) {
-      if (compute_distance(new_centroids[i], centroids_[i], distance_fn_) > 1e-4) {
+      if (compute_distance(new_centroids[i], centroids_[i], distance_fn_) > 0.01) {
         changed = true;
       }
-      centroids_[i] = new_centroids[i];
+      centroids_[i] = std::move(new_centroids[i]);
     }
+
+    ++cnt;
   }
 
   // 将数据点分配到最近的质心
@@ -165,11 +170,27 @@ RC IvfflatIndex::build_index(
 
 std::vector<RID> IvfflatIndex::ann_search(const std::vector<float> &base_vector, size_t limit)
 {
+  std::vector<std::pair<float, size_t>> centroid_distances;
+
+  // 计算与所有簇中心的距离
+  for (size_t i = 0; i < centroids_.size(); i++) {
+    float dist = compute_distance(base_vector, centroids_[i], distance_fn_);
+    centroid_distances.emplace_back(dist, i);
+  }
+
+  // 找到最近的 probes_ 个簇
+  std::sort(centroid_distances.begin(),
+      centroid_distances.end(),
+      [&](const std::pair<float, size_t> &a, const std::pair<float, size_t> &b) {
+        return a.first < b.first;  // 按距离升序排序
+      });
+
   std::vector<std::pair<float, RID>> candidates;
 
-  // 探测一定数量的列表并收集候选结果
+  // 探测最近的 probes_ 个簇
   for (size_t i = 0; i < probes_; i++) {
-    for (const auto &[vec, rid] : centroids_buckets_[i]) {
+    size_t cluster_index = centroid_distances[i].second;
+    for (const auto &[vec, rid] : centroids_buckets_[cluster_index]) {
       float dist = compute_distance(base_vector, vec, distance_fn_);
       candidates.emplace_back(dist, rid);
     }
