@@ -311,7 +311,7 @@ TEST(AggregateFunctionExpr, aggregate_expr_test)
 {
   Value                  int_value(1);
   unique_ptr<Expression> value_expr(new ValueExpr(int_value));
-  AggregateFunctionExpr  aggregate_expr(AggregateFunctionExpr::Type::SUM, std::move(value_expr));
+  AggregateFunctionExpr  aggregate_expr(AggregateFunctionType::SUM, std::move(value_expr));
   aggregate_expr.equal(aggregate_expr);
   auto aggregator = aggregate_expr.create_aggregator();
   for (int i = 0; i < 100; i++) {
@@ -320,17 +320,17 @@ TEST(AggregateFunctionExpr, aggregate_expr_test)
   Value result;
   aggregator->evaluate(result);
   ASSERT_EQ(result.get_int(), 4950);
-  AggregateFunctionExpr::Type aggr_type;
+  AggregateFunctionType aggr_type;
   ASSERT_EQ(RC::SUCCESS, AggregateFunctionExpr::type_from_string("sum", aggr_type));
-  ASSERT_EQ(aggr_type, AggregateFunctionExpr::Type::SUM);
+  ASSERT_EQ(aggr_type, AggregateFunctionType::SUM);
   ASSERT_EQ(RC::SUCCESS, AggregateFunctionExpr::type_from_string("count", aggr_type));
-  ASSERT_EQ(aggr_type, AggregateFunctionExpr::Type::COUNT);
+  ASSERT_EQ(aggr_type, AggregateFunctionType::COUNT);
   ASSERT_EQ(RC::SUCCESS, AggregateFunctionExpr::type_from_string("avg", aggr_type));
-  ASSERT_EQ(aggr_type, AggregateFunctionExpr::Type::AVG);
+  ASSERT_EQ(aggr_type, AggregateFunctionType::AVG);
   ASSERT_EQ(RC::SUCCESS, AggregateFunctionExpr::type_from_string("max", aggr_type));
-  ASSERT_EQ(aggr_type, AggregateFunctionExpr::Type::MAX);
+  ASSERT_EQ(aggr_type, AggregateFunctionType::MAX);
   ASSERT_EQ(RC::SUCCESS, AggregateFunctionExpr::type_from_string("min", aggr_type));
-  ASSERT_EQ(aggr_type, AggregateFunctionExpr::Type::MIN);
+  ASSERT_EQ(aggr_type, AggregateFunctionType::MIN);
   ASSERT_EQ(RC::INVALID_ARGUMENT, AggregateFunctionExpr::type_from_string("invalid type", aggr_type));
 }
 

@@ -32,7 +32,7 @@ TEST(AggregateHashTableTest, DISABLED_standard_hash_table)
     group_chunk.add_column(std::move(column1), 0);
     aggr_chunk.add_column(std::move(column2), 1);
 
-    AggregateFunctionExpr     aggregate_expr(AggregateFunctionExpr::Type::SUM, nullptr);
+    AggregateFunctionExpr     aggregate_expr(AggregateFunctionType::SUM, nullptr);
     std::vector<Expression *> aggregate_exprs;
     aggregate_exprs.push_back(&aggregate_expr);
     auto standard_hash_table = std::make_unique<StandardAggregateHashTable>(aggregate_exprs);
@@ -75,7 +75,7 @@ TEST(AggregateHashTableTest, DISABLED_standard_hash_table)
     aggr_chunk.add_column(std::move(aggr1), 0);
     aggr_chunk.add_column(std::move(aggr2), 1);
 
-    AggregateFunctionExpr     aggregate_expr(AggregateFunctionExpr::Type::SUM, nullptr);
+    AggregateFunctionExpr     aggregate_expr(AggregateFunctionType::SUM, nullptr);
     std::vector<Expression *> aggregate_exprs;
     aggregate_exprs.push_back(&aggregate_expr);
     aggregate_exprs.push_back(&aggregate_expr);
