@@ -666,15 +666,13 @@ UnboundFunctionExpr::UnboundFunctionExpr(const char *aggregate_name, std::vector
 {}
 
 ////////////////////////////////////////////////////////////////////////////////
-AggregateFunctionExpr::AggregateFunctionExpr(AggregateFunctionType type, Expression *child)
-    : aggregate_type_(type), child_(child)
-{}
+AggregateExpr::AggregateExpr(AggregateFunctionType type, Expression *child) : aggregate_type_(type), child_(child) {}
 
-AggregateFunctionExpr::AggregateFunctionExpr(AggregateFunctionType type, unique_ptr<Expression> child)
+AggregateExpr::AggregateExpr(AggregateFunctionType type, unique_ptr<Expression> child)
     : aggregate_type_(type), child_(std::move(child))
 {}
 
-RC AggregateFunctionExpr::get_column(Chunk &chunk, Column &column)
+RC AggregateExpr::get_column(Chunk &chunk, Column &column)
 {
   RC rc = RC::SUCCESS;
   if (pos_ != -1) {
@@ -685,7 +683,7 @@ RC AggregateFunctionExpr::get_column(Chunk &chunk, Column &column)
   return rc;
 }
 
-bool AggregateFunctionExpr::equal(const Expression &other) const
+bool AggregateExpr::equal(const Expression &other) const
 {
   if (this == &other) {
     return true;
@@ -693,11 +691,11 @@ bool AggregateFunctionExpr::equal(const Expression &other) const
   if (other.type() != type()) {
     return false;
   }
-  const AggregateFunctionExpr &other_aggr_expr = static_cast<const AggregateFunctionExpr &>(other);
+  const AggregateExpr &other_aggr_expr = static_cast<const AggregateExpr &>(other);
   return aggregate_type_ == other_aggr_expr.aggregate_type() && child_->equal(*other_aggr_expr.child());
 }
 
-unique_ptr<Aggregator> AggregateFunctionExpr::create_aggregator() const
+unique_ptr<Aggregator> AggregateExpr::create_aggregator() const
 {
   unique_ptr<Aggregator> aggregator;
   switch (aggregate_type_) {
@@ -729,12 +727,9 @@ unique_ptr<Aggregator> AggregateFunctionExpr::create_aggregator() const
   return aggregator;
 }
 
-RC AggregateFunctionExpr::get_value(const Tuple &tuple, Value &value)
-{
-  return tuple.find_cell(TupleCellSpec(name()), value);
-}
+RC AggregateExpr::get_value(const Tuple &tuple, Value &value) { return tuple.find_cell(TupleCellSpec(name()), value); }
 
-RC AggregateFunctionExpr::type_from_string(const char *type_str, AggregateFunctionType &type)
+RC AggregateExpr::type_from_string(const char *type_str, AggregateFunctionType &type)
 {
   check_type("sum", AggregateFunctionType::SUM);
   check_type("avg", AggregateFunctionType::AVG);

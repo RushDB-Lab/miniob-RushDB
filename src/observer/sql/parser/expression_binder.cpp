@@ -419,7 +419,7 @@ RC ExpressionBinder::bind_arithmetic_expression(
   return RC::SUCCESS;
 }
 
-RC check_aggregate_expression(AggregateFunctionExpr &expression)
+RC check_aggregate_expression(AggregateExpr &expression)
 {
   // 必须有一个子表达式
   Expression *child_expression = expression.child().get();
@@ -475,7 +475,7 @@ RC ExpressionBinder::bind_function_expression(
   auto                  unbound_function_expr = static_cast<UnboundFunctionExpr *>(expr.get());
   const char           *function_name         = unbound_function_expr->function_name();
   AggregateFunctionType aggregate_type;
-  RC                    rc = AggregateFunctionExpr::type_from_string(function_name, aggregate_type);
+  RC                    rc = AggregateExpr::type_from_string(function_name, aggregate_type);
   if (OB_SUCC(rc)) {
     if (unbound_function_expr->args().size() != 1) {
       return RC::INVALID_ARGUMENT;
@@ -505,7 +505,7 @@ RC ExpressionBinder::bind_function_expression(
       }
     }
 
-    auto aggregate_expr = make_unique<AggregateFunctionExpr>(aggregate_type, std::move(child_expr));
+    auto aggregate_expr = make_unique<AggregateExpr>(aggregate_type, std::move(child_expr));
 
     // set name 阶段
     aggregate_expr->set_name(unbound_function_expr->name());

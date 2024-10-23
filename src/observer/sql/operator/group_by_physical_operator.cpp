@@ -26,7 +26,7 @@ GroupByPhysicalOperator::GroupByPhysicalOperator(vector<Expression *> &&expressi
   aggregate_expressions_ = std::move(expressions);
   value_expressions_.reserve(aggregate_expressions_.size());
   ranges::for_each(aggregate_expressions_, [this](Expression *expr) {
-    auto       *aggregate_expr = static_cast<AggregateFunctionExpr *>(expr);
+    auto       *aggregate_expr = static_cast<AggregateExpr *>(expr);
     Expression *child_expr     = aggregate_expr->child().get();
     ASSERT(child_expr != nullptr, "aggregate expression must have a child expression");
     value_expressions_.emplace_back(child_expr);
@@ -38,7 +38,7 @@ void GroupByPhysicalOperator::create_aggregator_list(AggregatorList &aggregator_
   aggregator_list.clear();
   aggregator_list.reserve(aggregate_expressions_.size());
   ranges::for_each(aggregate_expressions_, [&aggregator_list](Expression *expr) {
-    auto *aggregate_expr = static_cast<AggregateFunctionExpr *>(expr);
+    auto *aggregate_expr = static_cast<AggregateExpr *>(expr);
     aggregator_list.emplace_back(aggregate_expr->create_aggregator());
   });
 }

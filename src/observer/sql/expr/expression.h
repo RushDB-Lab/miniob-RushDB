@@ -43,7 +43,7 @@ enum class ExprType
   NONE,
   STAR,              ///< 星号，表示所有字段
   UNBOUND_FIELD,     ///< 未绑定的字段，需要在resolver阶段解析为FieldExpr
-  UNBOUND_FUNCTION,  ///< 未绑定的聚合函数，需要在resolver阶段解析为AggregateFunctionExpr
+  UNBOUND_FUNCTION,  ///< 未绑定的聚合函数，需要在resolver阶段解析为AggregateExpr
   FIELD,             ///< 字段。在实际执行时，根据行数据内容提取对应字段的值
   VALUE,             ///< 常量值
   CAST,              ///< 需要做类型转换的表达式
@@ -464,6 +464,8 @@ private:
 class NormalFunctionExpr : public UnboundFunctionExpr
 {
 public:
+  using Type = NormalFunctionExpr;
+
   NormalFunctionExpr(
       NormalFunctionType type, const char *aggregate_name, std::vector<std::unique_ptr<Expression>> child)
       : ::UnboundFunctionExpr(aggregate_name, std::move(child)), type_(type)
@@ -490,12 +492,14 @@ private:
   NormalFunctionType type_;
 };
 
-class AggregateFunctionExpr : public Expression
+class AggregateExpr : public Expression
 {
 public:
-  AggregateFunctionExpr(AggregateFunctionType type, Expression *child);
-  AggregateFunctionExpr(AggregateFunctionType type, std::unique_ptr<Expression> child);
-  virtual ~AggregateFunctionExpr() = default;
+  using Type = AggregateFunctionType;
+
+  AggregateExpr(AggregateFunctionType type, Expression *child);
+  AggregateExpr(AggregateFunctionType type, std::unique_ptr<Expression> child);
+  virtual ~AggregateExpr() = default;
 
   bool equal(const Expression &other) const override;
 
