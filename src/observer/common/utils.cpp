@@ -12,6 +12,7 @@
 
 #include "utils.h"
 
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <sstream>
@@ -99,4 +100,39 @@ RC parse_vector_from_string(const char *str, float *&array, int &length)
   }
 
   return RC::SUCCESS;
+}
+
+std::string get_day_with_suffix(int day)
+{
+  if (day >= 11 && day <= 13) {
+    return std::to_string(day) + "th";
+  }
+  switch (day % 10) {
+    case 1: return std::to_string(day) + "st";
+
+    case 2: return std::to_string(day) + "nd";
+
+    case 3: return std::to_string(day) + "rd";
+
+    default: return std::to_string(day) + "th";
+  }
+}
+
+std::string get_full_month_name(int month)
+{
+  switch (month) {
+    case 1: return "January";
+    case 2: return "February";
+    case 3: return "March";
+    case 4: return "April";
+    case 5: return "May";
+    case 6: return "June";
+    case 7: return "July";
+    case 8: return "August";
+    case 9: return "September";
+    case 10: return "October";
+    case 11: return "November";
+    case 12: return "December";
+    default: assert(false);
+  }
 }

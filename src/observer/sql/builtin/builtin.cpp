@@ -75,48 +75,7 @@ RC round(const vector<Value> &args, Value &result)
   return RC::SUCCESS;
 }
 
-namespace date {
-static string get_day_with_suffix(int day)
-{
-  if (day >= 11 && day <= 13) {
-    return std::to_string(day) + "th";
-  }
-  switch (day % 10) {
-    case 1: {
-      return std::to_string(day) + "st";
-    }
-    case 2: {
-      return std::to_string(day) + "nd";
-    }
-    case 3: {
-      return std::to_string(day) + "rd";
-    }
-    default: {
-      return std::to_string(day) + "th";
-    }
-  }
-}
-
-static string get_full_month_name(int month)
-{
-  switch (month) {
-    case 1: return "January";
-    case 2: return "February";
-    case 3: return "March";
-    case 4: return "April";
-    case 5: return "May";
-    case 6: return "June";
-    case 7: return "July";
-    case 8: return "August";
-    case 9: return "September";
-    case 10: return "October";
-    case 11: return "November";
-    case 12: return "December";
-    default: return "";  // 如果月份值无效，返回一个错误字符串
-  }
-}
-
-static RC get_year_month_day(const Value &value, int &year, int &month, int &day)
+RC get_year_month_day(const Value &value, int &year, int &month, int &day)
 {
   if (value.attr_type() == AttrType::DATES) {
     // 提取年、月、日（假设日期格式为YYYYMMDD）
@@ -141,8 +100,6 @@ static RC get_year_month_day(const Value &value, int &year, int &month, int &day
   return RC::SUCCESS;
 }
 
-}  // namespace date
-
 RC year(const vector<Value> &args, Value &result)
 {
   if (args.size() != 1) {
@@ -152,7 +109,7 @@ RC year(const vector<Value> &args, Value &result)
     return RC::INVALID_ARGUMENT;
   }
   int year, month, day;
-  RC  rc = date::get_year_month_day(args[0], year, month, day);
+  RC  rc = get_year_month_day(args[0], year, month, day);
   if (OB_FAIL(rc)) {
     return rc;
   }
@@ -169,7 +126,7 @@ RC month(const vector<Value> &args, Value &result)
     return RC::INVALID_ARGUMENT;
   }
   int year, month, day;
-  RC  rc = date::get_year_month_day(args[0], year, month, day);
+  RC  rc = get_year_month_day(args[0], year, month, day);
   if (OB_FAIL(rc)) {
     return rc;
   }
@@ -186,7 +143,7 @@ RC day(const vector<Value> &args, Value &result)
     return RC::INVALID_ARGUMENT;
   }
   int year, month, day;
-  RC  rc = date::get_year_month_day(args[0], year, month, day);
+  RC  rc = get_year_month_day(args[0], year, month, day);
   if (OB_FAIL(rc)) {
     return rc;
   }
@@ -207,7 +164,7 @@ RC date_format(const vector<Value> &args, Value &result)
   }
 
   int year, month, day;
-  RC  rc = date::get_year_month_day(args[0], year, month, day);
+  RC  rc = get_year_month_day(args[0], year, month, day);
   if (OB_FAIL(rc)) {
     return rc;
   }
@@ -233,7 +190,7 @@ RC date_format(const vector<Value> &args, Value &result)
           str += std::to_string(month);
           break;
         case 'M':  // 完整的月份名称
-          str += date::get_full_month_name(month);
+          str += get_full_month_name(month);
           break;
         case 'd':  // 两位数日期
           str += (day < 10 ? "0" : "") + std::to_string(day);
@@ -242,7 +199,7 @@ RC date_format(const vector<Value> &args, Value &result)
           str += std::to_string(day);
           break;
         case 'D':  // 带序数后缀的日期
-          str += date::get_day_with_suffix(day);
+          str += get_day_with_suffix(day);
           break;
         default:  // 未知格式符，按原样输出
           str += fmt[i + 1];
