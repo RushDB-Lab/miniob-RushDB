@@ -12,15 +12,6 @@ See the Mulan PSL v2 for more details. */
 
 namespace builtin {
 
-RC _typeof(const vector<Value> &args, Value &result)
-{
-  if (args.size() != 1) {
-    return RC::INVALID_ARGUMENT;
-  }
-  result = Value(attr_type_to_string(args[0].attr_type()));
-  return RC::SUCCESS;
-}
-
 RC length(const vector<Value> &args, Value &result)
 {
   if (args.size() != 1) {

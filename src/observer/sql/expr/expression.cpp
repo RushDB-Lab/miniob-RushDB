@@ -863,7 +863,6 @@ ListExpr::ListExpr(std::vector<Expression *> &&exprs)
 
 RC NormalFunctionExpr::type_from_string(const char *type_str, NormalFunctionType &type)
 {
-  check_type("typeof", NormalFunctionType::TYPEOF);
   check_type("month", NormalFunctionType::MONTH);
   check_type("year", NormalFunctionType::YEAR);
   check_type("date_format", NormalFunctionType::DATE_FORMAT);
@@ -902,7 +901,6 @@ RC NormalFunctionExpr::get_value(const Tuple &tuple, Value &result)
     case NormalFunctionType::L2_DISTANCE: return builtin::l2_distance(args_values_, result);
     case NormalFunctionType::COSINE_DISTANCE: return builtin::cosine_distance(args_values_, result);
     case NormalFunctionType::INNER_PRODUCT: return builtin::inner_product(args_values_, result);
-    case NormalFunctionType::TYPEOF: return builtin::_typeof(args_values_, result);
   }
   return RC::INTERNAL;
 }
@@ -931,7 +929,6 @@ RC NormalFunctionExpr::try_get_value(Value &result) const
     case NormalFunctionType::L2_DISTANCE: return builtin::l2_distance(args_values_, result);
     case NormalFunctionType::COSINE_DISTANCE: return builtin::cosine_distance(args_values_, result);
     case NormalFunctionType::INNER_PRODUCT: return builtin::inner_product(args_values_, result);
-    case NormalFunctionType::TYPEOF: return builtin::_typeof(args_values_, result);
   }
   return RC::INTERNAL;
 }
@@ -951,7 +948,6 @@ AttrType NormalFunctionExpr::value_type() const
     case NormalFunctionType::L2_DISTANCE: return AttrType::FLOATS;
     case NormalFunctionType::COSINE_DISTANCE: return AttrType::FLOATS;
     case NormalFunctionType::INNER_PRODUCT: return AttrType::FLOATS;
-    case NormalFunctionType::TYPEOF: return AttrType::CHARS;
   }
   return AttrType::UNDEFINED;
 }

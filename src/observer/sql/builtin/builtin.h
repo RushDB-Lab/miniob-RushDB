@@ -24,7 +24,6 @@ enum AggregateFunctionType
 
 enum class NormalFunctionType
 {
-  TYPEOF,
   LENGTH,
   ROUND,
   YEAR,
@@ -40,8 +39,6 @@ enum class NormalFunctionType
 };
 
 namespace builtin {
-
-extern RC _typeof(const vector<Value> &args, Value &result);
 
 extern RC length(const vector<Value> &args, Value &result);
 
