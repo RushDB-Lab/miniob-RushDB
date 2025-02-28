@@ -1,3 +1,18 @@
+# 作品简介
+队伍学校：**成都理工大学** & 沈阳工业大学
+
+队伍名称：**RushDB**
+
+队伍成员：**明泰**、**胡鑫**、吴奕民
+
+金牌🥇赞助：[**RushDB 实验室**](https://github.com/RushDB-Lab)
+
+初赛完成度（**100%**）
+
+![初赛](https://pic1.imgdb.cn/item/67c1b360d0e0a243d4083540.png)
+
+[![Visitors](https://api.visitorbadge.io/api/visitors?path=https://github.com/RushDB-Lab/miniob&label=visitors&countColor=%23263759)](https://visitorbadge.io/status?path=https://github.com/RushDB-Lab/miniob)
+
 # MiniOB 介绍
 
 <div align="left">
