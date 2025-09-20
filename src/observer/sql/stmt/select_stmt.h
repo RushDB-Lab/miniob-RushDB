@@ -17,7 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include <memory>
 #include <vector>
 
-#include "common/rc.h"
+#include "common/sys/rc.h"
 #include "sql/stmt/stmt.h"
 #include "storage/field/field.h"
 

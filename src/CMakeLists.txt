@@ -1,0 +1,11 @@
+ADD_SUBDIRECTORY(common)
+ADD_SUBDIRECTORY(observer)
+ADD_SUBDIRECTORY(obclient)
+ADD_SUBDIRECTORY(oblsm)
+if (WITH_CPPLINGS)
+    ADD_SUBDIRECTORY(cpplings)
+endif()
+
+if (WITH_MEMTRACER)
+    ADD_SUBDIRECTORY(memtracer)
+endif()

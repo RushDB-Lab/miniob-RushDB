@@ -16,7 +16,7 @@ See the Mulan PSL v2 for more details. */
 
 #include <vector>
 
-#include "common/rc.h"
+#include "common/sys/rc.h"
 #include "sql/expr/expression.h"
 #include "sql/stmt/stmt.h"
 #include "sql/parser/expression_binder.h"

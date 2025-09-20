@@ -19,7 +19,7 @@ See the Mulan PSL v2 for more details. */
 #include <span>
 
 #include "common/lang/serializable.h"
-#include "common/rc.h"
+#include "common/sys/rc.h"
 #include "common/types.h"
 #include "storage/field/field_meta.h"
 #include "storage/index/index_meta.h"
@@ -84,7 +84,7 @@ public:
 protected:
   int32_t   table_id_   = -1;
   TableType table_type_ = TableType::Unknown;
-  bool      mutable_    = true;  // 当前仅对视图可用，是否是只读视图，即包括聚合函数或 groupby having 语句
+  bool mutable_ = true;  // 当前仅对视图可用，是否是只读视图，即包括聚合函数或 groupby having 语句
 
   std::string            name_;
   std::vector<FieldMeta> trx_fields_;

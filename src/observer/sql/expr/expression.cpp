@@ -248,7 +248,7 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value)
     return rc;
   }
   DEFER(if (nullptr != left_subquery_expr) left_subquery_expr->close();
-      if (nullptr != right_subquery_expr) right_subquery_expr->close(););
+        if (nullptr != right_subquery_expr) right_subquery_expr->close(););
 
   // Get the value of the left expression
   rc = left_->get_value(tuple, left_value);
@@ -666,13 +666,15 @@ UnboundFunctionExpr::UnboundFunctionExpr(const char *aggregate_name, std::vector
 {}
 
 ////////////////////////////////////////////////////////////////////////////////
-AggregateExpr::AggregateExpr(AggregateFunctionType type, Expression *child) : aggregate_type_(type), child_(child) {}
+AggregateFunctionExpr::AggregateFunctionExpr(AggregateFunctionType type, Expression *child)
+    : aggregate_type_(type), child_(child)
+{}
 
-AggregateExpr::AggregateExpr(AggregateFunctionType type, unique_ptr<Expression> child)
+AggregateFunctionExpr::AggregateFunctionExpr(AggregateFunctionType type, unique_ptr<Expression> child)
     : aggregate_type_(type), child_(std::move(child))
 {}
 
-RC AggregateExpr::get_column(Chunk &chunk, Column &column)
+RC AggregateFunctionExpr::get_column(Chunk &chunk, Column &column)
 {
   RC rc = RC::SUCCESS;
   if (pos_ != -1) {
@@ -683,7 +685,7 @@ RC AggregateExpr::get_column(Chunk &chunk, Column &column)
   return rc;
 }
 
-bool AggregateExpr::equal(const Expression &other) const
+bool AggregateFunctionExpr::equal(const Expression &other) const
 {
   if (this == &other) {
     return true;
@@ -691,11 +693,11 @@ bool AggregateExpr::equal(const Expression &other) const
   if (other.type() != type()) {
     return false;
   }
-  const AggregateExpr &other_aggr_expr = static_cast<const AggregateExpr &>(other);
+  const AggregateFunctionExpr &other_aggr_expr = static_cast<const AggregateFunctionExpr &>(other);
   return aggregate_type_ == other_aggr_expr.aggregate_type() && child_->equal(*other_aggr_expr.child());
 }
 
-unique_ptr<Aggregator> AggregateExpr::create_aggregator() const
+unique_ptr<Aggregator> AggregateFunctionExpr::create_aggregator() const
 {
   unique_ptr<Aggregator> aggregator;
   switch (aggregate_type_) {
@@ -727,9 +729,12 @@ unique_ptr<Aggregator> AggregateExpr::create_aggregator() const
   return aggregator;
 }
 
-RC AggregateExpr::get_value(const Tuple &tuple, Value &value) { return tuple.find_cell(TupleCellSpec(name()), value); }
+RC AggregateFunctionExpr::get_value(const Tuple &tuple, Value &value)
+{
+  return tuple.find_cell(TupleCellSpec(name()), value);
+}
 
-RC AggregateExpr::type_from_string(const char *type_str, AggregateFunctionType &type)
+RC AggregateFunctionExpr::type_from_string(const char *type_str, AggregateFunctionType &type)
 {
   check_type("sum", AggregateFunctionType::SUM);
   check_type("avg", AggregateFunctionType::AVG);
@@ -863,6 +868,7 @@ ListExpr::ListExpr(std::vector<Expression *> &&exprs)
 
 RC NormalFunctionExpr::type_from_string(const char *type_str, NormalFunctionType &type)
 {
+  check_type("typeof", NormalFunctionType::TYPEOF);
   check_type("month", NormalFunctionType::MONTH);
   check_type("year", NormalFunctionType::YEAR);
   check_type("date_format", NormalFunctionType::DATE_FORMAT);
@@ -901,6 +907,7 @@ RC NormalFunctionExpr::get_value(const Tuple &tuple, Value &result)
     case NormalFunctionType::L2_DISTANCE: return builtin::l2_distance(args_values_, result);
     case NormalFunctionType::COSINE_DISTANCE: return builtin::cosine_distance(args_values_, result);
     case NormalFunctionType::INNER_PRODUCT: return builtin::inner_product(args_values_, result);
+    case NormalFunctionType::TYPEOF: return builtin::_typeof(args_values_, result);
   }
   return RC::INTERNAL;
 }
@@ -929,6 +936,7 @@ RC NormalFunctionExpr::try_get_value(Value &result) const
     case NormalFunctionType::L2_DISTANCE: return builtin::l2_distance(args_values_, result);
     case NormalFunctionType::COSINE_DISTANCE: return builtin::cosine_distance(args_values_, result);
     case NormalFunctionType::INNER_PRODUCT: return builtin::inner_product(args_values_, result);
+    case NormalFunctionType::TYPEOF: return builtin::_typeof(args_values_, result);
   }
   return RC::INTERNAL;
 }
@@ -948,6 +956,7 @@ AttrType NormalFunctionExpr::value_type() const
     case NormalFunctionType::L2_DISTANCE: return AttrType::FLOATS;
     case NormalFunctionType::COSINE_DISTANCE: return AttrType::FLOATS;
     case NormalFunctionType::INNER_PRODUCT: return AttrType::FLOATS;
+    case NormalFunctionType::TYPEOF: return AttrType::CHARS;
   }
   return AttrType::UNDEFINED;
 }

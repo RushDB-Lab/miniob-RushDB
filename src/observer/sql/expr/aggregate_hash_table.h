@@ -13,7 +13,7 @@ See the Mulan PSL v2 for more details. */
 #include <unordered_map>
 
 #include "common/math/simd_util.h"
-#include "common/rc.h"
+#include "common/sys/rc.h"
 #include "sql/expr/expression.h"
 
 /**
@@ -82,7 +82,7 @@ public:
   {
     for (auto &expr : aggregations) {
       ASSERT(expr->type() == ExprType::AGGREGATION, "expect aggregate expression");
-      auto *aggregation_expr = static_cast<AggregateExpr *>(expr);
+      auto *aggregation_expr = static_cast<AggregateFunctionExpr *>(expr);
       aggr_types_.push_back(aggregation_expr->aggregate_type());
     }
   }
@@ -128,7 +128,7 @@ public:
     int scan_count_ = 0;
   };
 
-  LinearProbingAggregateHashTable(AggregateExpr::Type aggregate_type, int capacity = DEFAULT_CAPACITY)
+  LinearProbingAggregateHashTable(AggregateFunctionExpr::Type aggregate_type, int capacity = DEFAULT_CAPACITY)
       : keys_(capacity, EMPTY_KEY), values_(capacity, 0), capacity_(capacity), aggregate_type_(aggregate_type)
   {}
   virtual ~LinearProbingAggregateHashTable() {}
@@ -162,10 +162,10 @@ private:
   static const int EMPTY_KEY;
   static const int DEFAULT_CAPACITY;
 
-  std::vector<int>    keys_;
-  std::vector<V>      values_;
-  int                 size_     = 0;
-  int                 capacity_ = 0;
-  AggregateExpr::Type aggregate_type_;
+  std::vector<int>            keys_;
+  std::vector<V>              values_;
+  int                         size_     = 0;
+  int                         capacity_ = 0;
+  AggregateFunctionExpr::Type aggregate_type_;
 };
 #endif

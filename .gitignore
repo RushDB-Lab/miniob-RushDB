@@ -1,13 +1,9 @@
-./deps/3rd
-./deps/libevent
-./deps/googletest
-./deps/jsoncpp
-./deps/benchmark
+deps/3rd/*
 .vscode
 !.vscode/tasks.json
 !.vscode/launch.json
 .VSCodeCounter/*
-./docs/doxy/
+docs/doxy/
 build/*
 build_*
 cmake-build-*/*
@@ -17,19 +13,20 @@ build
 .idea
 .ccls-cache
 compile_commands.json
-./.name
-./miniob.iml
-./vcs.xml
-./workspace.xml
-./modules.xml
+.name
+miniob.iml
+vcs.xml
+workspace.xml
+modules.xml
 GRTAGS
 GPATH
 GTAGS
 docs/book
-test_sql
+**/__pycache__
 #*#
 
-# commitizen
-node_modules
-package.json
-package-lock.json
+# ignore generated files
+src/observer/sql/parser/lex_sql.cpp
+src/observer/sql/parser/lex_sql.h
+src/observer/sql/parser/yacc_sql.cpp
+src/observer/sql/parser/yacc_sql.hpp

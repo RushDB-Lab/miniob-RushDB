@@ -17,7 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include <stddef.h>
 
 #include "common/log/log.h"
-#include "common/rc.h"
+#include "common/sys/rc.h"
 #include "common/types.h"
 #include "common/lang/vector.h"
 #include "common/lang/sstream.h"
@@ -313,7 +313,7 @@ public:
   const std::vector<std::pair<BaseTable *, RID>> &base_rids() const { return base_rids_; }
 
 private:
-  RID                                      rid_;        // 存储基表的记录位置
+  RID rid_;                                             // 存储基表的记录位置
   std::vector<std::pair<BaseTable *, RID>> base_rids_;  // 用于视图存储当前记录由哪些基表的哪些记录组成
 
   char *data_  = nullptr;

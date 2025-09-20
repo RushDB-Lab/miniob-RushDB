@@ -4,8 +4,11 @@
 TOPDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 BUILD_SH=$TOPDIR/build.sh
+echo "THIRD_PARTY_INSTALL_PREFIX is ${THIRD_PARTY_INSTALL_PREFIX:=$TOPDIR/deps/3rd/usr/local}"
 
 CMAKE_COMMAND="cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 --log-level=STATUS"
+CMAKE_COMMAND_THIRD_PARTY="$CMAKE_COMMAND -DCMAKE_INSTALL_PREFIX=$THIRD_PARTY_INSTALL_PREFIX"
+CMAKE_COMMAND_MINIOB="$CMAKE_COMMAND"
 
 ALL_ARGS=("$@")
 BUILD_ARGS=()
@@ -18,51 +21,21 @@ function usage
 {
   echo "Usage:"
   echo "./build.sh -h"
-  echo "./build.sh init                      # Initialize and install dependencies"
-  echo "./build.sh clean                     # Clean up build directories"
-  echo "./build.sh gen_parser                # Generate parser files"
-  echo "./build.sh style                     # Apply coding style to source files"
-  echo "./build.sh test [test_case]          # Run tests, optionally specify a test case"
+  echo "./build.sh init # install dependence"
+  echo "./build.sh clean"
   echo "./build.sh [BuildType] [--make [MakeOptions]]"
   echo ""
   echo "OPTIONS:"
-  echo "  -h                      Show this help message"
-  echo "  init                    Initialize and install dependencies"
-  echo "  clean                   Clean up all build directories"
-  echo "  gen_parser              Generate parser files in src/observer/sql/parser"
-  echo "  style                   Apply coding style to source files in ./src"
-  echo "  test         [test_case] Run tests, optionally specify a test case to run"
-  echo "  [BuildType]             Specify build type: debug (default), release, relwithdebinfo, minsizerel"
-  echo "  --make       [MakeOptions]  Options to pass to the make command, default: -jN"
+  echo "BuildType => debug(default), release"
+  echo "MakeOptions => Options to make command, default: -j N"
 
   echo ""
   echo "Examples:"
-  echo "# Show help."
-  echo "./build.sh -h"
-  echo ""
-  echo "# Initialize the project and install dependencies."
+  echo "# Init."
   echo "./build.sh init"
   echo ""
-  echo "# Clean up all build directories."
-  echo "./build.sh clean"
-  echo ""
-  echo "# Generate parser files."
-  echo "./build.sh gen_parser"
-  echo ""
-  echo "# Apply coding style to source files."
-  echo "./build.sh style"
-  echo ""
-  echo "# Run all tests."
-  echo "./build.sh test"
-  echo ""
-  echo "# Run a specific test case."
-  echo "./build.sh test my_test_case"
-  echo ""
-  echo "# Build in debug mode (default) and make with -j24."
+  echo "# Build by debug mode and make with -j24."
   echo "./build.sh debug --make -j24"
-  echo ""
-  echo "# Build in release mode."
-  echo "./build.sh release"
 }
 
 function parse_args
@@ -102,6 +75,10 @@ function prepare_build_dir
 function do_init
 {
   git submodule update --init || return
+  git -C "deps/3rd/libevent" checkout 112421c8fa4840acd73502f2ab6a674fc025de37 || return
+  # git submodule update --remote "deps/3rd/libevent" || return
+  git -C "deps/3rd/jsoncpp" checkout 1.9.6 || return
+
   current_dir=$PWD
 
   MAKE_COMMAND="make --silent"
@@ -110,7 +87,7 @@ function do_init
   cd ${TOPDIR}/deps/3rd/libevent && \
     mkdir -p build && \
     cd build && \
-    ${CMAKE_COMMAND} .. -DEVENT__DISABLE_OPENSSL=ON -DEVENT__LIBRARY_TYPE=BOTH && \
+    ${CMAKE_COMMAND_THIRD_PARTY} .. -DEVENT__DISABLE_OPENSSL=ON -DEVENT__LIBRARY_TYPE=BOTH && \
     ${MAKE_COMMAND} -j4 && \
     make install
 
@@ -118,7 +95,7 @@ function do_init
   cd ${TOPDIR}/deps/3rd/googletest && \
     mkdir -p build && \
     cd build && \
-    ${CMAKE_COMMAND} .. && \
+    ${CMAKE_COMMAND_THIRD_PARTY} .. && \
     ${MAKE_COMMAND} -j4 && \
     ${MAKE_COMMAND} install
 
@@ -126,7 +103,7 @@ function do_init
   cd ${TOPDIR}/deps/3rd/benchmark && \
     mkdir -p build && \
     cd build && \
-    ${CMAKE_COMMAND} .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBENCHMARK_ENABLE_TESTING=OFF  -DBENCHMARK_INSTALL_DOCS=OFF -DBENCHMARK_ENABLE_GTEST_TESTS=OFF -DBENCHMARK_USE_BUNDLED_GTEST=OFF -DBENCHMARK_ENABLE_ASSEMBLY_TESTS=OFF && \
+    ${CMAKE_COMMAND_THIRD_PARTY} .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBENCHMARK_ENABLE_TESTING=OFF  -DBENCHMARK_INSTALL_DOCS=OFF -DBENCHMARK_ENABLE_GTEST_TESTS=OFF -DBENCHMARK_USE_BUNDLED_GTEST=OFF -DBENCHMARK_ENABLE_ASSEMBLY_TESTS=OFF && \
     ${MAKE_COMMAND} -j4 && \
     ${MAKE_COMMAND} install
 
@@ -134,8 +111,16 @@ function do_init
   cd ${TOPDIR}/deps/3rd/jsoncpp && \
     mkdir -p build && \
     cd build && \
-    ${CMAKE_COMMAND} -DJSONCPP_WITH_TESTS=OFF -DJSONCPP_WITH_POST_BUILD_UNITTEST=OFF .. && \
-    ${MAKE_COMMAND} && \
+    ${CMAKE_COMMAND_THIRD_PARTY} -DJSONCPP_WITH_TESTS=OFF -DJSONCPP_WITH_POST_BUILD_UNITTEST=OFF .. && \
+    ${MAKE_COMMAND} -j4 && \
+    ${MAKE_COMMAND} install
+
+  # build replxx
+  cd ${TOPDIR}/deps/3rd/replxx && \
+    mkdir -p build && \
+    cd build && \
+    ${CMAKE_COMMAND_THIRD_PARTY} .. -DCMAKE_BUILD_TYPE=Release -DREPLXX_BUILD_EXAMPLES=OFF -DREPLXX_BUILD_PACKAGE=OFF && \
+    ${MAKE_COMMAND} -j4 && \
     ${MAKE_COMMAND} install
 
   cd $current_dir
@@ -167,8 +152,8 @@ function do_build
 {
   TYPE=$1; shift
   prepare_build_dir $TYPE || return
-  echo "${CMAKE_COMMAND} ${TOPDIR} $@"
-  ${CMAKE_COMMAND} -S ${TOPDIR} $@
+  echo "${CMAKE_COMMAND_MINIOB} ${TOPDIR} $@"
+  ${CMAKE_COMMAND_MINIOB} -S ${TOPDIR} $@
 }
 
 function do_clean
@@ -177,74 +162,19 @@ function do_clean
   find . -maxdepth 1 -type d -name 'build_*' | xargs rm -rf
 }
 
-function build
-{
-  set -- "${BUILD_ARGS[@]}"
-  # 将传递的所有参数转换为小写
-  BUILD_TYPE=$(echo "$1" | tr '[:upper:]' '[:lower:]')
-
-  case "x$BUILD_TYPE" in
-    xrelease)
-      do_build "$@" -DCMAKE_BUILD_TYPE=Release
-      ;;
-    xrelwithdebinfo)
-      do_build "$@" -DCMAKE_BUILD_TYPE=RelWithDebInfo
-      ;;
-    xdebug)
-      do_build "$@" -DCMAKE_BUILD_TYPE=Debug
-      ;;
-    xminsizerel)
-      do_build "$@" -DCMAKE_BUILD_TYPE=MinSizeRel
-      ;;
-    *)
-      BUILD_ARGS=(debug "${BUILD_ARGS[@]}")
-      build
-      ;;
-  esac
-}
-
-function gen_parser
-{
-  echo "generate parser..."
-  cd ${TOPDIR}/src/observer/sql/parser
-  ./gen_parser.sh
-  echo "generate parser done"
-  cd ${TOPDIR}
-}
-
-function style
-{
-  # Check if .clang-format file exists
-  if [ ! -f .clang-format ]; then
-    echo "Error: .clang-format file not found in the current directory."
-    exit 1
-  fi
-
-  # 设置要格式化的文件扩展名
-  EXTENSIONS=("c" "h" "cpp" "hpp")
-
-  # 查找并格式化文件
-  for ext in "${EXTENSIONS[@]}"; do
-    find ./src -type f -name "*.$ext" -exec clang-format -i {} +
-  done
-
-  echo "Formatting complete!"
-}
-
-function run_tests {
-  echo "Running test(s)..."
-  cd ${TOPDIR}/test/case || exit
-
-  if [[ -z "$1" ]]; then
-    # 如果没有提供测试用例名，直接执行
-    python3 miniob_test.py
+function build {
+  # 默认参数是 debug
+  if [ -z "${BUILD_ARGS[0]}" ]; then
+    set -- "debug"  # 如果没有参数，则设置默认值
   else
-    # 如果提供了测试用例名，执行带参数的命令
-    TEST_CASE="$1"
-    echo "Running test case: $TEST_CASE"
-    python3 miniob_test.py --test-cases="$TEST_CASE"
+    set -- "${BUILD_ARGS[@]}"  # 否则使用 BUILD_ARGS 的第一个参数
   fi
+  local build_type_lower=$(echo "$1" | tr '[:upper:]' '[:lower:]')  # 转换为小写
+  echo "Build type: $build_type_lower"  # 输出构建类型
+
+  do_build $@ -DCMAKE_BUILD_TYPE="$build_type_lower" # 调用 do_build
 }
+
 
 function main
 {
@@ -260,15 +190,6 @@ function main
       ;;
     clean)
       do_clean
-      ;;
-    gen_parser)
-      gen_parser
-      ;;
-    style)
-      style
-      ;;
-    test)
-      run_tests "$2"
       ;;
     *)
       parse_args

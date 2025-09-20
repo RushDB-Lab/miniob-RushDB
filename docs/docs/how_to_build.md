@@ -26,15 +26,17 @@ MiniOB 需要使用：
 bash build.sh init
 ```
 
-脚本将自动拉取依赖库(可以参考 .gitmodules) 然后编译安装到系统目录。
+脚本将自动拉取依赖库(可以参考 .gitmodules) 然后编译安装到miniob源码目录的 `deps/3rd/usr/local` 下。
 
-如果执行用户不是root，需要在命令前加上 `sudo`：
+如果你想将第三方依赖安装到其它目录，比如 `/usr/local` 下，可以这样做：
 
 ```bash
-sudo bash build.sh init
+THIRD_PARTY_INSTALL_PREFIX=/usr/local bash build.sh init
 ```
 
-> 如果使用 GitPod 开发，可以跳过这步，会自动执行。
+> 注意：安装到系统目录可能需要一些特殊权限，可能需要使用 `sudo` 来执行命令。
+
+> 如果使用 GitPod、GitHub Devcontainer 或 miniob docker 容器开发，可以跳过这步，会自动执行。
 
 ## 2. 编译
 
@@ -158,3 +160,32 @@ git config --global core.autocrlf false
 关于该问题的更多细节，请参考[问题来源](https://ask.oceanbase.com/t/topic/35604437/7)。
 关于该问题的进一步分析，请参考[Linux系统下执行sudo命令环境变量失效现象](https://zhuanlan.zhihu.com/p/669332689)。
 也可以将cmake所在路径添加到sudo的PATH变量中来解决上述问题，请参考[sudo命令下环境变量实效的解决方法](https://www.cnblogs.com/xiao-xiaoyang/p/17444600.html)。
+
+
+### 3. Could not find a package configuration file provided by "Libevent"
+在执行build.sh脚本时，遇到下面的错误
+![cmake error](images/miniob-build-libevent.png)
+
+通常是因为cmake版本原因（版本太高？）导致libevent在init阶段没有编译成功。
+
+***解决方法：***
+
+在[text](../../deps/3rd/libevent/CMakeLists.txt) 中将cmake的最低版本设置
+cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+改为
+cmake_minimum_required(VERSION 3.1...3.8 FATAL_ERROR)
+之后重新执行
+```bash
+sudo bash build.sh init
+```
+
+如果你成功解决libevent的问题，你大概率会遇到另一个错误：
+![cmake error](images/miniob-build-jsoncpp.png)
+需要在[text](../../deps/3rd/jsoncpp/jsoncppConfig.cmake.in)中将cmake策略
+cmake_policy(VERSION 3.0)
+改为
+cmake_policy(VERSION 3.0...3.8)
+之后重新执行
+```bash
+sudo bash build.sh init
+```
