@@ -14,7 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "common/sys/rc.h"
+#include "common/rc.h"
 #include "event/session_event.h"
 #include "event/sql_event.h"
 #include "session/session.h"
@@ -40,7 +40,7 @@ public:
 
     Db *db = session_event->session()->get_current_db();
 
-    vector<string> all_tables;
+    std::vector<std::string> all_tables;
     db->all_tables(all_tables);
 
     TupleSchema tuple_schema;
@@ -48,11 +48,11 @@ public:
     sql_result->set_tuple_schema(tuple_schema);
 
     auto oper = new StringListPhysicalOperator;
-    for (const string &s : all_tables) {
+    for (const std::string &s : all_tables) {
       oper->append(s);
     }
 
-    sql_result->set_operator(unique_ptr<PhysicalOperator>(oper));
+    sql_result->set_operator(std::unique_ptr<PhysicalOperator>(oper));
     return RC::SUCCESS;
   }
 };

@@ -16,6 +16,9 @@ See the Mulan PSL v2 for more details. */
 
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <utility>
+#include <vector>
+#include <filesystem>
 
 #include "common/lang/string.h"
 #include "common/log/log.h"
@@ -27,6 +30,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/trx/trx.h"
 #include "storage/clog/disk_log_handler.h"
 #include "storage/clog/integrated_log_replayer.h"
+#include "storage/table/view.h"
 
 using namespace common;
 
@@ -42,14 +46,10 @@ Db::~Db()
     log_handler_->await_termination();
     log_handler_.reset();
   }
-  if (lsm_) {
-    delete lsm_;
-    lsm_ = nullptr;
-  }
   LOG_INFO("Db has been closed: %s", name_.c_str());
 }
 
-RC Db::init(const char *name, const char *dbpath, const char *trx_kit_name, const char *log_handler_name, const char *storage_engine)
+RC Db::init(const char *name, const char *dbpath, const char *trx_kit_name, const char *log_handler_name)
 {
   RC rc = RC::SUCCESS;
 
@@ -63,25 +63,13 @@ RC Db::init(const char *name, const char *dbpath, const char *trx_kit_name, cons
     return RC::INVALID_ARGUMENT;
   }
 
-  oceanbase::ObLsmOptions options;
-  filesystem::path lsm_path = filesystem::path(dbpath) / "lsm";
-  filesystem::create_directory(lsm_path);
-
-  rc = oceanbase::ObLsm::open(options, lsm_path, &lsm_);
-  if (OB_FAIL(rc)) {
-    LOG_ERROR("failed to open lsm. dbpath=%s, rc=%s", dbpath, strrc(rc));
-    return rc;
-  }
-
-  TrxKit *trx_kit = TrxKit::create(trx_kit_name, this);
+  TrxKit *trx_kit = TrxKit::create(trx_kit_name);
   if (trx_kit == nullptr) {
     LOG_ERROR("Failed to create trx kit: %s", trx_kit_name);
     return RC::INVALID_ARGUMENT;
   }
 
   trx_kit_.reset(trx_kit);
-
-  storage_engine_ = storage_engine;
 
   buffer_pool_manager_ = make_unique<BufferPoolManager>();
   auto dblwr_buffer    = make_unique<DiskDoubleWriteBuffer>(*buffer_pool_manager_);
@@ -150,7 +138,7 @@ RC Db::init(const char *name, const char *dbpath, const char *trx_kit_name, cons
   return rc;
 }
 
-RC Db::create_table(const char *table_name, span<const AttrInfoSqlNode> attributes, const vector<string>& primary_keys, const StorageFormat storage_format)
+RC Db::create_table(const char *table_name, span<const AttrInfoSqlNode> attributes, const StorageFormat storage_format)
 {
   RC rc = RC::SUCCESS;
   // check table_name
@@ -163,8 +151,7 @@ RC Db::create_table(const char *table_name, span<const AttrInfoSqlNode> attribut
   string  table_file_path = table_meta_file(path_.c_str(), table_name);
   Table  *table           = new Table();
   int32_t table_id        = next_table_id_++;
-  rc = table->create(this, table_id, table_file_path.c_str(), table_name, path_.c_str(), attributes, primary_keys, storage_format,
-                     get_storage_engine());
+  rc = table->create(this, table_id, table_file_path.c_str(), table_name, path_.c_str(), attributes, storage_format);
   if (rc != RC::SUCCESS) {
     LOG_ERROR("Failed to create table %s.", table_name);
     delete table;
@@ -176,16 +163,74 @@ RC Db::create_table(const char *table_name, span<const AttrInfoSqlNode> attribut
   return RC::SUCCESS;
 }
 
-Table *Db::find_table(const char *table_name) const
+RC Db::create_table(const char *table_name, std::vector<std::string> attr_names, std::string select_sql,
+    SelectStmt *select_stmt, const StorageFormat storage_format)
 {
-  unordered_map<string, Table *>::const_iterator iter = opened_tables_.find(table_name);
+  RC rc = RC::SUCCESS;
+  // check table_name
+  if (opened_tables_.count(table_name) != 0) {
+    LOG_WARN("%s has been opened before.", table_name);
+    return RC::SCHEMA_TABLE_EXIST;
+  }
+
+  // 文件路径可以移到Table模块
+  string  table_file_path = vtable_meta_file(path_.c_str(), table_name);
+  View   *table           = new View;
+  int32_t table_id        = next_table_id_++;
+  rc                      = table->create(this,
+      table_id,
+      table_file_path.c_str(),
+      table_name,
+      path_.c_str(),
+      std::move(attr_names),
+      std::move(select_sql),
+      select_stmt,
+      storage_format);
+  if (rc != RC::SUCCESS) {
+    LOG_ERROR("Failed to create table %s.", table_name);
+    delete table;
+    return rc;
+  }
+
+  opened_tables_[table_name] = table;
+  LOG_INFO("Create table success. table name=%s, table_id:%d", table_name, table_id);
+  return RC::SUCCESS;
+}
+
+RC Db::drop_table(const char *table_name)
+{
+  // check table_name
+  auto it = opened_tables_.find(table_name);
+  if (it == opened_tables_.end()) {
+    LOG_WARN("%s has not been opened before.", table_name);
+    return RC::SCHEMA_TABLE_NOT_EXIST;
+  }
+
+  // drop table
+  auto table = it->second;
+  auto rc    = table->drop();
+  if (rc != RC::SUCCESS) {
+    LOG_ERROR("Failed to drop table %s.", table_name);
+    return rc;
+  }
+
+  opened_tables_.erase(table_name);
+  // release memory
+  delete table;
+  LOG_INFO("Drop table success. table name=%s", table_name);
+  return RC::SUCCESS;
+}
+
+BaseTable *Db::find_table(const char *table_name) const
+{
+  unordered_map<string, BaseTable *>::const_iterator iter = opened_tables_.find(table_name);
   if (iter != opened_tables_.end()) {
     return iter->second;
   }
   return nullptr;
 }
 
-Table *Db::find_table(int32_t table_id) const
+BaseTable *Db::find_table(int32_t table_id) const
 {
   for (auto pair : opened_tables_) {
     if (pair.second->table_id() == table_id) {
@@ -197,7 +242,8 @@ Table *Db::find_table(int32_t table_id) const
 
 RC Db::open_all_tables()
 {
-  vector<string> table_meta_files;
+  std::vector<string>      table_meta_files;
+  std::vector<std::string> view_meta_files;
 
   int ret = list_file(path_.c_str(), TABLE_META_FILE_PATTERN, table_meta_files);
   if (ret < 0) {
@@ -205,10 +251,16 @@ RC Db::open_all_tables()
     return RC::IOERR_READ;
   }
 
+  ret = list_file(path_.c_str(), VTABLE_META_FILE_PATTERN, view_meta_files);
+  if (ret < 0) {
+    LOG_ERROR("Failed to list view meta files under %s.", path_.c_str());
+    return RC::IOERR_READ;
+  }
+
   RC rc = RC::SUCCESS;
   for (const string &filename : table_meta_files) {
-    Table *table = new Table();
-    rc           = table->open(this, filename.c_str(), path_.c_str());
+    BaseTable *table = new Table();
+    rc               = table->open(this, filename.c_str(), path_.c_str());
     if (rc != RC::SUCCESS) {
       delete table;
       LOG_ERROR("Failed to open table. filename=%s", filename.c_str());
@@ -226,8 +278,48 @@ RC Db::open_all_tables()
     if (table->table_id() >= next_table_id_) {
       next_table_id_ = table->table_id() + 1;
     }
+
     opened_tables_[table->name()] = table;
     LOG_INFO("Open table: %s, file: %s", table->name(), filename.c_str());
+  }
+
+  for (const string &filename : view_meta_files) {
+    BaseTable *table = new View();
+    // 视图的 open 只是初始化了元数据和查询 sql，成员变量未初始化
+    rc = table->open(this, filename.c_str(), path_.c_str());
+    if (rc != RC::SUCCESS) {
+      delete table;
+      LOG_ERROR("Failed to open table. filename=%s", filename.c_str());
+      return rc;
+    }
+
+    if (opened_tables_.count(table->name()) != 0) {
+      LOG_ERROR("Duplicate table with difference file name. table=%s, the other filename=%s",
+          table->name(), filename.c_str());
+      // 在这里原本先删除table后调用table->name()方法，犯了use-after-free的错误
+      delete table;
+      return RC::INTERNAL;
+    }
+
+    if (table->table_id() >= next_table_id_) {
+      next_table_id_ = table->table_id() + 1;
+    }
+
+    opened_tables_[table->name()] = table;
+    LOG_INFO("Open table: %s, file: %s", table->name(), filename.c_str());
+  }
+
+  // 在所有表都载入后，对于视图要手动调一下 init，初始化成员变量
+  for (auto &[_, table] : opened_tables_) {
+    if (table->type() == TableType::View) {
+      auto view = dynamic_cast<View *>(table);
+      rc        = view->init_member();
+      if (OB_FAIL(rc)) {
+        LOG_ERROR("Failed to initialize view: %s", table->name());
+        return rc;
+      }
+      LOG_INFO("Successfully initialized view: %s", table->name());
+    }
   }
 
   LOG_INFO("All table have been opened. num=%d", opened_tables_.size());
@@ -248,8 +340,8 @@ RC Db::sync()
   RC rc = RC::SUCCESS;
   // 调用所有表的sync函数刷新数据到磁盘
   for (const auto &table_pair : opened_tables_) {
-    Table *table = table_pair.second;
-    rc           = table->sync();
+    BaseTable *table = table_pair.second;
+    rc               = table->sync();
     if (rc != RC::SUCCESS) {
       LOG_ERROR("Failed to flush table. table=%s.%s, rc=%d:%s", name_.c_str(), table->name(), rc, strrc(rc));
       return rc;
@@ -373,7 +465,7 @@ RC Db::flush_meta()
     return RC::IOERR_WRITE;
   }
 
-  string buffer = to_string(check_point_lsn_);
+  string buffer = std::to_string(check_point_lsn_);
   int    n      = write(fd, buffer.c_str(), buffer.size());
   if (n < 0) {
     LOG_ERROR("Failed to write db meta file. db=%s, file=%s, errno=%s", 

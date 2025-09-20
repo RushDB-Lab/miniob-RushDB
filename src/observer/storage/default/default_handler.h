@@ -39,7 +39,7 @@ public:
    * @param trx_kit_name 使用哪种类型的事务模型
    * @param log_handler_name 使用哪种类型的日志处理器
    */
-  RC   init(const char *base_dir, const char *trx_kit_name, const char *log_handler_name, const char *storage_engine);
+  RC   init(const char *base_dir, const char *trx_kit_name, const char *log_handler_name);
   void destroy();
 
   /**
@@ -85,8 +85,8 @@ public:
   RC drop_table(const char *dbname, const char *relation_name);
 
 public:
-  Db    *find_db(const char *dbname) const;
-  Table *find_table(const char *dbname, const char *table_name) const;
+  Db        *find_db(const char *dbname) const;
+  BaseTable *find_table(const char *dbname, const char *table_name) const;
 
   RC sync();
 
@@ -96,5 +96,4 @@ private:
   string            trx_kit_name_;      ///< 事务模型的名称
   string            log_handler_name_;  ///< 日志处理器的名称
   map<string, Db *> opened_dbs_;        ///< 打开的数据库
-  string            storage_engine_;    ///< 存储引擎的名称
 };

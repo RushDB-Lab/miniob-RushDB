@@ -28,6 +28,8 @@ See the Mulan PSL v2 for more details. */
 #include <unistd.h>
 #include <poll.h>
 
+#include <memory>
+
 #include "common/ini_setting.h"
 #include "common/io/io.h"
 #include "common/lang/mutex.h"

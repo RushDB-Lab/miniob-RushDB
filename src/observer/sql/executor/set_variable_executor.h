@@ -14,7 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "common/sys/rc.h"
+#include "common/rc.h"
 #include "event/session_event.h"
 #include "event/sql_event.h"
 #include "session/session.h"

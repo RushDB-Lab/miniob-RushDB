@@ -82,7 +82,16 @@ RC NestedLoopJoinPhysicalOperator::close()
   return rc;
 }
 
-Tuple *NestedLoopJoinPhysicalOperator::current_tuple() { return &joined_tuple_; }
+Tuple *NestedLoopJoinPhysicalOperator::current_tuple()
+{
+  // 拷贝
+  auto left_base_rids  = joined_tuple_.left_base_rids();
+  auto right_base_rids = joined_tuple_.right_base_rids();
+  left_base_rids.insert(left_base_rids.end(), right_base_rids.begin(), right_base_rids.end());
+  joined_tuple_.set_base_rids(left_base_rids);
+
+  return &joined_tuple_;
+}
 
 RC NestedLoopJoinPhysicalOperator::left_next()
 {

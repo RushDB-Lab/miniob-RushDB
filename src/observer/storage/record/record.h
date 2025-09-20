@@ -17,7 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include <stddef.h>
 
 #include "common/log/log.h"
-#include "common/sys/rc.h"
+#include "common/rc.h"
 #include "common/types.h"
 #include "common/lang/vector.h"
 #include "common/lang/sstream.h"
@@ -25,7 +25,10 @@ See the Mulan PSL v2 for more details. */
 #include "storage/field/field_meta.h"
 #include "storage/index/index_meta.h"
 
+#include <common/type/char_type.h>
+
 class Field;
+class BaseTable;
 
 /**
  * @brief 标识一个记录的位置
@@ -86,7 +89,7 @@ struct RIDHash
 {
   size_t operator()(const RID &rid) const noexcept
   {
-    return hash<PageNum>()(rid.page_num) ^ hash<SlotNum>()(rid.slot_num);
+    return std::hash<PageNum>()(rid.page_num) ^ std::hash<SlotNum>()(rid.slot_num);
   }
 };
 
@@ -101,21 +104,24 @@ class Record
 {
 public:
   Record() = default;
-  ~Record()
+  ~Record() { reset(); }
+
+  void reset()
   {
     if (owner_ && data_ != nullptr) {
       free(data_);
-      data_ = nullptr;
+      owner_ = false;
+      data_  = nullptr;
     }
   }
 
   Record(const Record &other)
   {
-    rid_   = other.rid_;
-    key_   = other.key_;
-    data_  = other.data_;
-    len_   = other.len_;
-    owner_ = other.owner_;
+    rid_       = other.rid_;
+    base_rids_ = other.base_rids_;
+    data_      = other.data_;
+    len_       = other.len_;
+    owner_     = other.owner_;
 
     if (other.owner_) {
       char *tmp = (char *)malloc(other.len_);
@@ -132,20 +138,33 @@ public:
     }
 
     if (!owner_ || len_ != other.len_) {
-      this->~Record();
+      reset();
       new (this) Record(other);
       return *this;
     }
-    this->rid_ = other.rid_;
-    this->key_ = other.key_;
+    this->rid_       = other.rid_;
+    this->base_rids_ = other.base_rids_;
     memcpy(data_, other.data_, other.len_);
     return *this;
   }
 
+  Record clone()
+  {
+    Record new_record;
+    new_record.rid_       = this->rid_;
+    new_record.base_rids_ = this->base_rids_;
+    new_record.len_       = this->len_;
+    new_record.data_      = (char *)malloc(this->len_);
+    memcpy(new_record.data_, this->data_, this->len_);
+    new_record.owner_ = true;
+    return new_record;
+  }
+
   Record(Record &&other)
   {
-    rid_ = other.rid_;
-    key_ = other.key_;
+    rid_       = other.rid_;
+    base_rids_ = std::move(other.base_rids_);
+
     if (!other.owner_) {
       data_        = other.data_;
       len_         = other.len_;
@@ -167,7 +186,7 @@ public:
       return *this;
     }
 
-    this->~Record();
+    reset();
     new (this) Record(std::move(other));
     return *this;
   }
@@ -177,10 +196,11 @@ public:
     this->data_ = data;
     this->len_  = len;
   }
+
   void set_data_owner(char *data, int len)
   {
     ASSERT(len != 0, "the len of data should not be 0");
-    this->~Record();
+    reset();
 
     this->data_  = data;
     this->len_   = len;
@@ -213,33 +233,60 @@ public:
     return RC::SUCCESS;
   }
 
-  RC set_field(int field_offset, int field_len, char *data)
+  RC set_field(int field_offset, int field_len, const Value &value)
   {
-    if (!owner_) {
-      LOG_ERROR("cannot set field when record does not own the memory");
-      return RC::INTERNAL;
-    }
+    // 只警告不检查试试看
+    // if (!owner_) {
+    //   LOG_WARN("cannot set field when record does not own the memory");
+    //   return RC::INTERNAL;
+    // }
     if (field_offset + field_len > len_) {
       LOG_ERROR("invalid offset or length. offset=%d, length=%d, total length=%d", field_offset, field_len, len_);
       return RC::INVALID_ARGUMENT;
     }
-
-    memcpy(data_ + field_offset, data, field_len);
+    // 实际数据长度
+    auto len = std::min(field_len, value.length());
+    // 如果是字符串类型，长度可变，要根据实际长度拷贝数据
+    memcpy(data_ + field_offset, value.data(), len);
+    // 因为列数据是连续的，如果中间某些列加了'\0'，会导致后面列没数据
+    // 需要判断更新的字符串是否小于上限，只有小于才需要加'\0'，而大于应该抛出异常
+    // 除了字符串类型其他都是定长的
+    if (len < field_len) {
+      data_[field_offset + len] = '\0';
+    }
     return RC::SUCCESS;
   }
 
-  RC reset_filed(int field_offset, int field_len)
+  RC get_field(const FieldMeta &field_meta, Value &value) const
   {
-    if (!owner_) {
-      LOG_ERROR("cannot set field when record does not own the memory");
-      return RC::INTERNAL;
-    }
-    if (field_offset + field_len > len_) {
-      LOG_ERROR("invalid offset or length. offset=%d, length=%d, total length=%d", field_offset, field_len, len_);
+    int field_offset = field_meta.offset();
+    int data_len     = field_meta.len() - field_meta.nullable();
+
+    if (field_offset + field_meta.len() > len_) {
+      LOG_ERROR("invalid offset or length. offset=%d, length=%d, total length=%d", field_offset, field_meta.len(), len_);
       return RC::INVALID_ARGUMENT;
     }
 
-    memset(data_ + field_offset, 0, field_len);
+    value.set_type(field_meta.type());
+
+    if (field_meta.nullable()) {
+      // 只有字段是可为空的，取标记位才有意义
+      bool is_null = data_[field_offset + field_meta.len() - 1] == '1';
+      if (is_null) {
+        value.set_null();
+        return RC::SUCCESS;
+      }
+    }
+
+    char *data = new char[data_len];
+    memcpy(data, data_ + field_offset, data_len);
+    value.set_data(data, data_len);
+
+    // vector 不释放内存
+    if (!(field_meta.type() == AttrType::VECTORS)) {
+      delete[] data;
+    }
+
     return RC::SUCCESS;
   }
 
@@ -254,15 +301,22 @@ public:
     this->rid_.slot_num = slot_num;
   }
 
-  RID          &rid() { return rid_; }
-  const RID    &rid() const { return rid_; }
-  void          set_key(const string &key) { key_ = key; }
-  const string &key() const { return key_; }
+  RID       &rid() { return rid_; }
+  const RID &rid() const { return rid_; }
+
+  void append_base_rid(BaseTable *table, RID rid) { base_rids_.emplace_back(table, rid); }
+
+  void set_base_rids(std::vector<std::pair<BaseTable *, RID>> &base_rids) { base_rids_ = std::move(base_rids); }
+
+  std::vector<std::pair<BaseTable *, RID>> &base_rids() { return base_rids_; }
+
+  const std::vector<std::pair<BaseTable *, RID>> &base_rids() const { return base_rids_; }
 
 private:
-  RID    rid_;
-  string key_;  //// 记录的主键，用于 lsm-tree 引擎，需要考虑重构 Record
-  char  *data_  = nullptr;
-  int    len_   = 0;      /// 如果不是record自己来管理内存，这个字段可能是无效的
-  bool   owner_ = false;  /// 表示当前是否由record来管理内存
+  RID rid_;                                             // 存储基表的记录位置
+  std::vector<std::pair<BaseTable *, RID>> base_rids_;  // 用于视图存储当前记录由哪些基表的哪些记录组成
+
+  char *data_  = nullptr;
+  int   len_   = 0;      /// 如果不是record自己来管理内存，这个字段可能是无效的
+  bool  owner_ = false;  /// 表示当前是否由record来管理内
 };

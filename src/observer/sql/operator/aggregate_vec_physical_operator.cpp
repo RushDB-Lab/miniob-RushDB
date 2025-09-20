@@ -8,13 +8,14 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
+#include <algorithm>
 #include "common/log/log.h"
-#include "common/lang/ranges.h"
 #include "sql/operator/aggregate_vec_physical_operator.h"
 #include "sql/expr/aggregate_state.h"
 #include "sql/expr/expression_tuple.h"
 #include "sql/expr/composite_tuple.h"
 
+using namespace std;
 using namespace common;
 
 AggregateVecPhysicalOperator::AggregateVecPhysicalOperator(vector<Expression *> &&expressions)
@@ -23,7 +24,7 @@ AggregateVecPhysicalOperator::AggregateVecPhysicalOperator(vector<Expression *> 
   value_expressions_.reserve(aggregate_expressions_.size());
 
   ranges::for_each(aggregate_expressions_, [this](Expression *expr) {
-    auto *      aggregate_expr = static_cast<AggregateExpr *>(expr);
+    auto       *aggregate_expr = static_cast<AggregateFunctionExpr *>(expr);
     Expression *child_expr     = aggregate_expr->child().get();
     ASSERT(child_expr != nullptr, "aggregation expression must have a child expression");
     value_expressions_.emplace_back(child_expr);
@@ -32,11 +33,23 @@ AggregateVecPhysicalOperator::AggregateVecPhysicalOperator(vector<Expression *> 
   for (size_t i = 0; i < aggregate_expressions_.size(); i++) {
     auto &expr = aggregate_expressions_[i];
     ASSERT(expr->type() == ExprType::AGGREGATION, "expected an aggregation expression");
-    auto *aggregate_expr = static_cast<AggregateExpr *>(expr);
-    void *state_ptr = create_aggregate_state(aggregate_expr->aggregate_type(), aggregate_expr->child()->value_type());
-    ASSERT(state_ptr != nullptr, "failed to create aggregate state");
-    aggr_values_.insert(state_ptr);
-    output_chunk_.add_column(make_unique<Column>(aggregate_expr->value_type(), aggregate_expr->value_length()), i);
+    auto *aggregate_expr = static_cast<AggregateFunctionExpr *>(expr);
+
+    if (aggregate_expr->aggregate_type() == AggregateFunctionType::SUM) {
+      if (aggregate_expr->value_type() == AttrType::INTS) {
+        void *aggr_value                     = malloc(sizeof(SumState<int>));
+        ((SumState<int> *)aggr_value)->value = 0;
+        aggr_values_.insert(aggr_value);
+        output_chunk_.add_column(make_unique<Column>(AttrType::INTS, sizeof(int)), i);
+      } else if (aggregate_expr->value_type() == AttrType::FLOATS) {
+        void *aggr_value                       = malloc(sizeof(SumState<float>));
+        ((SumState<float> *)aggr_value)->value = 0;
+        aggr_values_.insert(aggr_value);
+        output_chunk_.add_column(make_unique<Column>(AttrType::FLOATS, sizeof(float)), i);
+      }
+    } else {
+      ASSERT(false, "not supported aggregation type");
+    }
   }
 }
 
@@ -56,11 +69,17 @@ RC AggregateVecPhysicalOperator::open(Trx *trx)
       Column column;
       value_expressions_[aggr_idx]->get_column(chunk_, column);
       ASSERT(aggregate_expressions_[aggr_idx]->type() == ExprType::AGGREGATION, "expect aggregate expression");
-      auto *aggregate_expr = static_cast<AggregateExpr *>(aggregate_expressions_[aggr_idx]);
-      rc = aggregate_state_update_by_column(aggr_values_.at(aggr_idx), aggregate_expr->aggregate_type(), aggregate_expr->child()->value_type(), column);
-      if (OB_FAIL(rc)) {
-        LOG_INFO("failed to update aggregate state. rc=%s", strrc(rc));
-        return rc;
+      auto *aggregate_expr = static_cast<AggregateFunctionExpr *>(aggregate_expressions_[aggr_idx]);
+      if (aggregate_expr->aggregate_type() == AggregateFunctionType::SUM) {
+        if (aggregate_expr->value_type() == AttrType::INTS) {
+          update_aggregate_state<SumState<int>, int>(aggr_values_.at(aggr_idx), column);
+        } else if (aggregate_expr->value_type() == AttrType::FLOATS) {
+          update_aggregate_state<SumState<float>, float>(aggr_values_.at(aggr_idx), column);
+        } else {
+          ASSERT(false, "not supported value type");
+        }
+      } else {
+        ASSERT(false, "not supported aggregation type");
       }
     }
   }
@@ -71,35 +90,18 @@ RC AggregateVecPhysicalOperator::open(Trx *trx)
 
   return rc;
 }
-
 template <class STATE, typename T>
 void AggregateVecPhysicalOperator::update_aggregate_state(void *state, const Column &column)
 {
   STATE *state_ptr = reinterpret_cast<STATE *>(state);
-  T *    data      = (T *)column.data();
+  T     *data      = (T *)column.data();
   state_ptr->update(data, column.count());
 }
 
 RC AggregateVecPhysicalOperator::next(Chunk &chunk)
 {
-  if (outputed_) {
-    return RC::RECORD_EOF;
-  }
-  for (size_t i = 0; i < aggr_values_.size(); i++) {
-    auto pos = i;
-    ASSERT(aggregate_expressions_[pos]->type() == ExprType::AGGREGATION, "expect aggregation expression");
-    auto *aggregate_expr = static_cast<AggregateExpr *>(aggregate_expressions_[pos]);
-    RC rc = finialize_aggregate_state(aggr_values_.at(pos), aggregate_expr->aggregate_type(), aggregate_expr->child()->value_type(), output_chunk_.column(i));
-    if (OB_FAIL(rc)) {
-      LOG_INFO("failed to finialize aggregate state. rc=%s", strrc(rc));
-      return rc;
-    }
-  }
-
-  chunk.reference(output_chunk_);
-  outputed_ = true;
-
-  return RC::SUCCESS;
+  // your code here
+  exit(-1);
 }
 
 RC AggregateVecPhysicalOperator::close()

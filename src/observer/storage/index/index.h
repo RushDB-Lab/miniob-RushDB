@@ -17,7 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include <stddef.h>
 #include <vector>
 
-#include "common/sys/rc.h"
+#include "common/rc.h"
 #include "storage/field/field_meta.h"
 #include "storage/index/index_meta.h"
 #include "storage/record/record_manager.h"
@@ -44,12 +44,13 @@ public:
   {
     return RC::UNSUPPORTED;
   }
+
   virtual RC open(Table *table, const char *file_name, const IndexMeta &index_meta, const FieldMeta &field_meta)
   {
     return RC::UNSUPPORTED;
   }
 
-  virtual bool is_vector_index() { return false; }
+  virtual bool is_vector_index() { return index_meta_.index_type() == IndexType::VectorIVFFlatIndex; }
 
   const IndexMeta &index_meta() const { return index_meta_; }
 
@@ -80,7 +81,10 @@ public:
    * @param right_inclusive 是否包含右边界
    */
   virtual IndexScanner *create_scanner(const char *left_key, int left_len, bool left_inclusive, const char *right_key,
-      int right_len, bool right_inclusive) = 0;
+      int right_len, bool right_inclusive)
+  {
+    return nullptr;
+  }
 
   /**
    * @brief 同步索引数据到磁盘
@@ -89,11 +93,10 @@ public:
   virtual RC sync() = 0;
 
 protected:
-  RC init(const IndexMeta &index_meta, const FieldMeta &field_meta);
+  RC init(const IndexMeta &index_meta);
 
 protected:
   IndexMeta index_meta_;  ///< 索引的元数据
-  FieldMeta field_meta_;  ///< 当前实现仅考虑一个字段的索引
 };
 
 /**

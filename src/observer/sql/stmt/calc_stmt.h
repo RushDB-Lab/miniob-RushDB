@@ -14,9 +14,12 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "common/sys/rc.h"
+#include <vector>
+
+#include "common/rc.h"
 #include "sql/expr/expression.h"
 #include "sql/stmt/stmt.h"
+#include "sql/parser/expression_binder.h"
 
 class Db;
 class Table;
@@ -36,15 +39,27 @@ public:
 public:
   static RC create(CalcSqlNode &calc_sql, Stmt *&stmt)
   {
-    CalcStmt *calc_stmt     = new CalcStmt();
-    calc_stmt->expressions_ = std::move(calc_sql.expressions);
+    CalcStmt                      *calc_stmt = new CalcStmt();
+    BinderContext                  binder_context;
+    vector<unique_ptr<Expression>> bound_expressions;
+    ExpressionBinder               expression_binder(binder_context);
+
+    for (unique_ptr<Expression> &expression : calc_sql.expressions) {
+      RC rc = expression_binder.bind_expression(expression, bound_expressions);
+      if (OB_FAIL(rc)) {
+        LOG_INFO("bind expression failed. rc=%s", strrc(rc));
+        return rc;
+      }
+    }
+
+    calc_stmt->expressions_ = std::move(bound_expressions);
     stmt                    = calc_stmt;
     return RC::SUCCESS;
   }
 
 public:
-  vector<unique_ptr<Expression>> &expressions() { return expressions_; }
+  std::vector<std::unique_ptr<Expression>> &expressions() { return expressions_; }
 
 private:
-  vector<unique_ptr<Expression>> expressions_;
+  std::vector<std::unique_ptr<Expression>> expressions_;
 };

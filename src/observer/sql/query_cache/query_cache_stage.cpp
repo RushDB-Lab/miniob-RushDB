@@ -13,6 +13,7 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include <string.h>
+#include <string>
 
 #include "query_cache_stage.h"
 
@@ -23,7 +24,4 @@ See the Mulan PSL v2 for more details. */
 
 using namespace common;
 
-RC QueryCacheStage::handle_request(SQLStageEvent *sql_event)
-{
-  return RC::SUCCESS;
-}
+RC QueryCacheStage::handle_request(SQLStageEvent *sql_event) { return RC::SUCCESS; }

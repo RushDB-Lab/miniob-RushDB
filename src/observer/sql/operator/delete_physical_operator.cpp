@@ -23,7 +23,7 @@ RC DeletePhysicalOperator::open(Trx *trx)
     return RC::SUCCESS;
   }
 
-  unique_ptr<PhysicalOperator> &child = children_[0];
+  std::unique_ptr<PhysicalOperator> &child = children_[0];
 
   RC rc = child->open(trx);
   if (rc != RC::SUCCESS) {
@@ -42,6 +42,7 @@ RC DeletePhysicalOperator::open(Trx *trx)
 
     RowTuple *row_tuple = static_cast<RowTuple *>(tuple);
     Record   &record    = row_tuple->record();
+    record.set_base_rids(tuple->base_rids());
     records_.emplace_back(std::move(record));
   }
 
@@ -60,12 +61,6 @@ RC DeletePhysicalOperator::open(Trx *trx)
   return RC::SUCCESS;
 }
 
-RC DeletePhysicalOperator::next()
-{
-  return RC::RECORD_EOF;
-}
+RC DeletePhysicalOperator::next() { return RC::RECORD_EOF; }
 
-RC DeletePhysicalOperator::close()
-{
-  return RC::SUCCESS;
-}
+RC DeletePhysicalOperator::close() { return RC::SUCCESS; }

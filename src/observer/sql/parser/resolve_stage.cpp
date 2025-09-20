@@ -13,6 +13,7 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include <string.h>
+#include <string>
 
 #include "resolve_stage.h"
 

@@ -13,11 +13,10 @@ See the Mulan PSL v2 for more details. */
 #include "common/lang/array.h"
 #include "common/lang/memory.h"
 #include "common/lang/string.h"
-#include "common/sys/rc.h"
+#include "common/rc.h"
 #include "common/type/attr_type.h"
 
 class Value;
-class Column;
 
 /**
  * @brief 定义了数据类型相关的操作，比如比较运算、算术运算等
@@ -25,7 +24,6 @@ class Column;
  * @details 数据类型定义的算术运算中，比如 add、subtract 等，将按照当前数据类型设置最终结果值的类型。
  * 参与运算的参数类型不一定相同，不同的类型进行运算是否能够支持需要参考各个类型的实现。
  */
-
 class DataType
 {
 public:
@@ -48,8 +46,6 @@ public:
    *  INT32_MAX 表示未实现的比较
    */
   virtual int compare(const Value &left, const Value &right) const { return INT32_MAX; }
-
-  virtual int compare(const Column &left, const Column &right, int left_idx, int right_idx) const { return INT32_MAX; }
 
   /**
    * @brief 计算 left + right，并将结果保存到 result 中
@@ -79,7 +75,10 @@ public:
   /**
    * @brief 将 val 转换为 type 类型，并将结果保存到 result 中
    */
-  virtual RC cast_to(const Value &val, AttrType type, Value &result) const { return RC::UNSUPPORTED; }
+  virtual RC cast_to(const Value &val, AttrType type, Value &result, bool allow_type_promotion = true) const
+  {
+    return RC::UNSUPPORTED;
+  }
 
   /**
    * @brief 将 val 转换为 string，并将结果保存到 result 中

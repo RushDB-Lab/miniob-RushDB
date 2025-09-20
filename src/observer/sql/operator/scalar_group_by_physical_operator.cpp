@@ -65,7 +65,7 @@ RC ScalarGroupByPhysicalOperator::open(Trx *trx)
       composite_tuple.add_tuple(make_unique<ValueListTuple>(std::move(child_tuple_to_value)));
       group_value_ = make_unique<GroupValueType>(std::move(aggregator_list), std::move(composite_tuple));
     }
-    
+
     rc = aggregate(get<0>(*group_value_), group_value_expression_tuple);
     if (OB_FAIL(rc)) {
       LOG_WARN("failed to aggregate values. rc=%s", strrc(rc));
@@ -93,7 +93,26 @@ RC ScalarGroupByPhysicalOperator::open(Trx *trx)
 
 RC ScalarGroupByPhysicalOperator::next()
 {
+  if (emitted_) {
+    return RC::RECORD_EOF;
+  }
   if (group_value_ == nullptr || emitted_) {
+    auto *aggregate_expr = static_cast<AggregateFunctionExpr *>(aggregate_expressions_[0]);
+    if (aggregate_expr->aggregate_type() == AggregateFunctionType::COUNT) {
+      Value val(0);
+      auto  Vlist = make_unique<ValueListTuple>();
+      Vlist->set_cells(std::vector<Value>{val});
+      TupleCellSpec spec(aggregate_expr->name());
+      Vlist->set_names(std::vector<TupleCellSpec>{spec});
+      CompositeTuple composite_tuple;
+      composite_tuple.add_tuple(std::move(Vlist));
+
+      AggregatorList aggregator_list;
+      group_value_ = make_unique<GroupValueType>(std::move(aggregator_list), std::move(composite_tuple));
+      emitted_     = true;
+
+      return RC::SUCCESS;
+    }
     return RC::RECORD_EOF;
   }
 
@@ -106,7 +125,6 @@ RC ScalarGroupByPhysicalOperator::close()
 {
   group_value_.reset();
   emitted_ = false;
-  children_[0]->close();
   return RC::SUCCESS;
 }
 

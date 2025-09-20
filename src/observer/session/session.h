@@ -67,8 +67,6 @@ public:
    */
   Trx *current_trx();
 
-  void destroy_trx();
-
   /**
    * @brief 设置当前正在处理的请求
    */
@@ -81,12 +79,6 @@ public:
 
   void set_sql_debug(bool sql_debug) { sql_debug_ = sql_debug; }
   bool sql_debug_on() const { return sql_debug_; }
-
-  void set_hash_join(bool hash_join) { hash_join_ = hash_join; }
-  bool hash_join_on() const { return hash_join_; }
-
-  void set_use_cascade(bool use_cascade) { use_cascade_ = use_cascade; }
-  bool use_cascade() const { return use_cascade_; }
 
   void          set_execution_mode(const ExecutionMode mode) { execution_mode_ = mode; }
   ExecutionMode get_execution_mode() const { return execution_mode_; }
@@ -114,9 +106,7 @@ private:
 
   bool trx_multi_operation_mode_ = false;  ///< 当前事务的模式，是否多语句模式. 单语句模式自动提交
 
-  bool sql_debug_   = false;  ///< 是否输出SQL调试信息
-  bool hash_join_   = false;  ///< 是否使用hash join
-  bool use_cascade_ = false;  ///< 是否使用 cascade 优化器
+  bool sql_debug_ = false;  ///< 是否输出SQL调试信息
 
   // 是否使用了 `chunk_iterator` 模式。 只有在设置了 `chunk_iterator`
   // 并且可以生成相关物理执行计划时才会使用 `chunk_iterator` 模式。

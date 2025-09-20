@@ -13,6 +13,8 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include "storage/trx/mvcc_trx.h"
+
+#include <ranges>
 #include "storage/db/db.h"
 #include "storage/field/field.h"
 #include "storage/trx/mvcc_trx_log.h"
@@ -31,10 +33,21 @@ MvccTrxKit::~MvccTrxKit()
 RC MvccTrxKit::init()
 {
   // 事务使用一些特殊的字段，放到每行记录中，表示行记录的可见性。
-  fields_ = vector<FieldMeta>{
-      // field_id in trx fields is invisible.
-      FieldMeta("__trx_xid_begin", AttrType::INTS, 0 /*attr_offset*/, 4 /*attr_len*/, false /*visible*/, -1/*field_id*/),
-      FieldMeta("__trx_xid_end", AttrType::INTS, 0 /*attr_offset*/, 4 /*attr_len*/, false /*visible*/, -2/*field_id*/)};
+  fields_ = vector<FieldMeta>{// field_id in trx fields is invisible.
+      FieldMeta("__trx_xid_begin",
+          AttrType::INTS,
+          0 /*attr_offset*/,
+          4 /*attr_len*/,
+          false /*visible*/,
+          -1 /*field_id*/,
+          false),
+      FieldMeta("__trx_xid_end",
+          AttrType::INTS,
+          0 /*attr_offset*/,
+          4 /*attr_len*/,
+          false /*visible*/,
+          -2 /*field_id*/,
+          false)};
 
   LOG_INFO("init mvcc trx kit done.");
   return RC::SUCCESS;
@@ -85,6 +98,20 @@ void MvccTrxKit::destroy_trx(Trx *trx)
   delete trx;
 }
 
+Trx *MvccTrxKit::find_trx(int32_t trx_id)
+{
+  lock_.lock();
+  for (Trx *trx : trxes_) {
+    if (trx->id() == trx_id) {
+      lock_.unlock();
+      return trx;
+    }
+  }
+  lock_.unlock();
+
+  return nullptr;
+}
+
 void MvccTrxKit::all_trxes(vector<Trx *> &trxes)
 {
   lock_.lock();
@@ -99,11 +126,10 @@ LogReplayer *MvccTrxKit::create_log_replayer(Db &db, LogHandler &log_handler)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-MvccTrx::MvccTrx(MvccTrxKit &kit, LogHandler &log_handler) : Trx(TrxKit::Type::MVCC), trx_kit_(kit), log_handler_(log_handler)
-{}
+MvccTrx::MvccTrx(MvccTrxKit &kit, LogHandler &log_handler) : trx_kit_(kit), log_handler_(log_handler) {}
 
-MvccTrx::MvccTrx(MvccTrxKit &kit, LogHandler &log_handler, int32_t trx_id) 
-  : Trx(TrxKit::Type::MVCC), trx_kit_(kit), log_handler_(log_handler), trx_id_(trx_id)
+MvccTrx::MvccTrx(MvccTrxKit &kit, LogHandler &log_handler, int32_t trx_id)
+    : trx_kit_(kit), log_handler_(log_handler), trx_id_(trx_id)
 {
   started_    = true;
   recovering_ = true;
@@ -111,7 +137,7 @@ MvccTrx::MvccTrx(MvccTrxKit &kit, LogHandler &log_handler, int32_t trx_id)
 
 MvccTrx::~MvccTrx() {}
 
-RC MvccTrx::insert_record(Table *table, Record &record)
+RC MvccTrx::insert_record(BaseTable *table, Record &record)
 {
   Field begin_field;
   Field end_field;
@@ -130,11 +156,11 @@ RC MvccTrx::insert_record(Table *table, Record &record)
   ASSERT(rc == RC::SUCCESS, "failed to append insert record log. trx id=%d, table id=%d, rid=%s, record len=%d, rc=%s",
          trx_id_, table->table_id(), record.rid().to_string().c_str(), record.len(), strrc(rc));
 
-  operations_.push_back(Operation(Operation::Type::INSERT, table, record.rid()));
+  operations_.emplace_back(Operation::Type::INSERT, table, record.rid());
   return rc;
 }
 
-RC MvccTrx::delete_record(Table *table, Record &record)
+RC MvccTrx::delete_record(BaseTable *table, Record &record)
 {
   Field begin_field;
   Field end_field;
@@ -167,12 +193,38 @@ RC MvccTrx::delete_record(Table *table, Record &record)
   ASSERT(rc == RC::SUCCESS, "failed to append delete record log. trx id=%d, table id=%d, rid=%s, record len=%d, rc=%s",
       trx_id_, table->table_id(), record.rid().to_string().c_str(), record.len(), strrc(rc));
 
-  operations_.push_back(Operation(Operation::Type::DELETE, table, record.rid()));
+  operations_.emplace_back(Operation::Type::DELETE, table, record.rid());
 
   return RC::SUCCESS;
 }
 
-RC MvccTrx::visit_record(Table *table, Record &record, ReadWriteMode mode)
+RC MvccTrx::update_record(BaseTable *table, Record &old_record, Record &new_record)
+{
+  Field begin_field;
+  Field end_field;
+  trx_fields(table, begin_field, end_field);
+
+  // 更新的处理和插入一样，begin 设置负值，但是 end 保持不变，因为可能遇到一个老事务对旧数据的修改
+  begin_field.set_int(new_record, -trx_id_);
+  end_field.set_int(new_record, trx_kit_.max_trx_id());
+
+  RC rc = table->update_record(old_record, new_record);
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to insert record into table. rc=%s", strrc(rc));
+    return rc;
+  }
+
+  // 不实现故障恢复应该不用日志
+  // rc = log_handler_.insert_record(trx_id_, table, record.rid());
+  // ASSERT(rc == RC::SUCCESS, "failed to append insert record log. trx id=%d, table id=%d, rid=%s, record len=%d,
+  // rc=%s",
+  //        trx_id_, table->table_id(), record.rid().to_string().c_str(), record.len(), strrc(rc));
+
+  operations_.emplace_back(Operation::Type::UPDATE, table, old_record.rid(), old_record, new_record);
+  return rc;
+}
+
+RC MvccTrx::visit_record(BaseTable *table, Record &record, ReadWriteMode mode)
 {
   Field begin_field;
   Field end_field;
@@ -234,7 +286,7 @@ RC MvccTrx::visit_record(Table *table, Record &record, ReadWriteMode mode)
  * @param begin_xid_field 返回处理begin_xid的字段
  * @param end_xid_field   返回处理end_xid的字段
  */
-void MvccTrx::trx_fields(Table *table, Field &begin_xid_field, Field &end_xid_field) const
+void MvccTrx::trx_fields(BaseTable *table, Field &begin_xid_field, Field &end_xid_field) const
 {
   const TableMeta      &table_meta = table->table_meta();
   span<const FieldMeta> trx_fields = table_meta.trx_fields();
@@ -266,15 +318,28 @@ RC MvccTrx::commit()
 RC MvccTrx::commit_with_trx_id(int32_t commit_xid)
 {
   // TODO 原子性提交BUG：这里存在一个很大的问题，不能让其他事务一次性看到当前事务更新到的数据或同时看不到
+
+  // 当前事务在提交时，会逐个修改之前修改过的行数据，调整版本号。
+  // 这造成的问题是，在某个时刻，有些行数据的版本号已经修改了，有些还没有。那可能会存在一个事务，能够看到已经修改完成版本号的行，但是看不到未修改的行。
+  // 比如事务A，插入了3条数据，在提交的时候，逐个修改版本号，某个情况下可能会存在下面的场景(假设A的事务ID是90，commit
+  // id是100)：
+  //
+  // record	begin xid	end xid	data
+  //   R1	100	  +∞	    ...
+  //   R2	100	  +∞	    ...
+  //   R3	-90	  +∞	    ...
+  // 此时有一个新的事务，假设事务号是 110，那么它可以看到记录R1和R2，但是看不到R3，因为R3从记录状态来看，还没有提交。
+
   RC rc    = RC::SUCCESS;
   started_ = false;
 
   for (const Operation &operation : operations_) {
     switch (operation.type()) {
       case Operation::Type::INSERT: {
-        RID    rid(operation.page_num(), operation.slot_num());
-        Table *table = operation.table();
-        Field  begin_xid_field, end_xid_field;
+        RID        rid   = operation.rid();
+        BaseTable *table = operation.table();
+
+        Field begin_xid_field, end_xid_field;
         trx_fields(table, begin_xid_field, end_xid_field);
 
         auto record_updater = [this, &begin_xid_field, commit_xid](Record &record) -> bool {
@@ -294,8 +359,8 @@ RC MvccTrx::commit_with_trx_id(int32_t commit_xid)
       } break;
 
       case Operation::Type::DELETE: {
-        Table *table = operation.table();
-        RID    rid(operation.page_num(), operation.slot_num());
+        RID        rid   = operation.rid();
+        BaseTable *table = operation.table();
 
         Field begin_xid_field, end_xid_field;
         trx_fields(table, begin_xid_field, end_xid_field);
@@ -307,6 +372,29 @@ RC MvccTrx::commit_with_trx_id(int32_t commit_xid)
                  end_xid_field.get_int(record), trx_id_);
 
           end_xid_field.set_int(record, commit_xid);
+          return true;
+        };
+
+        rc = operation.table()->visit_record(rid, record_updater);
+        ASSERT(rc == RC::SUCCESS, "failed to get record while committing. rid=%s, rc=%s",
+               rid.to_string().c_str(), strrc(rc));
+      } break;
+
+      case Operation::Type::UPDATE: {
+        RID        rid   = operation.rid();
+        BaseTable *table = operation.table();
+
+        Field begin_xid_field, end_xid_field;
+        trx_fields(table, begin_xid_field, end_xid_field);
+
+        auto record_updater = [this, &begin_xid_field, commit_xid](Record &record) -> bool {
+          LOG_DEBUG("before commit update record. trx id=%d, begin xid=%d, commit xid=%d, lbt=%s",
+                   trx_id_, begin_xid_field.get_int(record), commit_xid, lbt());
+          ASSERT(begin_xid_field.get_int(record) == -trx_id_,
+                 "got an invalid record while committing. end xid=%d, this trx id=%d",
+                 begin_xid_field.get_int(record), trx_id_);
+
+          begin_xid_field.set_int(record, commit_xid);
           return true;
         };
 
@@ -336,17 +424,16 @@ RC MvccTrx::rollback()
   RC rc    = RC::SUCCESS;
   started_ = false;
 
-  for (auto iter = operations_.rbegin(), itend = operations_.rend(); iter != itend; ++iter) {
-    const Operation &operation = *iter;
+  for (auto &operation : std::ranges::reverse_view(operations_)) {
     switch (operation.type()) {
       case Operation::Type::INSERT: {
-        RID    rid(operation.page_num(), operation.slot_num());
-        Table *table = operation.table();
+        RID        rid   = operation.rid();
+        BaseTable *table = operation.table();
         // 这里也可以不删除，仅仅给数据加个标识位，等垃圾回收器来收割也行
-        Record record;
-        record.set_rid(rid);
+
         if (recovering_) {
           // 恢复的时候，需要额外判断下当前记录是否还是当前事务拥有。是的话才能删除记录
+          Record record;
           rc = table->get_record(rid, record);
           if (OB_SUCC(rc)) {
             Field begin_xid_field, end_xid_field;
@@ -362,14 +449,14 @@ RC MvccTrx::rollback()
             return rc;
           }
         }
-        rc = table->delete_record(record);
+        rc = table->delete_record(rid);
         ASSERT(rc == RC::SUCCESS, "failed to delete record while rollback. rid=%s, rc=%s",
                rid.to_string().c_str(), strrc(rc));
       } break;
 
       case Operation::Type::DELETE: {
-        Table *table = operation.table();
-        RID    rid(operation.page_num(), operation.slot_num());
+        RID        rid   = operation.rid();
+        BaseTable *table = operation.table();
 
         ASSERT(rc == RC::SUCCESS, "failed to get record while rollback. rid=%s, rc=%s",
               rid.to_string().c_str(), strrc(rc));
@@ -394,6 +481,35 @@ RC MvccTrx::rollback()
                rid.to_string().c_str(), strrc(rc));
       } break;
 
+      case Operation::Type::UPDATE: {
+        RID        rid   = operation.rid();
+        BaseTable *table = operation.table();
+
+        if (recovering_) {
+          // 恢复的时候，需要额外判断下当前记录是否还是当前事务拥有。是的话才能删除记录
+          Record record;
+          rc = table->get_record(rid, record);
+          if (OB_SUCC(rc)) {
+            Field begin_xid_field, end_xid_field;
+            trx_fields(table, begin_xid_field, end_xid_field);
+            if (begin_xid_field.get_int(record) != -trx_id_) {
+              continue;
+            }
+          } else if (RC::RECORD_NOT_EXIST == rc) {
+            continue;
+          } else {
+            LOG_WARN("failed to get record while rollback. table=%s, rid=%s, rc=%s",
+                     table->name(), rid.to_string().c_str(), strrc(rc));
+            return rc;
+          }
+        }
+
+        // 直接用旧的记录的时间戳覆盖
+        rc = table->update_record(operation.updated_record(), operation.old_record());
+        ASSERT(rc == RC::SUCCESS, "failed to update record while rollback. rid=%s, rc=%s",
+               rid.to_string().c_str(), strrc(rc));
+      } break;
+
       default: {
         ASSERT(false, "unsupported operation. type=%d", static_cast<int>(operation.type()));
       }
@@ -409,7 +525,7 @@ RC MvccTrx::rollback()
   return rc;
 }
 
-RC find_table(Db *db, const LogEntry &log_entry, Table *&table)
+RC find_table(Db *db, const LogEntry &log_entry, BaseTable *&table)
 {
   auto *trx_log_header = reinterpret_cast<const MvccTrxLogHeader *>(log_entry.data());
   switch (MvccTrxLogOperation(trx_log_header->operation_type).type()) {
@@ -431,13 +547,15 @@ RC find_table(Db *db, const LogEntry &log_entry, Table *&table)
 
 RC MvccTrx::redo(Db *db, const LogEntry &log_entry)
 {
-  auto *trx_log_header = reinterpret_cast<const MvccTrxLogHeader *>(log_entry.data());
-  Table *table = nullptr;
-  RC     rc    = find_table(db, log_entry, table);
+  auto      *trx_log_header = reinterpret_cast<const MvccTrxLogHeader *>(log_entry.data());
+  BaseTable *base_table     = nullptr;
+  RC         rc             = find_table(db, log_entry, base_table);
   if (OB_FAIL(rc)) {
     return rc;
   }
 
+  ASSERT(base_table->type() == TableType::Table, "Only tables support MVCC. The provided base_table is not of type Table.");
+  Table *table = static_cast<Table *>(base_table);
   switch (MvccTrxLogOperation(trx_log_header->operation_type).type()) {
     case MvccTrxLogOperation::Type::INSERT_RECORD: {
       auto *trx_log_record = reinterpret_cast<const MvccTrxRecordLogEntry *>(log_entry.data());

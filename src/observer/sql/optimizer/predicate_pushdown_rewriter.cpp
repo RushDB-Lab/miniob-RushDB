@@ -18,7 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/logical_operator.h"
 #include "sql/operator/table_get_logical_operator.h"
 
-RC PredicatePushdownRewriter::rewrite(unique_ptr<LogicalOperator> &oper, bool &change_made)
+RC PredicatePushdownRewriter::rewrite(std::unique_ptr<LogicalOperator> &oper, bool &change_made)
 {
   RC rc = RC::SUCCESS;
   if (oper->type() != LogicalOperatorType::PREDICATE) {
@@ -29,20 +29,20 @@ RC PredicatePushdownRewriter::rewrite(unique_ptr<LogicalOperator> &oper, bool &c
     return rc;
   }
 
-  unique_ptr<LogicalOperator> &child_oper = oper->children().front();
+  std::unique_ptr<LogicalOperator> &child_oper = oper->children().front();
   if (child_oper->type() != LogicalOperatorType::TABLE_GET) {
     return rc;
   }
 
   auto table_get_oper = static_cast<TableGetLogicalOperator *>(child_oper.get());
 
-  vector<unique_ptr<Expression>> &predicate_oper_exprs = oper->expressions();
+  std::vector<std::unique_ptr<Expression>> &predicate_oper_exprs = oper->expressions();
   if (predicate_oper_exprs.size() != 1) {
     return rc;
   }
 
-  unique_ptr<Expression>             &predicate_expr = predicate_oper_exprs.front();
-  vector<unique_ptr<Expression>> pushdown_exprs;
+  std::unique_ptr<Expression>             &predicate_expr = predicate_oper_exprs.front();
+  std::vector<std::unique_ptr<Expression>> pushdown_exprs;
   rc = get_exprs_can_pushdown(predicate_expr, pushdown_exprs);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to get exprs can pushdown. rc=%s", strrc(rc));
@@ -55,7 +55,7 @@ RC PredicatePushdownRewriter::rewrite(unique_ptr<LogicalOperator> &oper, bool &c
     LOG_TRACE("all expressions of predicate operator were pushdown to table get operator, then make a fake one");
 
     Value value((bool)true);
-    predicate_expr = unique_ptr<Expression>(new ValueExpr(value));
+    predicate_expr = std::unique_ptr<Expression>(new ValueExpr(value));
   }
 
   if (!pushdown_exprs.empty()) {
@@ -65,7 +65,7 @@ RC PredicatePushdownRewriter::rewrite(unique_ptr<LogicalOperator> &oper, bool &c
   return rc;
 }
 
-bool PredicatePushdownRewriter::is_empty_predicate(unique_ptr<Expression> &expr)
+bool PredicatePushdownRewriter::is_empty_predicate(std::unique_ptr<Expression> &expr)
 {
   bool bool_ret = false;
   if (!expr) {
@@ -89,19 +89,19 @@ bool PredicatePushdownRewriter::is_empty_predicate(unique_ptr<Expression> &expr)
  *                       pushdown_exprs 只会增加，不要做清理操作
  */
 RC PredicatePushdownRewriter::get_exprs_can_pushdown(
-    unique_ptr<Expression> &expr, vector<unique_ptr<Expression>> &pushdown_exprs)
+    std::unique_ptr<Expression> &expr, std::vector<std::unique_ptr<Expression>> &pushdown_exprs)
 {
   RC rc = RC::SUCCESS;
   if (expr->type() == ExprType::CONJUNCTION) {
     ConjunctionExpr *conjunction_expr = static_cast<ConjunctionExpr *>(expr.get());
     // 或 操作的比较，太复杂，现在不考虑
     if (conjunction_expr->conjunction_type() == ConjunctionExpr::Type::OR) {
-      LOG_WARN("unsupported or operation");
-      rc = RC::UNIMPLEMENTED;
+      // TODO LOG_WARN("unsupported or operation");
+      rc = RC::SUCCESS;
       return rc;
     }
 
-    vector<unique_ptr<Expression>> &child_exprs = conjunction_expr->children();
+    std::vector<std::unique_ptr<Expression>> &child_exprs = conjunction_expr->children();
     for (auto iter = child_exprs.begin(); iter != child_exprs.end();) {
       // 对每个子表达式，判断是否可以下放到table get 算子
       // 如果可以的话，就从当前孩子节点中删除他
@@ -112,13 +112,25 @@ RC PredicatePushdownRewriter::get_exprs_can_pushdown(
       }
 
       if (!*iter) {
-        iter = child_exprs.erase(iter);
+        child_exprs.erase(iter);
       } else {
         ++iter;
       }
     }
   } else if (expr->type() == ExprType::COMPARISON) {
     // 如果是比较操作，并且比较的左边或右边是表某个列值，那么就下推下去
+    auto comparison_expr = static_cast<ComparisonExpr *>(expr.get());
+
+    std::unique_ptr<Expression> &left_expr  = comparison_expr->left();
+    std::unique_ptr<Expression> &right_expr = comparison_expr->right();
+    // 比较操作的左右两边只要有一个是取列字段值的并且另一边也是取字段值或常量，就pushdown
+    if (left_expr->type() != ExprType::FIELD && right_expr->type() != ExprType::FIELD) {
+      return rc;
+    }
+    if (left_expr->type() != ExprType::FIELD && left_expr->type() != ExprType::VALUE &&
+        right_expr->type() != ExprType::FIELD && right_expr->type() != ExprType::VALUE) {
+      return rc;
+    }
 
     pushdown_exprs.emplace_back(std::move(expr));
   }

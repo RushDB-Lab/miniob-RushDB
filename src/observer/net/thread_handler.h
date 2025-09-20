@@ -14,7 +14,8 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "common/sys/rc.h"
+#include <functional>
+#include "common/rc.h"
 
 class Communicator;
 

@@ -23,7 +23,7 @@ See the Mulan PSL v2 for more details. */
 class ExplainStmt : public Stmt
 {
 public:
-  ExplainStmt(unique_ptr<Stmt> child_stmt);
+  ExplainStmt(std::unique_ptr<Stmt> child_stmt);
   virtual ~ExplainStmt() = default;
 
   StmtType type() const override { return StmtType::EXPLAIN; }
@@ -33,5 +33,5 @@ public:
   static RC create(Db *db, const ExplainSqlNode &query, Stmt *&stmt);
 
 private:
-  unique_ptr<Stmt> child_stmt_;
+  std::unique_ptr<Stmt> child_stmt_;
 };

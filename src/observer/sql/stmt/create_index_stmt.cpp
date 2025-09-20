@@ -26,25 +26,32 @@ RC CreateIndexStmt::create(Db *db, const CreateIndexSqlNode &create_index, Stmt 
   stmt = nullptr;
 
   const char *table_name = create_index.relation_name.c_str();
-  if (is_blank(table_name) || is_blank(create_index.index_name.c_str()) ||
-      is_blank(create_index.attribute_name.c_str())) {
-    LOG_WARN("invalid argument. db=%p, table_name=%p, index name=%s, attribute name=%s",
-        db, table_name, create_index.index_name.c_str(), create_index.attribute_name.c_str());
+  if (is_blank(table_name) || is_blank(create_index.index_name.c_str())) {
+    LOG_WARN("invalid argument. db=%p, table_name=%p, index name=%s",
+        db, table_name, create_index.index_name.c_str());
     return RC::INVALID_ARGUMENT;
   }
 
   // check whether the table exists
-  Table *table = db->find_table(table_name);
-  if (nullptr == table) {
+  BaseTable *base_table = db->find_table(table_name);
+  if (nullptr == base_table) {
     LOG_WARN("no such table. db=%s, table_name=%s", db->name(), table_name);
     return RC::SCHEMA_TABLE_NOT_EXIST;
   }
 
-  const FieldMeta *field_meta = table->table_meta().field(create_index.attribute_name.c_str());
-  if (nullptr == field_meta) {
-    LOG_WARN("no such field in table. db=%s, table=%s, field name=%s", 
-             db->name(), table_name, create_index.attribute_name.c_str());
-    return RC::SCHEMA_FIELD_NOT_EXIST;
+  if (base_table->type() != TableType::Table) {
+    LOG_WARN("table %s is not BASE TABLE. db=%s",
+             table_name, db->name());
+    return RC::CREATE_INDEX_ON_NON_TABLE_TYPE;
+  }
+
+  Table            *table = static_cast<Table *>(base_table);
+  vector<FieldMeta> field_metas;
+  RC                rc = table->table_meta().get_field_metas(create_index.attribute_name, field_metas);
+  if (OB_FAIL(rc)) {
+    LOG_WARN("no such field in table. db=%s, table=%s",
+             db->name(), table_name);
+    return rc;
   }
 
   Index *index = table->find_index(create_index.index_name.c_str());
@@ -53,6 +60,38 @@ RC CreateIndexStmt::create(Db *db, const CreateIndexSqlNode &create_index, Stmt 
     return RC::SCHEMA_INDEX_NAME_REPEAT;
   }
 
-  stmt = new CreateIndexStmt(table, field_meta, create_index.index_name);
+  auto config = create_index.vector_index_config;
+
+  auto index_type = config.index_type;
+  if (index_type == IndexType::BPlusTreeIndex) {
+    stmt = new CreateIndexStmt(table, index_type, field_metas, create_index.index_name, create_index.unique);
+  } else if (index_type == IndexType::VectorIVFFlatIndex) {
+    // 解析距离度量方法，后续单独提取出去
+    auto               distance_type_str = common::str_to_lower(config.distance_fn);
+    NormalFunctionType distance_type;
+    if (distance_type_str == "l2_distance") {
+      distance_type = NormalFunctionType::L2_DISTANCE;
+    } else if (distance_type_str == "inner_product") {
+      distance_type = NormalFunctionType::INNER_PRODUCT;
+    } else if (distance_type_str == "cosine_distance") {
+      distance_type = NormalFunctionType::COSINE_DISTANCE;
+    } else {
+      return RC::UNSUPPORTED;
+    }
+
+    // 没有参数，使用默认参数
+    if (config.lists.attr_type() == AttrType::UNDEFINED && config.probes.attr_type() == AttrType::UNDEFINED) {
+      stmt = new CreateIndexStmt(table, index_type, field_metas, create_index.index_name, distance_type);
+    } else if (config.lists.attr_type() == AttrType::INTS && config.probes.attr_type() == AttrType::INTS) {
+      std::vector<int> options(2);
+      options[0] = config.lists.get_int();
+      options[1] = config.probes.get_int();
+      stmt       = new CreateIndexStmt(
+          table, index_type, field_metas, create_index.index_name, distance_type, std::move(options));
+    } else {
+      return RC::INVALID_ARGUMENT;
+    }
+  }
+
   return RC::SUCCESS;
 }

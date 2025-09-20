@@ -14,6 +14,9 @@ See the Mulan PSL v2 for more details. */
 
 #include "storage/default/default_handler.h"
 
+#include <string>
+#include <filesystem>
+
 #include "common/lang/string.h"
 #include "common/log/log.h"
 #include "common/os/path.h"
@@ -24,13 +27,13 @@ See the Mulan PSL v2 for more details. */
 #include "storage/table/table.h"
 #include "storage/trx/trx.h"
 
-using namespace std;
+// using namespace std;
 
 DefaultHandler::DefaultHandler() {}
 
 DefaultHandler::~DefaultHandler() noexcept { destroy(); }
 
-RC DefaultHandler::init(const char *base_dir, const char *trx_kit_name, const char *log_handler_name, const char *storage_engine)
+RC DefaultHandler::init(const char *base_dir, const char *trx_kit_name, const char *log_handler_name)
 {
   // 检查目录是否存在，或者创建
   filesystem::path db_dir(base_dir);
@@ -41,11 +44,10 @@ RC DefaultHandler::init(const char *base_dir, const char *trx_kit_name, const ch
     return RC::INTERNAL;
   }
 
-  base_dir_ = base_dir;
-  db_dir_   = db_dir;
-  trx_kit_name_ = trx_kit_name;
+  base_dir_         = base_dir;
+  db_dir_           = db_dir;
+  trx_kit_name_     = trx_kit_name;
   log_handler_name_ = log_handler_name;
-  storage_engine_ = storage_engine;
 
   const char *sys_db = "sys";
 
@@ -100,7 +102,27 @@ RC DefaultHandler::create_db(const char *dbname)
   return RC::SUCCESS;
 }
 
-RC DefaultHandler::drop_db(const char *dbname) { return RC::INTERNAL; }
+RC DefaultHandler::drop_db(const char *dbname)
+{
+  if (dbname == nullptr || common::is_blank(dbname)) {
+    LOG_WARN("Invalid db name");
+    return RC::INVALID_ARGUMENT;
+  }
+
+  // 如果对应目录不存在，返回错误
+  filesystem::path dbpath = db_dir_ / dbname;
+  if (!filesystem::is_directory(dbpath)) {
+    LOG_WARN("Db not exists: %s", dbname);
+    return RC::SCHEMA_DB_NOT_EXIST;
+  }
+
+  error_code ec;
+  if (!filesystem::remove(dbpath, ec)) {
+    LOG_ERROR("Drop db fail: %s. error=%s", dbpath.c_str(), strerror(errno));
+    return RC::IOERR_WRITE;
+  }
+  return RC::SUCCESS;
+}
 
 RC DefaultHandler::open_db(const char *dbname)
 {
@@ -121,7 +143,7 @@ RC DefaultHandler::open_db(const char *dbname)
   // open db
   Db *db  = new Db();
   RC  ret = RC::SUCCESS;
-  if ((ret = db->init(dbname, dbpath.c_str(), trx_kit_name_.c_str(), log_handler_name_.c_str(), storage_engine_.c_str())) != RC::SUCCESS) {
+  if ((ret = db->init(dbname, dbpath.c_str(), trx_kit_name_.c_str(), log_handler_name_.c_str())) != RC::SUCCESS) {
     LOG_ERROR("Failed to open db: %s. error=%s", dbname, strrc(ret));
     delete db;
   } else {
@@ -132,14 +154,13 @@ RC DefaultHandler::open_db(const char *dbname)
 
 RC DefaultHandler::close_db(const char *dbname) { return RC::UNIMPLEMENTED; }
 
-// TODO: remove DefaultHandler
 RC DefaultHandler::create_table(const char *dbname, const char *relation_name, span<const AttrInfoSqlNode> attributes)
 {
   Db *db = find_db(dbname);
   if (db == nullptr) {
     return RC::SCHEMA_DB_NOT_OPENED;
   }
-  return db->create_table(relation_name, attributes, {});
+  return db->create_table(relation_name, attributes);
 }
 
 RC DefaultHandler::drop_table(const char *dbname, const char *relation_name) { return RC::UNIMPLEMENTED; }
@@ -153,7 +174,7 @@ Db *DefaultHandler::find_db(const char *dbname) const
   return iter->second;
 }
 
-Table *DefaultHandler::find_table(const char *dbname, const char *table_name) const
+BaseTable *DefaultHandler::find_table(const char *dbname, const char *table_name) const
 {
   if (dbname == nullptr || table_name == nullptr) {
     LOG_WARN("Invalid argument. dbname=%p, table_name=%p", dbname, table_name);

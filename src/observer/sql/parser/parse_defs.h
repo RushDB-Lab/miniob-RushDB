@@ -14,11 +14,12 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "common/lang/string.h"
-#include "common/lang/vector.h"
-#include "common/lang/memory.h"
+#include <string>
+// #include <utility>
+#include <vector>
+#include <memory>
+
 #include "common/value.h"
-#include "common/lang/utility.h"
 
 class Expression;
 
@@ -35,8 +36,8 @@ class Expression;
  */
 struct RelAttrSqlNode
 {
-  string relation_name;   ///< relation name (may be NULL) 表名
-  string attribute_name;  ///< attribute name              属性名
+  std::string relation_name;   ///< relation name (may be NULL) 表名
+  std::string attribute_name;  ///< attribute name              属性名
 };
 
 /**
@@ -45,12 +46,20 @@ struct RelAttrSqlNode
  */
 enum CompOp
 {
-  EQUAL_TO,     ///< "="
-  LESS_EQUAL,   ///< "<="
-  NOT_EQUAL,    ///< "<>"
-  LESS_THAN,    ///< "<"
-  GREAT_EQUAL,  ///< ">="
-  GREAT_THAN,   ///< ">"
+  EQUAL_TO,       ///< "="
+  LESS_EQUAL,     ///< "<="
+  NOT_EQUAL,      ///< "<>"
+  LESS_THAN,      ///< "<"
+  GREAT_EQUAL,    ///< ">="
+  GREAT_THAN,     ///< ">"
+  IS_OP,          ///< "is (null)"
+  IS_NOT_OP,      ///< "is not (null)"
+  LIKE_OP,        ///< "like"
+  NOT_LIKE_OP,    ///< "not like"
+  IN_OP,          ///< "in (sub query)"
+  NOT_IN_OP,      ///< "not in (sub query)"
+  EXISTS_OP,      ///< "exists (sub query)"
+  NOT_EXISTS_OP,  ///< "not exists (sub query)"
   NO_OP
 };
 
@@ -76,6 +85,31 @@ struct ConditionSqlNode
 };
 
 /**
+ * @brief 描述一个relation的节点
+ */
+struct RelationNode
+{
+  RelationNode(std::string relation_, std::string alias_) : relation(std::move(relation_)), alias(std::move(alias_)) {}
+  explicit RelationNode(std::string relation_) : relation(std::move(relation_)) {}
+  std::string relation;  ///< 查询的表
+  std::string alias;     ///< 该表的别名 (may be NULL)
+};
+
+/**
+ * @brief 描述一个orderby的节点
+ */
+struct OrderBySqlNode
+{
+  std::unique_ptr<Expression> expr;
+  bool                        is_asc;  ///< 默认true 为升序
+};
+
+struct LimitSqlNode
+{
+  int number;
+};
+
+/**
  * @brief 描述一个select语句
  * @ingroup SQLParser
  * @details 一个正常的select语句描述起来比这个要复杂很多，这里做了简化。
@@ -85,13 +119,26 @@ struct ConditionSqlNode
  * where 条件 conditions，这里表示使用AND串联起来多个条件。正常的SQL语句会有OR，NOT等，
  * 甚至可以包含复杂的表达式。
  */
-
 struct SelectSqlNode
 {
-  vector<unique_ptr<Expression>> expressions;  ///< 查询的表达式
-  vector<string>                 relations;    ///< 查询的表
-  vector<ConditionSqlNode>       conditions;   ///< 查询条件，使用AND串联起来多个条件
-  vector<unique_ptr<Expression>> group_by;     ///< group by clause
+  std::vector<std::unique_ptr<Expression>> expressions;        ///< 查询的表达式
+  std::vector<RelationNode>                relations;          ///< 查询的表
+  std::unique_ptr<Expression>              conditions;         ///< 查询条件，使用AND串联起来多个条件
+  std::vector<std::unique_ptr<Expression>> group_by;           ///< group by clause
+  std::vector<OrderBySqlNode>              order_by;           ///< attributes in order clause
+  std::unique_ptr<Expression>              having_conditions;  ///< having
+  std::unique_ptr<LimitSqlNode>            limit;
+};
+
+/**
+ * @brief 描述一个join语句
+ * @ingroup SQLParser
+ * @details 目前只支持 inner join，解析表和条件后直接放到 SelectSqlNode 里。
+ */
+struct JoinSqlNode
+{
+  std::vector<std::string>    relations;   ///< 查询的表
+  std::unique_ptr<Expression> conditions;  ///< 查询条件，可能有多个
 };
 
 /**
@@ -100,7 +147,7 @@ struct SelectSqlNode
  */
 struct CalcSqlNode
 {
-  vector<unique_ptr<Expression>> expressions;  ///< calc clause
+  std::vector<std::unique_ptr<Expression>> expressions;  ///< calc clause
 };
 
 /**
@@ -110,8 +157,9 @@ struct CalcSqlNode
  */
 struct InsertSqlNode
 {
-  string        relation_name;  ///< Relation to insert into
-  vector<Value> values;         ///< 要插入的值
+  std::string                     relation_name;  ///< Relation to insert into
+  std::vector<std::string>        attr_names;     ///< attribute names
+  std::vector<std::vector<Value>> values_list;    ///< 要插入的值列表
 };
 
 /**
@@ -120,8 +168,18 @@ struct InsertSqlNode
  */
 struct DeleteSqlNode
 {
-  string                   relation_name;  ///< Relation to delete from
-  vector<ConditionSqlNode> conditions;
+  std::string                 relation_name;  ///< Relation to delete from
+  std::unique_ptr<Expression> condition;
+};
+
+/**
+ * @brief 描述一个set语句
+ * @ingroup SQLParser
+ */
+struct SetClauseSqlNode
+{
+  std::string                 field_name;  ///< 更新的字段
+  std::unique_ptr<Expression> value;       ///< 更新的值
 };
 
 /**
@@ -130,10 +188,9 @@ struct DeleteSqlNode
  */
 struct UpdateSqlNode
 {
-  string                   relation_name;   ///< Relation to update
-  string                   attribute_name;  ///< 更新的字段，仅支持一个字段
-  Value                    value;           ///< 更新的值，仅支持一个字段
-  vector<ConditionSqlNode> conditions;
+  std::string                   relation_name;  ///< Relation to update
+  std::vector<SetClauseSqlNode> set_clauses;    ///< 更新的set语句，支持多个字段和值
+  std::unique_ptr<Expression>   conditions;     ///< 谓词条件
 };
 
 /**
@@ -143,9 +200,11 @@ struct UpdateSqlNode
  */
 struct AttrInfoSqlNode
 {
-  AttrType type;    ///< Type of attribute
-  string   name;    ///< Attribute name
-  size_t   length;  ///< Length of attribute
+  AttrType    type;             ///< Type of attribute
+  std::string name;             ///< Attribute name
+  size_t      length;           ///< Length of attribute
+  bool        nullable;         ///< 字段是否可以为空
+  bool        mutable_ = true;  ///< 视图字段是否是可插入修改的
 };
 
 /**
@@ -155,12 +214,32 @@ struct AttrInfoSqlNode
  */
 struct CreateTableSqlNode
 {
-  string                  relation_name;  ///< Relation name
-  vector<AttrInfoSqlNode> attr_infos;     ///< attributes
-  vector<string>          primary_keys;   ///< primary keys
-  // TODO: integrate to CreateTableOptions
-  string storage_format;  ///< storage format
-  string storage_engine;  ///< storage engine
+  std::string                    relation_name;        ///< Relation name
+  std::vector<AttrInfoSqlNode>   attr_infos;           ///< attributes
+  std::string                    storage_format;       ///< storage format
+  std::unique_ptr<SelectSqlNode> create_table_select;  ///< create table select
+};
+
+/**
+ * @brief 描述一个create view语句
+ * @ingroup SQLParser
+ * @details 这里也做了很多简化。
+ */
+struct CreateViewSqlNode
+{
+  std::string                    relation_name;       ///< Relation name
+  std::vector<std::string>       attribute_names;     ///< attribute names
+  std::unique_ptr<SelectSqlNode> create_view_select;  ///< create table select
+};
+
+/**
+ * @brief 描述一个drop view语句
+ * @ingroup SQLParser
+ * @details 这里也做了很多简化。
+ */
+struct DropViewSqlNode
+{
+  std::string relation_name;  ///< Relation name
 };
 
 /**
@@ -169,16 +248,22 @@ struct CreateTableSqlNode
  */
 struct DropTableSqlNode
 {
-  string relation_name;  ///< 要删除的表名
+  std::string relation_name;  ///< 要删除的表名
 };
 
-/**
- * @brief 描述一个analyze table语句
- * @ingroup SQLParser
- */
-struct AnalyzeTableSqlNode
+enum class IndexType
 {
-  string relation_name;  ///< 要分析的表名
+  BPlusTreeIndex,
+  VectorIVFFlatIndex,  // 目前就支持以上两种
+  VectorHNSWIndex
+};
+
+struct VectorIndexConfig
+{
+  std::string distance_fn;                             ///< 距离度量方法
+  IndexType   index_type = IndexType::BPlusTreeIndex;  ///< 索引类型，非向量索引情况默认为 b+ 树
+  Value       lists;                                   ///< 列表数量
+  Value       probes;                                  ///< 探测次数
 };
 
 /**
@@ -189,9 +274,11 @@ struct AnalyzeTableSqlNode
  */
 struct CreateIndexSqlNode
 {
-  string index_name;      ///< Index name
-  string relation_name;   ///< Relation name
-  string attribute_name;  ///< Attribute name
+  bool                     unique;               ///< unique index
+  std::string              index_name;           ///< Index name
+  std::string              relation_name;        ///< Relation name
+  std::vector<std::string> attribute_name;       ///< Attribute name
+  VectorIndexConfig        vector_index_config;  ///< 向量索引还有一些额外参数
 };
 
 /**
@@ -200,8 +287,17 @@ struct CreateIndexSqlNode
  */
 struct DropIndexSqlNode
 {
-  string index_name;     ///< Index name
-  string relation_name;  ///< Relation name
+  std::string index_name;     ///< Index name
+  std::string relation_name;  ///< Relation name
+};
+
+/**
+ * @brief 描述一个show index语句
+ * @ingroup SQLParser
+ */
+struct ShowIndexSqlNode
+{
+  std::string relation_name;  ///< Relation name
 };
 
 /**
@@ -211,7 +307,7 @@ struct DropIndexSqlNode
  */
 struct DescTableSqlNode
 {
-  string relation_name;
+  std::string relation_name;
 };
 
 /**
@@ -221,10 +317,8 @@ struct DescTableSqlNode
  */
 struct LoadDataSqlNode
 {
-  string relation_name;
-  string file_name;
-  string terminated = ",";
-  string enclosed   = "\"";
+  std::string relation_name;
+  std::string file_name;
 };
 
 /**
@@ -234,8 +328,8 @@ struct LoadDataSqlNode
  */
 struct SetVariableSqlNode
 {
-  string name;
-  Value  value;
+  std::string name;
+  Value       value;
 };
 
 class ParsedSqlNode;
@@ -249,7 +343,7 @@ class ParsedSqlNode;
  */
 struct ExplainSqlNode
 {
-  unique_ptr<ParsedSqlNode> sql_node;
+  std::unique_ptr<ParsedSqlNode> sql_node;
 };
 
 /**
@@ -259,9 +353,9 @@ struct ExplainSqlNode
  */
 struct ErrorSqlNode
 {
-  string error_msg;
-  int    line;
-  int    column;
+  std::string error_msg;
+  int         line;
+  int         column;
 };
 
 /**
@@ -278,12 +372,14 @@ enum SqlCommandFlag
   SCF_DELETE,
   SCF_CREATE_TABLE,
   SCF_DROP_TABLE,
-  SCF_ANALYZE_TABLE,
   SCF_CREATE_INDEX,
   SCF_DROP_INDEX,
+  SCF_SHOW_INDEX,
   SCF_SYNC,
   SCF_SHOW_TABLES,
   SCF_DESC_TABLE,
+  SCF_CREATE_VIEW,
+  SCF_DROP_VIEW,
   SCF_BEGIN,  ///< 事务开始语句，可以在这里扩展只读事务
   SCF_COMMIT,
   SCF_CLOG_SYNC,
@@ -310,10 +406,12 @@ public:
   UpdateSqlNode       update;
   CreateTableSqlNode  create_table;
   DropTableSqlNode    drop_table;
-  AnalyzeTableSqlNode analyze_table;
   CreateIndexSqlNode  create_index;
   DropIndexSqlNode    drop_index;
+  ShowIndexSqlNode    show_index;
   DescTableSqlNode    desc_table;
+  CreateViewSqlNode   create_view;
+  DropViewSqlNode     drop_view;
   LoadDataSqlNode     load_data;
   ExplainSqlNode      explain;
   SetVariableSqlNode  set_variable;
@@ -330,10 +428,10 @@ public:
 class ParsedSqlResult
 {
 public:
-  void add_sql_node(unique_ptr<ParsedSqlNode> sql_node);
+  void add_sql_node(std::unique_ptr<ParsedSqlNode> sql_node);
 
-  vector<unique_ptr<ParsedSqlNode>> &sql_nodes() { return sql_nodes_; }
+  std::vector<std::unique_ptr<ParsedSqlNode>> &sql_nodes() { return sql_nodes_; }
 
 private:
-  vector<unique_ptr<ParsedSqlNode>> sql_nodes_;  ///< 这里记录SQL命令。虽然看起来支持多个，但是当前仅处理一个
+  std::vector<std::unique_ptr<ParsedSqlNode>> sql_nodes_;  ///< 这里记录SQL命令。虽然看起来支持多个，但是当前仅处理一个
 };

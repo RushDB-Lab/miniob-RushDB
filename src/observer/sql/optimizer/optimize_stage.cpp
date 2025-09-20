@@ -13,6 +13,7 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include <string.h>
+#include <string>
 
 #include "optimize_stage.h"
 
@@ -24,8 +25,6 @@ See the Mulan PSL v2 for more details. */
 #include "event/sql_event.h"
 #include "sql/operator/logical_operator.h"
 #include "sql/stmt/stmt.h"
-#include "sql/optimizer/cascade/optimizer.h"
-#include "sql/optimizer/optimizer_utils.h"
 
 using namespace std;
 using namespace common;
@@ -44,34 +43,23 @@ RC OptimizeStage::handle_request(SQLStageEvent *sql_event)
 
   ASSERT(logical_operator, "logical operator is null");
 
-  // TODO: unify the RBO and CBO
   rc = rewrite(logical_operator);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to rewrite plan. rc=%s", strrc(rc));
     return rc;
   }
 
-  // TODO: better way
-  logical_operator->generate_general_child();
-  Optimizer optimizer;
-  // TODO: error handle
-  unique_ptr<PhysicalOperator> physical_operator;
-  if (sql_event->session_event()->session()->use_cascade()) {
-    physical_operator = optimizer.optimize(logical_operator.get());
-    if (!physical_operator) {
-      rc = RC::INTERNAL;
-      LOG_WARN("failed to optimize logical plan. rc=%s", strrc(rc));
-      return rc;
-    }
-    string phys_plan_str = OptimizerUtils::dump_physical_plan(physical_operator);
+  rc = optimize(logical_operator);
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to optimize plan. rc=%s", strrc(rc));
+    return rc;
+  }
 
-    LOG_INFO("cascade physical plan:\n%s", phys_plan_str.c_str());
-  } else {
-    rc = generate_physical_plan(logical_operator, physical_operator, sql_event->session_event()->session());
-    if (rc != RC::SUCCESS) {
-      LOG_WARN("failed to generate physical plan. rc=%s", strrc(rc));
-      return rc;
-    }
+  unique_ptr<PhysicalOperator> physical_operator;
+  rc = generate_physical_plan(logical_operator, physical_operator, sql_event->session_event()->session());
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to generate physical plan. rc=%s", strrc(rc));
+    return rc;
   }
 
   sql_event->set_operator(std::move(physical_operator));
@@ -89,14 +77,15 @@ RC OptimizeStage::generate_physical_plan(
     unique_ptr<LogicalOperator> &logical_operator, unique_ptr<PhysicalOperator> &physical_operator, Session *session)
 {
   RC rc = RC::SUCCESS;
-  if (session->get_execution_mode() == ExecutionMode::CHUNK_ITERATOR && LogicalOperator::can_generate_vectorized_operator(logical_operator->type())) {
-    LOG_TRACE("use chunk iterator");
+  if (session->get_execution_mode() == ExecutionMode::CHUNK_ITERATOR &&
+      LogicalOperator::can_generate_vectorized_operator(logical_operator->type())) {
+    LOG_INFO("use chunk iterator");
     session->set_used_chunk_mode(true);
-    rc    = physical_plan_generator_.create_vec(*logical_operator, physical_operator, session);
+    rc = physical_plan_generator_.create_vec(*logical_operator, physical_operator);
   } else {
-    LOG_TRACE("use tuple iterator");
+    LOG_INFO("use tuple iterator");
     session->set_used_chunk_mode(false);
-    rc = physical_plan_generator_.create(*logical_operator, physical_operator, session);
+    rc = physical_plan_generator_.create(*logical_operator, physical_operator);
   }
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to create physical operator. rc=%s", strrc(rc));

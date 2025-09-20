@@ -1,0 +1,112 @@
+/* Copyright (c) 2021 OceanBase and/or its affiliates. All rights reserved.
+miniob is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+         http://license.coscl.org.cn/MulanPSL2
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details. */
+
+//
+// Created by Longda on 2021/5/2.
+//
+
+#pragma once
+
+/**
+ * @brief 这个文件定义函数返回码/错误码(Return Code)
+ * @enum RC
+ */
+#define DEFINE_RCS                           \
+  DEFINE_RC(SUCCESS)                         \
+  DEFINE_RC(INVALID_ALIAS)                   \
+  DEFINE_RC(INVALID_ARGUMENT)                \
+  DEFINE_RC(INVALID_HAVING_CONDITION)        \
+  DEFINE_RC(UNIMPLEMENTED)                   \
+  DEFINE_RC(SQL_SYNTAX)                      \
+  DEFINE_RC(INTERNAL)                        \
+  DEFINE_RC(NOMEM)                           \
+  DEFINE_RC(NOTFOUND)                        \
+  DEFINE_RC(NUMBER_DIV_ZERO)                 \
+  DEFINE_RC(EMPTY)                           \
+  DEFINE_RC(ERROR_DATE)                      \
+  DEFINE_RC(FULL)                            \
+  DEFINE_RC(EXIST)                           \
+  DEFINE_RC(NOT_EXIST)                       \
+  DEFINE_RC(BUFFERPOOL_OPEN)                 \
+  DEFINE_RC(BUFFERPOOL_NOBUF)                \
+  DEFINE_RC(BUFFERPOOL_INVALID_PAGE_NUM)     \
+  DEFINE_RC(RECORD_OPENNED)                  \
+  DEFINE_RC(RECORD_INVALID_RID)              \
+  DEFINE_RC(RECORD_INVALID_KEY)              \
+  DEFINE_RC(RECORD_DUPLICATE_KEY)            \
+  DEFINE_RC(RECORD_NOMEM)                    \
+  DEFINE_RC(RECORD_EOF)                      \
+  DEFINE_RC(RECORD_NOT_EXIST)                \
+  DEFINE_RC(RECORD_INVISIBLE)                \
+  DEFINE_RC(SCHEMA_DB_EXIST)                 \
+  DEFINE_RC(SCHEMA_DB_NOT_EXIST)             \
+  DEFINE_RC(SCHEMA_DB_NOT_OPENED)            \
+  DEFINE_RC(SCHEMA_TABLE_NOT_EXIST)          \
+  DEFINE_RC(SCHEMA_TABLE_EXIST)              \
+  DEFINE_RC(SCHEMA_FIELD_NOT_EXIST)          \
+  DEFINE_RC(SCHEMA_FIELD_MISSING)            \
+  DEFINE_RC(SCHEMA_FIELD_TYPE_MISMATCH)      \
+  DEFINE_RC(SCHEMA_INDEX_NAME_REPEAT)        \
+  DEFINE_RC(IOERR_READ)                      \
+  DEFINE_RC(IOERR_WRITE)                     \
+  DEFINE_RC(IOERR_ACCESS)                    \
+  DEFINE_RC(IOERR_OPEN)                      \
+  DEFINE_RC(IOERR_CLOSE)                     \
+  DEFINE_RC(IOERR_SEEK)                      \
+  DEFINE_RC(IOERR_TOO_LONG)                  \
+  DEFINE_RC(IOERR_SYNC)                      \
+  DEFINE_RC(VECTOR_PARSE_ERROR)              \
+  DEFINE_RC(LOCKED_UNLOCK)                   \
+  DEFINE_RC(LOCKED_NEED_WAIT)                \
+  DEFINE_RC(LOCKED_CONCURRENCY_CONFLICT)     \
+  DEFINE_RC(FILE_EXIST)                      \
+  DEFINE_RC(FILE_NOT_EXIST)                  \
+  DEFINE_RC(FILE_NAME)                       \
+  DEFINE_RC(FILE_BOUND)                      \
+  DEFINE_RC(FILE_CREATE)                     \
+  DEFINE_RC(FILE_OPEN)                       \
+  DEFINE_RC(FILE_NOT_OPENED)                 \
+  DEFINE_RC(FILE_CLOSE)                      \
+  DEFINE_RC(FILE_REMOVE)                     \
+  DEFINE_RC(VARIABLE_NOT_EXISTS)             \
+  DEFINE_RC(VARIABLE_NOT_VALID)              \
+  DEFINE_RC(LOGBUF_FULL)                     \
+  DEFINE_RC(LOG_FILE_FULL)                   \
+  DEFINE_RC(LOG_ENTRY_INVALID)               \
+  DEFINE_RC(UNSUPPORTED)                     \
+  DEFINE_RC(VALUE_TOO_LONG)                  \
+  DEFINE_RC(VECTOR_LENGTG_ARE_INCONSISTENT)  \
+  DEFINE_RC(VECTOR_DIM_MISMATCH)             \
+  DEFINE_RC(TO_LONG_SUBQUERY_EXPR)           \
+  DEFINE_RC(NOT_NULLABLE_VALUE)              \
+  DEFINE_RC(NOT_NULL_AFTER_IS)               \
+  DEFINE_RC(UNKNOWN_FUNCTION)                \
+  DEFINE_RC(SUBQUERY_RETURNED_MULTIPLE_ROWS) \
+  DEFINE_RC(UNKNOWN_TABLE_TYPE)              \
+  DEFINE_RC(CREATE_INDEX_ON_NON_TABLE_TYPE)  \
+  DEFINE_RC(JOIN_VIEW_INSERT_ERROR)          \
+  DEFINE_RC(JOIN_VIEW_DELETE_ERROR)          \
+  DEFINE_RC(READ_ONLY_VIEW_INSERT_ERROR)     \
+  DEFINE_RC(READ_ONLY_VIEW_DELETE_ERROR)     \
+  DEFINE_RC(READ_ONLY_VIEW_UPDATE_ERROR)     \
+  DEFINE_RC(EXPRESSION_FIELD_NOT_INSERTABLE) \
+  DEFINE_RC(EXPRESSION_FIELD_NOT_UPDATEABLE)
+
+enum class RC
+{
+#define DEFINE_RC(name) name,
+  DEFINE_RCS
+#undef DEFINE_RC
+};
+
+extern const char *strrc(RC rc);
+
+extern bool OB_SUCC(RC rc);
+extern bool OB_FAIL(RC rc);

@@ -14,20 +14,22 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "common/sys/rc.h"
+#include "common/rc.h"
 #include "sql/operator/logical_operator.h"
 #include "sql/operator/physical_operator.h"
 
-class Session;
 class TableGetLogicalOperator;
 class PredicateLogicalOperator;
 class ProjectLogicalOperator;
 class InsertLogicalOperator;
 class DeleteLogicalOperator;
+class UpdateLogicalOperator;
 class ExplainLogicalOperator;
 class JoinLogicalOperator;
 class CalcLogicalOperator;
 class GroupByLogicalOperator;
+class OrderByLogicalOperator;
+class LimitLogicalOperator;
 
 /**
  * @brief 物理计划生成器
@@ -41,24 +43,24 @@ public:
   PhysicalPlanGenerator()          = default;
   virtual ~PhysicalPlanGenerator() = default;
 
-  RC create(LogicalOperator &logical_operator, unique_ptr<PhysicalOperator> &oper, Session *session);
-  RC create_vec(LogicalOperator &logical_operator, unique_ptr<PhysicalOperator> &oper, Session *session);
+  static RC create(LogicalOperator &logical_operator, std::unique_ptr<PhysicalOperator> &oper);
+  static RC create_vec(LogicalOperator &logical_operator, std::unique_ptr<PhysicalOperator> &oper);
 
 private:
-  RC create_plan(TableGetLogicalOperator &logical_oper, unique_ptr<PhysicalOperator> &oper, Session *session);
-  RC create_plan(PredicateLogicalOperator &logical_oper, unique_ptr<PhysicalOperator> &oper, Session *session);
-  RC create_plan(ProjectLogicalOperator &logical_oper, unique_ptr<PhysicalOperator> &oper, Session *session);
-  RC create_plan(InsertLogicalOperator &logical_oper, unique_ptr<PhysicalOperator> &oper, Session *session);
-  RC create_plan(DeleteLogicalOperator &logical_oper, unique_ptr<PhysicalOperator> &oper, Session *session);
-  RC create_plan(ExplainLogicalOperator &logical_oper, unique_ptr<PhysicalOperator> &oper, Session *session);
-  RC create_plan(JoinLogicalOperator &logical_oper, unique_ptr<PhysicalOperator> &oper, Session *session);
-  RC create_plan(CalcLogicalOperator &logical_oper, unique_ptr<PhysicalOperator> &oper, Session *session);
-  RC create_plan(GroupByLogicalOperator &logical_oper, unique_ptr<PhysicalOperator> &oper, Session *session);
-  RC create_vec_plan(ProjectLogicalOperator &logical_oper, unique_ptr<PhysicalOperator> &oper, Session *session);
-  RC create_vec_plan(TableGetLogicalOperator &logical_oper, unique_ptr<PhysicalOperator> &oper, Session *session);
-  RC create_vec_plan(GroupByLogicalOperator &logical_oper, unique_ptr<PhysicalOperator> &oper, Session *session);
-  RC create_vec_plan(ExplainLogicalOperator &logical_oper, unique_ptr<PhysicalOperator> &oper, Session *session);
-
-  // TODO: remove this and add CBO rules
-  bool can_use_hash_join(JoinLogicalOperator &logical_oper);
+  static RC create_plan(TableGetLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
+  static RC create_plan(PredicateLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
+  static RC create_plan(ProjectLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
+  static RC create_plan(InsertLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
+  static RC create_plan(DeleteLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
+  static RC create_plan(UpdateLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
+  static RC create_plan(ExplainLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
+  static RC create_plan(JoinLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
+  static RC create_plan(CalcLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
+  static RC create_plan(GroupByLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
+  static RC create_plan(OrderByLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
+  static RC create_plan(LimitLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
+  static RC create_vec_plan(ProjectLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
+  static RC create_vec_plan(TableGetLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
+  static RC create_vec_plan(GroupByLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
+  static RC create_vec_plan(ExplainLogicalOperator &logical_oper, std::unique_ptr<PhysicalOperator> &oper);
 };

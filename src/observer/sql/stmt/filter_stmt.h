@@ -14,56 +14,16 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "common/lang/unordered_map.h"
-#include "common/lang/vector.h"
 #include "sql/expr/expression.h"
 #include "sql/parser/parse_defs.h"
 #include "sql/stmt/stmt.h"
+#include "sql/parser/expression_binder.h"
+#include <unordered_map>
+#include <vector>
 
 class Db;
 class Table;
 class FieldMeta;
-
-struct FilterObj
-{
-  bool  is_attr;
-  Field field;
-  Value value;
-
-  void init_attr(const Field &field)
-  {
-    is_attr     = true;
-    this->field = field;
-  }
-
-  void init_value(const Value &value)
-  {
-    is_attr     = false;
-    this->value = value;
-  }
-};
-
-class FilterUnit
-{
-public:
-  FilterUnit() = default;
-  ~FilterUnit() {}
-
-  void set_comp(CompOp comp) { comp_ = comp; }
-
-  CompOp comp() const { return comp_; }
-
-  void set_left(const FilterObj &obj) { left_ = obj; }
-  void set_right(const FilterObj &obj) { right_ = obj; }
-
-  const FilterObj &left() const { return left_; }
-  const FilterObj &right() const { return right_; }
-
-private:
-  CompOp    comp_ = NO_OP;
-  FilterObj left_;
-  FilterObj right_;
-};
 
 /**
  * @brief Filter/谓词/过滤语句
@@ -76,15 +36,16 @@ public:
   virtual ~FilterStmt();
 
 public:
-  const vector<FilterUnit *> &filter_units() const { return filter_units_; }
+  static RC create(Db *db, BaseTable *default_table, std::vector<std::string> tables_alias,
+      std::unordered_map<std::string, BaseTable *> *tables, std::unique_ptr<Expression> &condition, FilterStmt *&stmt);
 
-public:
-  static RC create(Db *db, Table *default_table, unordered_map<string, Table *> *tables,
-      const ConditionSqlNode *conditions, int condition_num, FilterStmt *&stmt);
-
-  static RC create_filter_unit(Db *db, Table *default_table, unordered_map<string, Table *> *tables,
-      const ConditionSqlNode &condition, FilterUnit *&filter_unit);
+  bool                         condition_empty() const { return nullptr == condition_; }
+  std::unique_ptr<Expression> &condition() { return condition_; }
 
 private:
-  vector<FilterUnit *> filter_units_;  // 默认当前都是AND关系
+  RC bind_expressions_recursively(ExpressionBinder &expression_binder, unique_ptr<Expression> &condition,
+      vector<unique_ptr<Expression>> &cond_expressions);
+
+private:
+  std::unique_ptr<Expression> condition_;
 };

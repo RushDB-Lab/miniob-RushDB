@@ -13,7 +13,6 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "common/type/integer_type.h"
 #include "common/value.h"
-#include "storage/common/column.h"
 
 int IntegerType::compare(const Value &left, const Value &right) const
 {
@@ -21,34 +20,13 @@ int IntegerType::compare(const Value &left, const Value &right) const
   ASSERT(right.attr_type() == AttrType::INTS || right.attr_type() == AttrType::FLOATS, "right type is not numeric");
   if (right.attr_type() == AttrType::INTS) {
     return common::compare_int((void *)&left.value_.int_value_, (void *)&right.value_.int_value_);
-  } else if (right.attr_type() == AttrType::FLOATS) {
+  }
+  if (right.attr_type() == AttrType::FLOATS) {
     float left_val  = left.get_float();
     float right_val = right.get_float();
     return common::compare_float((void *)&left_val, (void *)&right_val);
   }
   return INT32_MAX;
-}
-
-int IntegerType::compare(const Column &left, const Column &right, int left_idx, int right_idx) const
-{
-  ASSERT(left.attr_type() == AttrType::INTS, "left type is not integer");
-  ASSERT(right.attr_type() == AttrType::INTS, "right type is not integer");
-  return common::compare_int((void *)&((int*)left.data())[left_idx],
-      (void *)&((int*)right.data())[right_idx]);
-}
-
-RC IntegerType::cast_to(const Value &val, AttrType type, Value &result) const
-{
-  switch (type) {
-  case AttrType::FLOATS: {
-    float float_value = val.get_int();
-    result.set_float(float_value);
-    return RC::SUCCESS;
-  }
-  default:
-    LOG_WARN("unsupported type %d", type);
-    return RC::SCHEMA_FIELD_TYPE_MISMATCH;
-  }
 }
 
 RC IntegerType::add(const Value &left, const Value &right, Value &result) const
@@ -77,7 +55,7 @@ RC IntegerType::negative(const Value &val, Value &result) const
 
 RC IntegerType::set_value_from_str(Value &val, const string &data) const
 {
-  RC                rc = RC::SUCCESS;
+  RC           rc = RC::SUCCESS;
   stringstream deserialize_stream;
   deserialize_stream.clear();  // 清理stream的状态，防止多次解析出现异常
   deserialize_stream.str(data);
@@ -93,8 +71,43 @@ RC IntegerType::set_value_from_str(Value &val, const string &data) const
 
 RC IntegerType::to_string(const Value &val, string &result) const
 {
-  stringstream ss;
-  ss << val.value_.int_value_;
-  result = ss.str();
+  result = std::to_string(val.get_int());
+  return RC::SUCCESS;
+}
+
+int IntegerType::cast_cost(AttrType type)
+{
+  if (type == AttrType::INTS)
+    return 0;  // INT -> INT
+  if (type == AttrType::FLOATS)
+    return 1;  // INT -> FLOAT
+  if (type == AttrType::BOOLEANS)
+    return 1;        // INT -> BOOL (非严格转换)
+  return INT32_MAX;  // 不支持转换
+}
+
+RC IntegerType::cast_to(const Value &val, AttrType type, Value &result, bool allow_type_promotion) const
+{
+  switch (type) {
+    case AttrType::INTS: {
+      result.set_int(val.get_int());
+    } break;
+    case AttrType::FLOATS: {
+      // 整数转浮点数，直接转换为浮点数，不考虑溢出
+      result.set_float(static_cast<float>(val.get_int()));
+    } break;
+    case AttrType::BOOLEANS: {
+      // 0 为 false，其他为 true
+      result.set_boolean(val.get_int() != 0);
+    } break;
+    case AttrType::CHARS: {
+      // 数字转字符串，不带符号，不考虑长度溢出
+      int         int_val = val.get_int();
+      std::string str     = int_val < 0 ? std::to_string(-int_val) : std::to_string(int_val);
+      result.set_string(str.c_str());  // 设置字符串结果
+      break;
+    } break;
+    default: return RC::UNSUPPORTED;  // 不支持的转换
+  }
   return RC::SUCCESS;
 }

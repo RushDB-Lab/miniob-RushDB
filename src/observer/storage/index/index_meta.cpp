@@ -8,64 +8,86 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
-//
-// Created by Wangyunlai.wyl on 2021/5/18.
-//
+#include "index_meta.h"
 
-#include "storage/index/index_meta.h"
-#include "common/lang/string.h"
-#include "common/log/log.h"
-#include "storage/field/field_meta.h"
-#include "storage/table/table_meta.h"
-#include "json/json.h"
-
-const static Json::StaticString FIELD_NAME("name");
-const static Json::StaticString FIELD_FIELD_NAME("field_name");
-
-RC IndexMeta::init(const char *name, const FieldMeta &field)
+RC IndexMeta::init(const char *name, IndexType index_type, const vector<FieldMeta> &fields, bool unique)
 {
-  if (common::is_blank(name)) {
-    LOG_ERROR("Failed to init index, name is empty.");
-    return RC::INVALID_ARGUMENT;
+  name_             = name;
+  index_type_       = index_type;
+  fields_total_len_ = 0;
+  fields_           = fields;
+  unique_           = unique;
+
+  for (auto &field : fields) {
+    fields_offset_.emplace_back(fields_total_len_);
+    fields_total_len_ += field.len();
   }
 
-  name_  = name;
-  field_ = field.name();
   return RC::SUCCESS;
+}
+
+string IndexMeta::to_string() const
+{
+  std::ostringstream oss;
+  oss << "Index Name: " << name_ << ", Fields: [";
+  for (size_t i = 0; i < fields_.size(); ++i) {
+    oss << fields_[i].name();
+    if (i < fields_.size() - 1) {
+      oss << ", ";
+    }
+  }
+  oss << "], Total Length: " << fields_total_len_;
+  return oss.str();
 }
 
 void IndexMeta::to_json(Json::Value &json_value) const
 {
-  json_value[FIELD_NAME]       = name_;
-  json_value[FIELD_FIELD_NAME] = field_;
+  json_value["name"]             = name_;
+  json_value["index_type"]       = static_cast<int>(index_type_);
+  json_value["fields_total_len"] = fields_total_len_;
+  json_value["unique"]           = unique_;
+
+  Json::Value fields_json(Json::arrayValue);
+  for (const auto &field : fields_) {
+    Json::Value field_json;
+    field.to_json(field_json);
+    fields_json.append(field_json);
+  }
+  json_value["fields"] = fields_json;
+
+  Json::Value offsets_json(Json::arrayValue);
+  for (const auto &offset : fields_offset_) {
+    offsets_json.append(offset);
+  }
+  json_value["fields_offset"] = offsets_json;
 }
 
-RC IndexMeta::from_json(const TableMeta &table, const Json::Value &json_value, IndexMeta &index)
+RC IndexMeta::from_json(const Json::Value &json_value, IndexMeta &index)
 {
-  const Json::Value &name_value  = json_value[FIELD_NAME];
-  const Json::Value &field_value = json_value[FIELD_FIELD_NAME];
-  if (!name_value.isString()) {
-    LOG_ERROR("Index name is not a string. json value=%s", name_value.toStyledString().c_str());
-    return RC::INTERNAL;
+  if (!json_value.isMember("name") || !json_value.isMember("index_type") || !json_value.isMember("fields") ||
+      !json_value.isMember("fields_total_len") || !json_value.isMember("fields_offset")) {
+    return RC::INVALID_ARGUMENT;
   }
 
-  if (!field_value.isString()) {
-    LOG_ERROR("Field name of index [%s] is not a string. json value=%s",
-        name_value.asCString(), field_value.toStyledString().c_str());
-    return RC::INTERNAL;
+  index.name_             = json_value["name"].asString();
+  index.index_type_       = static_cast<IndexType>(json_value["index_type"].asInt());
+  index.fields_total_len_ = json_value["fields_total_len"].asInt();
+  index.unique_           = json_value["unique"].asBool();
+
+  const Json::Value &fields_json = json_value["fields"];
+  for (const auto &field_json : fields_json) {
+    FieldMeta field;
+    RC        rc = FieldMeta::from_json(field_json, field);
+    if (rc != RC::SUCCESS) {
+      return rc;
+    }
+    index.fields_.push_back(field);
   }
 
-  const FieldMeta *field = table.field(field_value.asCString());
-  if (nullptr == field) {
-    LOG_ERROR("Deserialize index [%s]: no such field: %s", name_value.asCString(), field_value.asCString());
-    return RC::SCHEMA_FIELD_MISSING;
+  const Json::Value &offsets_json = json_value["fields_offset"];
+  for (const auto &offset : offsets_json) {
+    index.fields_offset_.push_back(offset.asInt());
   }
 
-  return index.init(name_value.asCString(), *field);
+  return RC::SUCCESS;
 }
-
-const char *IndexMeta::name() const { return name_.c_str(); }
-
-const char *IndexMeta::field() const { return field_.c_str(); }
-
-void IndexMeta::desc(ostream &os) const { os << "index name=" << name_ << ", field=" << field_; }

@@ -28,13 +28,6 @@ public:
 
   PhysicalOperatorType type() const override { return PhysicalOperatorType::EXPLAIN; }
 
-  OpType get_op_type() const override { return OpType::EXPLAIN; }
-
-  double calculate_cost(LogicalProperty *prop, const vector<LogicalProperty *> &child_log_props, CostModel *cm) override
-  {
-    return 0.0;
-  }
-
   RC     open(Trx *trx) override;
   RC     next() override;
   RC     next(Chunk &chunk) override;
@@ -48,9 +41,11 @@ public:
   }
 
 private:
+  void to_string(std::ostream &os, PhysicalOperator *oper, int level, bool last_child, std::vector<bool> &ends);
+
   void generate_physical_plan();
 
 private:
-  string         physical_plan_;
+  std::string    physical_plan_;
   ValueListTuple tuple_;
 };

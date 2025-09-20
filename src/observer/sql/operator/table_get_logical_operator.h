@@ -25,45 +25,44 @@ See the Mulan PSL v2 for more details. */
 class TableGetLogicalOperator : public LogicalOperator
 {
 public:
-  TableGetLogicalOperator(Table *table, ReadWriteMode mode);
-  virtual ~TableGetLogicalOperator() = default;
+  TableGetLogicalOperator(BaseTable *table, ReadWriteMode mode);
+  TableGetLogicalOperator(BaseTable *table, std::string table_alias, ReadWriteMode mode);
+  ~TableGetLogicalOperator() override = default;
 
   LogicalOperatorType type() const override { return LogicalOperatorType::TABLE_GET; }
 
-  OpType get_op_type() const override { return OpType::LOGICALGET; }
-
-  virtual uint64_t hash() const override
-  {
-    uint64_t hash = std::hash<int>()(static_cast<int>(get_op_type()));
-    hash ^= std::hash<int>()(table_->table_id());
-    return hash;
-  }
-
-  virtual bool operator==(const OperatorNode &other) const override
-  {
-    if (get_op_type() != other.get_op_type())
-      return false;
-    const auto &other_get = dynamic_cast<const TableGetLogicalOperator *>(&other);
-    if (table_->table_id() != other_get->table()->table_id())
-      return false;
-    return true;
-  }
-
-  unique_ptr<LogicalProperty> find_log_prop(const vector<LogicalProperty *> &log_props) override;
-
-  Table        *table() const { return table_; }
+  BaseTable    *table() const { return table_; }
   ReadWriteMode read_write_mode() const { return mode_; }
 
-  void set_predicates(vector<unique_ptr<Expression>> &&exprs);
-  auto predicates() -> vector<unique_ptr<Expression>> & { return predicates_; }
+  void set_predicates(std::vector<std::unique_ptr<Expression>> &&exprs);
+  auto predicates() -> std::vector<std::unique_ptr<Expression>> & { return predicates_; }
+
+  std::string &table_alias() { return table_alias_; }
+
+  std::vector<float> &base_vector() { return base_vector_; }
+  void                set_base_vector(std::vector<float> base_vector) { base_vector_ = std::move(base_vector); }
+
+  size_t limit() const { return limit_; }
+  void   set_limit(size_t limit) { limit_ = limit; }
+
+  Index *index() const { return index_; }
+  void   set_index(Index *index) { index_ = index; }
+
+  bool is_vector_scan() { return !base_vector_.empty(); }
 
 private:
-  Table        *table_ = nullptr;
-  ReadWriteMode mode_  = ReadWriteMode::READ_WRITE;
+  BaseTable    *table_ = nullptr;
+  std::string   table_alias_;
+  ReadWriteMode mode_ = ReadWriteMode::READ_WRITE;
 
   // 与当前表相关的过滤操作，可以尝试在遍历数据时执行
   // 这里的表达式都是比较简单的比较运算，并且左右两边都是取字段表达式或值表达式
   // 不包含复杂的表达式运算，比如加减乘除、或者conjunction expression
   // 如果有多个表达式，他们的关系都是 AND
-  vector<unique_ptr<Expression>> predicates_;
+  std::vector<std::unique_ptr<Expression>> predicates_;
+
+  // 向量索引参数
+  Index             *index_ = nullptr;
+  std::vector<float> base_vector_;  // 要比较的向量
+  std::size_t        limit_;        // 输出多少个
 };

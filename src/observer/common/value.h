@@ -18,7 +18,13 @@ See the Mulan PSL v2 for more details. */
 #include "common/lang/memory.h"
 #include "common/type/attr_type.h"
 #include "common/type/data_type.h"
-#include "common/type/string_t.h"
+#include "common/type/date_type.h"
+#include "common/type/text_type.h"
+#include "common/type/boolean_type.h"
+#include "common/utils.h"
+
+class NullValue
+{};
 
 /**
  * @brief 属性的值
@@ -35,6 +41,9 @@ public:
   friend class FloatType;
   friend class BooleanType;
   friend class CharType;
+  friend class DateType;
+  friend class NullType;
+  friend class TextType;
   friend class VectorType;
 
   Value() = default;
@@ -43,11 +52,12 @@ public:
 
   Value(AttrType attr_type, char *data, int length = 4) : attr_type_(attr_type) { this->set_data(data, length); }
 
+  explicit Value(NullValue);
   explicit Value(int val);
   explicit Value(float val);
   explicit Value(bool val);
   explicit Value(const char *s, int len = 0);
-  explicit Value(const string_t &val);
+  explicit Value(const vector<float> &values);
 
   Value(const Value &other);
   Value(Value &&other);
@@ -82,9 +92,9 @@ public:
     return DataType::type_instance(result.attr_type())->negative(value, result);
   }
 
-  static RC cast_to(const Value &value, AttrType to_type, Value &result)
+  static RC cast_to(const Value &value, AttrType to_type, Value &result, bool allow_type_promotion = true)
   {
-    return DataType::type_instance(value.attr_type())->cast_to(value, to_type, result);
+    return DataType::type_instance(value.attr_type())->cast_to(value, to_type, result, allow_type_promotion);
   }
 
   void set_type(AttrType type) { this->attr_type_ = type; }
@@ -92,32 +102,53 @@ public:
   void set_data(const char *data, int length) { this->set_data(const_cast<char *>(data), length); }
   void set_value(const Value &value);
   void set_boolean(bool val);
+  void set_null(bool is_null = true) { is_null_ = is_null; }
 
   string to_string() const;
 
-  int compare(const Value &other) const;
+  int  compare(const Value &other) const;
+  bool LIKE(const Value &other) const;
 
-  char *data() const;
+  const char *data() const;
 
   int      length() const { return length_; }
   AttrType attr_type() const { return attr_type_; }
+
+  RC borrow_text(const Value &v);
 
 public:
   /**
    * 获取对应的值
    * 如果当前的类型与期望获取的类型不符，就会执行转换操作
    */
-  int      get_int() const;
-  float    get_float() const;
-  string   get_string() const;
-  string_t get_string_t() const;
-  bool     get_boolean() const;
+  int                get_int() const;
+  float              get_float() const;
+  string             get_string() const;
+  bool               get_boolean() const;
+  int                get_date() const;
+  std::vector<float> get_vector() const;
+  int                get_vector_length() const;
+  float              get_vector_element(int i) const;
+  bool               is_null() const { return is_null_; }
+  inline bool        is_str() const { return attr_type_ == AttrType::CHARS; }
 
-public:
+  static int implicit_cast_cost(AttrType from, AttrType to)
+  {
+    if (from == to) {
+      return 0;
+    }
+    return DataType::type_instance(from)->cast_cost(to);
+  }
+
+private:
   void set_int(int val);
   void set_float(float val);
+  void set_date(int val);
   void set_string(const char *s, int len = 0);
-  void set_empty_string(int len);
+  void set_text(const char *s, int len = 65535);
+  void set_vector(float *array, int length);
+  void set_vector(const vector<float> &val);
+  void set_vector();
   void set_string_from_other(const Value &other);
 
 private:
@@ -130,8 +161,12 @@ private:
     float   float_value_;
     bool    bool_value_;
     char   *pointer_value_;
+    float  *vector_value_;
   } value_ = {.int_value_ = 0};
+
+  static_assert(sizeof(std::vector<Value> *) == sizeof(char *));
 
   /// 是否申请并占有内存, 目前对于 CHARS 类型 own_data_ 为true, 其余类型 own_data_ 为false
   bool own_data_ = false;
+  bool is_null_  = false;
 };

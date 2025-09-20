@@ -10,7 +10,7 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "common/sys/rc.h"
+#include "common/rc.h"
 #include "common/type/data_type.h"
 
 /**
@@ -26,7 +26,7 @@ public:
 
   int compare(const Value &left, const Value &right) const override;
 
-  RC cast_to(const Value &val, AttrType type, Value &result) const override;
+  RC cast_to(const Value &val, AttrType type, Value &result, bool allow_type_promotion = true) const override;
 
   RC set_value_from_str(Value &val, const string &data) const override;
 

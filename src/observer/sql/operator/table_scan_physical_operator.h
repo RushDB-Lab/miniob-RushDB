@@ -14,10 +14,9 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "common/sys/rc.h"
+#include "common/rc.h"
 #include "sql/operator/physical_operator.h"
 #include "storage/record/record_manager.h"
-#include "storage/record/record_scanner.h"
 #include "common/types.h"
 
 class Table;
@@ -31,33 +30,16 @@ class TableScanPhysicalOperator : public PhysicalOperator
 public:
   TableScanPhysicalOperator(Table *table, ReadWriteMode mode) : table_(table), mode_(mode) {}
 
-  virtual ~TableScanPhysicalOperator() = default;
+  TableScanPhysicalOperator(Table *table, std::string alias, ReadWriteMode mode) : table_(table), mode_(mode)
+  {
+    tuple_.set_table_alias(alias);
+  }
 
-  string param() const override;
+  ~TableScanPhysicalOperator() override = default;
+
+  std::string param() const override;
 
   PhysicalOperatorType type() const override { return PhysicalOperatorType::TABLE_SCAN; }
-  OpType               get_op_type() const override { return OpType::SEQSCAN; }
-  virtual uint64_t     hash() const override
-  {
-    uint64_t hash = std::hash<int>()(static_cast<int>(get_op_type()));
-    hash ^= std::hash<int>()(table_->table_id());
-    return hash;
-  }
-
-  virtual bool operator==(const OperatorNode &other) const override
-  {
-    if (get_op_type() != other.get_op_type())
-      return false;
-    const auto &other_get = dynamic_cast<const TableScanPhysicalOperator *>(&other);
-    if (table_->table_id() != other_get->table_id())
-      return false;
-    return true;
-  }
-
-  double calculate_cost(LogicalProperty *prop, const vector<LogicalProperty *> &child_log_props, CostModel *cm) override
-  {
-    return (cm->io() + cm->cpu_op()) * prop->get_card();
-  }
 
   RC open(Trx *trx) override;
   RC next() override;
@@ -65,19 +47,17 @@ public:
 
   Tuple *current_tuple() override;
 
-  int table_id() const { return table_->table_id(); }
-
-  void set_predicates(vector<unique_ptr<Expression>> &&exprs);
+  void set_predicates(std::vector<std::unique_ptr<Expression>> &&exprs);
 
 private:
   RC filter(RowTuple &tuple, bool &result);
 
 private:
-  Table                         *table_ = nullptr;
-  Trx                           *trx_   = nullptr;
-  ReadWriteMode                  mode_  = ReadWriteMode::READ_WRITE;
-  RecordScanner                 *record_scanner_;
-  Record                         current_record_;
-  RowTuple                       tuple_;
-  vector<unique_ptr<Expression>> predicates_;  // TODO chang predicate to table tuple filter
+  Table                                   *table_ = nullptr;
+  Trx                                     *trx_   = nullptr;
+  ReadWriteMode                            mode_  = ReadWriteMode::READ_WRITE;
+  RecordFileScanner                        record_scanner_;
+  Record                                   current_record_;
+  RowTuple                                 tuple_;
+  std::vector<std::unique_ptr<Expression>> predicates_;  // TODO chang predicate to table tuple filter
 };

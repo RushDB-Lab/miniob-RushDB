@@ -14,12 +14,22 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
+#include <string>
+#include <vector>
+#include <span>
+
 #include "common/lang/serializable.h"
-#include "common/sys/rc.h"
+#include "common/rc.h"
 #include "common/types.h"
-#include "common/lang/span.h"
 #include "storage/field/field_meta.h"
 #include "storage/index/index_meta.h"
+
+enum class TableType
+{
+  Unknown,
+  Table,
+  View
+};
 
 /**
  * @brief 表元数据
@@ -35,52 +45,52 @@ public:
 
   void swap(TableMeta &other) noexcept;
 
-  RC init(int32_t table_id, const char *name, const vector<FieldMeta> *trx_fields,
-      span<const AttrInfoSqlNode> attributes, const vector<string> &primary_keys, StorageFormat storage_format,
-      StorageEngine storage_engine);
+  RC init(int32_t table_id, TableType table_type, bool is_mutable, const char *name,
+      const std::vector<FieldMeta> *trx_fields, std::span<const AttrInfoSqlNode> attributes,
+      StorageFormat storage_format);
 
   RC add_index(const IndexMeta &index);
 
 public:
   int32_t             table_id() const { return table_id_; }
+  TableType           table_type() const { return table_type_; }
+  bool                is_mutable() const { return mutable_; }
   const char         *name() const;
   const FieldMeta    *trx_field() const;
   const FieldMeta    *field(int index) const;
   const FieldMeta    *field(const char *name) const;
+  RC                  get_field_metas(const vector<string> &fields, vector<FieldMeta> &result) const;
   const FieldMeta    *find_field_by_offset(int offset) const;
-  auto                field_metas() const -> const vector<FieldMeta>                *{ return &fields_; }
-  auto                trx_fields() const -> span<const FieldMeta>;
+  auto                field_metas() const -> const std::vector<FieldMeta>                *{ return &fields_; }
+  auto                trx_fields() const -> std::span<const FieldMeta>;
   const StorageFormat storage_format() const { return storage_format_; }
-  const StorageEngine storage_engine() const { return storage_engine_; }
 
   int field_num() const;  // sys field included
   int sys_field_num() const;
 
   const IndexMeta *index(const char *name) const;
-  const IndexMeta *find_index_by_field(const char *field) const;
   const IndexMeta *index(int i) const;
   int              index_num() const;
-
-  const vector<string> &primary_keys() const { return primary_keys_; }
 
   int record_size() const;
 
 public:
-  int  serialize(ostream &os) const override;
-  int  deserialize(istream &is) override;
+  int  serialize(std::ostream &os) const override;
+  int  deserialize(std::istream &is) override;
   int  get_serial_size() const override;
-  void to_string(string &output) const override;
-  void desc(ostream &os) const;
+  void to_string(std::string &output) const override;
+  void desc(std::ostream &os) const;
 
 protected:
-  int32_t           table_id_ = -1;
-  string            name_;
-  vector<FieldMeta> trx_fields_;
-  vector<FieldMeta> fields_;  // 包含sys_fields
-  vector<IndexMeta> indexes_;
-  vector<string>    primary_keys_;
-  StorageFormat     storage_format_;
-  StorageEngine     storage_engine_;
+  int32_t   table_id_   = -1;
+  TableType table_type_ = TableType::Unknown;
+  bool mutable_ = true;  // 当前仅对视图可用，是否是只读视图，即包括聚合函数或 groupby having 语句
+
+  std::string            name_;
+  std::vector<FieldMeta> trx_fields_;
+  std::vector<FieldMeta> fields_;  // 包含sys_fields
+  std::vector<IndexMeta> indexes_;
+  StorageFormat          storage_format_;
 
   int record_size_ = 0;
 };

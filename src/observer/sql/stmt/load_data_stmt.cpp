@@ -32,7 +32,7 @@ RC LoadDataStmt::create(Db *db, const LoadDataSqlNode &load_data, Stmt *&stmt)
   }
 
   // check whether the table exists
-  Table *table = db->find_table(table_name);
+  auto table = db->find_table(table_name);
   if (nullptr == table) {
     LOG_WARN("no such table. db=%s, table_name=%s", db->name(), table_name);
     return RC::SCHEMA_TABLE_NOT_EXIST;
@@ -43,15 +43,6 @@ RC LoadDataStmt::create(Db *db, const LoadDataSqlNode &load_data, Stmt *&stmt)
     return RC::FILE_NOT_EXIST;
   }
 
-  if (load_data.enclosed.size() != 3) {
-    LOG_WARN("load data invalid enclosed. enclosed=%s", load_data.enclosed.c_str());
-    return RC::INVALID_ARGUMENT;
-  }
-  if (load_data.terminated.size() != 3) {
-    LOG_WARN("load data invalid terminated. terminated=%s", load_data.terminated.c_str());
-    return RC::INVALID_ARGUMENT;
-  }
-
-  stmt = new LoadDataStmt(table, load_data.file_name.c_str(), load_data.terminated[1], load_data.enclosed[1]);
+  stmt = new LoadDataStmt(table, load_data.file_name.c_str());
   return rc;
 }

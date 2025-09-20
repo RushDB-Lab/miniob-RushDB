@@ -14,9 +14,12 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "common/sys/rc.h"
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "common/rc.h"
 #include "sql/expr/tuple.h"
-#include "sql/operator/operator_node.h"
 
 class Record;
 class TupleCellSpec;
@@ -37,8 +40,9 @@ enum class PhysicalOperatorType
   TABLE_SCAN,
   TABLE_SCAN_VEC,
   INDEX_SCAN,
+  VIEW_SCAN,
+  VECTOR_INDEX_SCAN,
   NESTED_LOOP_JOIN,
-  HASH_JOIN,
   EXPLAIN,
   PREDICATE,
   PREDICATE_VEC,
@@ -48,10 +52,13 @@ enum class PhysicalOperatorType
   STRING_LIST,
   DELETE,
   INSERT,
+  UPDATE,
   SCALAR_GROUP_BY,
   HASH_GROUP_BY,
   GROUP_BY_VEC,
   AGGREGATE_VEC,
+  ORDER_BY,
+  LIMIT,
   EXPR_VEC,
 };
 
@@ -59,7 +66,7 @@ enum class PhysicalOperatorType
  * @brief 与LogicalOperator对应，物理算子描述执行计划将如何执行
  * @ingroup PhysicalOperator
  */
-class PhysicalOperator : public OperatorNode
+class PhysicalOperator
 {
 public:
   PhysicalOperator() = default;
@@ -69,11 +76,8 @@ public:
   /**
    * 这两个函数是为了打印时使用的，比如在explain中
    */
-  virtual string name() const;
-  virtual string param() const;
-
-  bool is_physical() const override { return true; }
-  bool is_logical() const override { return false; }
+  virtual std::string name() const;
+  virtual std::string param() const;
 
   virtual PhysicalOperatorType type() const = 0;
 
@@ -86,10 +90,12 @@ public:
 
   virtual RC tuple_schema(TupleSchema &schema) const { return RC::UNIMPLEMENTED; }
 
-  void add_child(unique_ptr<PhysicalOperator> oper) { children_.emplace_back(std::move(oper)); }
+  void add_child(std::unique_ptr<PhysicalOperator> oper) { children_.emplace_back(std::move(oper)); }
+  void set_parent_tuple(const Tuple *tuple);
 
-  vector<unique_ptr<PhysicalOperator>> &children() { return children_; }
+  std::vector<std::unique_ptr<PhysicalOperator>> &children() { return children_; }
 
 protected:
-  vector<unique_ptr<PhysicalOperator>> children_;
+  std::vector<std::unique_ptr<PhysicalOperator>> children_;
+  const Tuple                                   *parent_tuple_ = nullptr;  // 不相关子查询的时候使用
 };

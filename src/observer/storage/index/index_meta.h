@@ -14,8 +14,11 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "common/sys/rc.h"
+#include "common/rc.h"
 #include "common/lang/string.h"
+#include "storage/field/field_meta.h"
+
+#include <json/value.h>
 
 class TableMeta;
 class FieldMeta;
@@ -35,19 +38,43 @@ class IndexMeta
 public:
   IndexMeta() = default;
 
-  RC init(const char *name, const FieldMeta &field);
+  [[nodiscard]] RC init(const char *name, IndexType index_type, const vector<FieldMeta> &fields, bool unique = false);
 
-public:
-  const char *name() const;
-  const char *field() const;
+  void desc(ostream &os) const { os << to_string(); }
 
-  void desc(ostream &os) const;
+  [[nodiscard]] string to_string() const;
 
-public:
-  void      to_json(Json::Value &json_value) const;
-  static RC from_json(const TableMeta &table, const Json::Value &json_value, IndexMeta &index);
+  void to_json(Json::Value &json_value) const;
 
-protected:
-  string name_;   // index's name
-  string field_;  // field's name
+  static RC from_json(const Json::Value &json_value, IndexMeta &index);
+
+  [[nodiscard]] char *make_entry_from_record(const char *record)
+  {
+    char *entry = new char[fields_total_len_];
+    make_entry_from_record(entry, record);
+    return entry;
+  }
+
+  void make_entry_from_record(char *entry, const char *record)
+  {
+    for (size_t i = 0; i < fields_.size(); i++) {
+      auto &field = fields_[i];
+      memcpy(entry + fields_offset_[i], record + field.offset(), field.len());
+    }
+  }
+
+  [[nodiscard]] const char              *name() const { return name_.c_str(); }
+  IndexType                              index_type() const { return index_type_; }
+  [[nodiscard]] int                      fields_total_len() const { return fields_total_len_; }
+  [[nodiscard]] const vector<FieldMeta> &fields() const { return fields_; }
+  [[nodiscard]] bool                     unique() const { return unique_; }
+  [[nodiscard]] const vector<int>       &fields_offset() const { return fields_offset_; }
+
+private:
+  string            name_;
+  IndexType         index_type_;
+  int               fields_total_len_ = 0;
+  vector<int>       fields_offset_;
+  vector<FieldMeta> fields_;
+  bool              unique_;
 };

@@ -14,7 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "common/sys/rc.h"
+#include "common/rc.h"
 #include "common/lang/string.h"
 #include "sql/parser/parse_defs.h"
 
@@ -30,10 +30,15 @@ class FieldMeta
 {
 public:
   FieldMeta();
-  FieldMeta(const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id);
+
+  // 除非字段定义为 not null，否则默认是 nullable 的
+  FieldMeta(const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id,
+      bool nullable = true, bool mutable_ = true);
+
   ~FieldMeta() = default;
 
-  RC init(const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id);
+  RC init(const char *name, AttrType attr_type, int attr_offset, int attr_len, bool visible, int field_id,
+      bool nullable = true, bool mutable_ = true);
 
 public:
   const char *name() const;
@@ -42,6 +47,8 @@ public:
   int         len() const;
   bool        visible() const;
   int         field_id() const;
+  bool        nullable() const;
+  bool        is_mutable() const;
 
 public:
   void desc(ostream &os) const;
@@ -57,4 +64,6 @@ protected:
   int      attr_len_;
   bool     visible_;
   int      field_id_;
+  bool     nullable_ = true;
+  bool     mutable_  = true;  // 如果是视图的表达式字段，实际上是不可插入或更新的
 };

@@ -14,6 +14,9 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
+#include <memory>
+#include <vector>
+
 #include "sql/expr/expression.h"
 #include "sql/operator/logical_operator.h"
 #include "storage/field/field.h"
@@ -26,13 +29,11 @@ See the Mulan PSL v2 for more details. */
 class ProjectLogicalOperator : public LogicalOperator
 {
 public:
-  ProjectLogicalOperator(vector<unique_ptr<Expression>> &&expressions);
+  ProjectLogicalOperator(std::vector<std::unique_ptr<Expression>> &&expressions);
   virtual ~ProjectLogicalOperator() = default;
 
-  LogicalOperatorType         type() const override { return LogicalOperatorType::PROJECTION; }
-  OpType                      get_op_type() const override { return OpType::LOGICALPROJECTION; }
-  unique_ptr<LogicalProperty> find_log_prop(const vector<LogicalProperty *> &log_props) override;
+  LogicalOperatorType type() const override { return LogicalOperatorType::PROJECTION; }
 
-  vector<unique_ptr<Expression>>       &expressions() { return expressions_; }
-  const vector<unique_ptr<Expression>> &expressions() const { return expressions_; }
+  std::vector<std::unique_ptr<Expression>>       &expressions() { return expressions_; }
+  const std::vector<std::unique_ptr<Expression>> &expressions() const { return expressions_; }
 };

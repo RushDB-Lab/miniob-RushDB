@@ -14,17 +14,21 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/operator/physical_operator.h"
 
-string physical_operator_type_name(PhysicalOperatorType type)
+std::string physical_operator_type_name(PhysicalOperatorType type)
 {
   switch (type) {
     case PhysicalOperatorType::TABLE_SCAN: return "TABLE_SCAN";
     case PhysicalOperatorType::INDEX_SCAN: return "INDEX_SCAN";
+    case PhysicalOperatorType::VIEW_SCAN: return "VIEW_SCAN";
+    case PhysicalOperatorType::VECTOR_INDEX_SCAN: return "VECTOR_INDEX_SCAN";
+    case PhysicalOperatorType::LIMIT: return "LIMIT";
+    case PhysicalOperatorType::ORDER_BY: return "ORDER_BY";
     case PhysicalOperatorType::NESTED_LOOP_JOIN: return "NESTED_LOOP_JOIN";
-    case PhysicalOperatorType::HASH_JOIN: return "HASH_JOIN";
     case PhysicalOperatorType::EXPLAIN: return "EXPLAIN";
     case PhysicalOperatorType::PREDICATE: return "PREDICATE";
     case PhysicalOperatorType::INSERT: return "INSERT";
     case PhysicalOperatorType::DELETE: return "DELETE";
+    case PhysicalOperatorType::UPDATE: return "UPDATE";
     case PhysicalOperatorType::PROJECT: return "PROJECT";
     case PhysicalOperatorType::STRING_LIST: return "STRING_LIST";
     case PhysicalOperatorType::HASH_GROUP_BY: return "HASH_GROUP_BY";
@@ -38,6 +42,13 @@ string physical_operator_type_name(PhysicalOperatorType type)
   }
 }
 
-string PhysicalOperator::name() const { return physical_operator_type_name(type()); }
+std::string PhysicalOperator::name() const { return physical_operator_type_name(type()); }
 
-string PhysicalOperator::param() const { return ""; }
+std::string PhysicalOperator::param() const { return ""; }
+void        PhysicalOperator::set_parent_tuple(const Tuple *tuple)
+{
+  parent_tuple_ = tuple;
+  for (auto &child : children_) {
+    child->set_parent_tuple(tuple);
+  }
+}

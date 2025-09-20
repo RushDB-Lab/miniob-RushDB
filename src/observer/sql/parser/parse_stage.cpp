@@ -13,6 +13,7 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include <string.h>
+#include <string>
 
 #include "parse_stage.h"
 
@@ -31,7 +32,7 @@ RC ParseStage::handle_request(SQLStageEvent *sql_event)
   RC rc = RC::SUCCESS;
 
   SqlResult         *sql_result = sql_event->session_event()->sql_result();
-  const string &sql        = sql_event->sql();
+  const std::string &sql        = sql_event->sql();
 
   ParsedSqlResult parsed_sql_result;
 
@@ -46,7 +47,7 @@ RC ParseStage::handle_request(SQLStageEvent *sql_event)
     LOG_WARN("got multi sql commands but only 1 will be handled");
   }
 
-  unique_ptr<ParsedSqlNode> sql_node = std::move(parsed_sql_result.sql_nodes().front());
+  std::unique_ptr<ParsedSqlNode> sql_node = std::move(parsed_sql_result.sql_nodes().front());
   if (sql_node->flag == SCF_ERROR) {
     // set error information to event
     rc = RC::SQL_SYNTAX;

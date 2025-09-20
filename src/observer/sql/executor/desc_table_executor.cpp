@@ -12,6 +12,8 @@ See the Mulan PSL v2 for more details. */
 // Created by Wangyunlai on 2023/6/14.
 //
 
+#include <memory>
+
 #include "sql/executor/desc_table_executor.h"
 
 #include "common/log/log.h"
@@ -39,8 +41,8 @@ RC DescTableExecutor::execute(SQLStageEvent *sql_event)
   SqlResult     *sql_result      = session_event->sql_result();
   const char    *table_name      = desc_table_stmt->table_name().c_str();
 
-  Db    *db    = session->get_current_db();
-  Table *table = db->find_table(table_name);
+  Db        *db    = session->get_current_db();
+  BaseTable *table = db->find_table(table_name);
   if (table != nullptr) {
     TupleSchema tuple_schema;
     tuple_schema.append_cell(TupleCellSpec("", "Field", "Field"));
@@ -53,7 +55,7 @@ RC DescTableExecutor::execute(SQLStageEvent *sql_event)
     const TableMeta &table_meta = table->table_meta();
     for (int i = table_meta.sys_field_num(); i < table_meta.field_num(); i++) {
       const FieldMeta *field_meta = table_meta.field(i);
-      oper->append({field_meta->name(), attr_type_to_string(field_meta->type()), to_string(field_meta->len())});
+      oper->append({field_meta->name(), attr_type_to_string(field_meta->type()), std::to_string(field_meta->len())});
     }
 
     sql_result->set_operator(unique_ptr<PhysicalOperator>(oper));
