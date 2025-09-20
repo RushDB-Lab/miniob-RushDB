@@ -16,7 +16,7 @@ See the Mulan PSL v2 for more details. */
 
 #include <memory>
 
-#include "common/rc.h"
+#include "common/sys/rc.h"
 #include "common/type/attr_type.h"
 
 class Stmt;

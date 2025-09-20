@@ -10,7 +10,7 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "common/rc.h"
+#include "common/sys/rc.h"
 #include "sql/operator/physical_operator.h"
 #include "storage/record/record_manager.h"
 #include "common/types.h"

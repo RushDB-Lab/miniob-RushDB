@@ -14,7 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "common/rc.h"
+#include "common/sys/rc.h"
 #include "session/session.h"
 #include "sql/operator/logical_operator.h"
 #include "sql/operator/physical_operator.h"

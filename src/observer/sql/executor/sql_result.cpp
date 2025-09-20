@@ -14,7 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/executor/sql_result.h"
 #include "common/log/log.h"
-#include "common/rc.h"
+#include "common/sys/rc.h"
 #include "session/session.h"
 #include "storage/trx/trx.h"
 

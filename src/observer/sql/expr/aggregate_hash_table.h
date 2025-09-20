@@ -13,7 +13,7 @@ See the Mulan PSL v2 for more details. */
 #include <unordered_map>
 
 #include "common/math/simd_util.h"
-#include "common/rc.h"
+#include "common/sys/rc.h"
 #include "sql/expr/expression.h"
 
 /**

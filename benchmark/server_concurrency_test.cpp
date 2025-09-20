@@ -23,7 +23,7 @@ See the Mulan PSL v2 for more details. */
 
 #include "common/lang/stdexcept.h"
 #include "common/log/log.h"
-#include "rc.h"
+#include "common/sys/rc.h"
 
 using namespace std;
 using namespace common;
