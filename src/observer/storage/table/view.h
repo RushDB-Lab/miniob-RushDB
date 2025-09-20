@@ -62,7 +62,7 @@ public:
   bool has_join() { return tables_.size() > 1; }
 
 private:
-  std::string select_sql_;  // 持久化，运行时也只能存解析后的 sql，因为涉及独占资源的移动
-  std::vector<BaseTable *> tables_;  // 可能含视图和基表，所以要在所有表都加载好再处理
+  std::string                              select_sql_;   // 持久化，运行时也只能存解析后的 sql，因为涉及独占资源的移动
+  std::vector<BaseTable *>                 tables_;       // 可能含视图和基表，所以要在所有表都加载好再处理
   std::vector<std::pair<BaseTable *, int>> field_index_;  // 视图的 field 对应 哪个物理表和对应的 field idx
 };

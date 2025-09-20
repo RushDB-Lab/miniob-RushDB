@@ -26,12 +26,12 @@ void ObMemTable::put(uint64_t seq, const string_view &key, const string_view &va
   //  seq          : uint64(sequence)
   //  value_size   : value.size()
   //  value bytes  : char[value.size()]
-  size_t       user_key_size          = key.size();
+  size_t       user_key_size     = key.size();
   size_t       val_size          = value.size();
   size_t       internal_key_size = user_key_size + SEQ_SIZE;
   const size_t encoded_len       = sizeof(size_t) + internal_key_size + sizeof(size_t) + val_size;
-  char *       buf               = reinterpret_cast<char *>(arena_.alloc(encoded_len));
-  char *       p                 = buf;
+  char        *buf               = reinterpret_cast<char *>(arena_.alloc(encoded_len));
+  char        *p                 = buf;
   memcpy(p, &internal_key_size, sizeof(size_t));
   p += sizeof(size_t);
   memcpy(p, key.data(), user_key_size);

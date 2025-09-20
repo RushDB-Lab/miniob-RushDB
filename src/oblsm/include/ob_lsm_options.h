@@ -21,7 +21,7 @@ namespace oceanbase {
  */
 struct ObLsmOptions
 {
-  ObLsmOptions(){};
+  ObLsmOptions() {};
 
   // TODO: all params are used for test, need to reset to appropriate values.
   size_t memtable_size = 8 * 1024;
@@ -47,7 +47,7 @@ struct ObLsmOptions
 // TODO: UNIMPLEMENTED
 struct ObLsmReadOptions
 {
-  ObLsmReadOptions(){};
+  ObLsmReadOptions() {};
 
   int64_t seq = -1;
 };

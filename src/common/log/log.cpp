@@ -216,7 +216,7 @@ int Log::rename_old_logs()
 
   while (log_index < MAX_LOG_NUM) {
     string log_name = log_name_ + "." + size_to_pad_str(log_index, 3);
-    int         result   = access(log_name.c_str(), R_OK);
+    int    result   = access(log_name.c_str(), R_OK);
     if (result) {
       break;
     }
@@ -271,7 +271,7 @@ int Log::rotate_by_size()
     char log_index_str[4] = {0};
     snprintf(log_index_str, sizeof(log_index_str), "%03d", 1);
     string log_name_new = log_name_ + "." + log_index_str;
-    result                   = rename(log_name_.c_str(), log_name_new.c_str());
+    result              = rename(log_name_.c_str(), log_name_new.c_str());
     if (result) {
       cerr << "Failed to rename " << log_name_ << " to " << log_name_new << endl;
     }

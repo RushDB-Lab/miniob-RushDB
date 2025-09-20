@@ -71,13 +71,13 @@ string size_to_pad_str(int size, int pad)
 
 string &str_to_upper(string &s)
 {
-  transform(s.begin(), s.end(), s.begin(), (int (*)(int)) & toupper);
+  transform(s.begin(), s.end(), s.begin(), (int (*)(int))&toupper);
   return s;
 }
 
 string &str_to_lower(string &s)
 {
-  transform(s.begin(), s.end(), s.begin(), (int (*)(int)) & tolower);
+  transform(s.begin(), s.end(), s.begin(), (int (*)(int))&tolower);
   return s;
 }
 
@@ -270,7 +270,7 @@ char *substr(const char *s, int n1, int n2)
  */
 string double_to_str(double v)
 {
-  char buf[256];
+  char   buf[256];
   double rounded_v = round(v * 100.0) / 100.0;
   snprintf(buf, sizeof(buf), "%.2f", rounded_v);
   size_t len = strlen(buf);

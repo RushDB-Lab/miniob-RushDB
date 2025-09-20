@@ -33,7 +33,7 @@ namespace oceanbase {
 class ObMemTable : public enable_shared_from_this<ObMemTable>
 {
 public:
-  ObMemTable() : comparator_(), table_(comparator_){};
+  ObMemTable() : comparator_(), table_(comparator_) {};
 
   ~ObMemTable() = default;
 

@@ -142,13 +142,13 @@ TEST(ArithmeticExpr, get_column)
 {
   // constant value
   {
-    Value int_value1(1);
-    Value int_value2(2);
-    Value float_value1((float)1.1);
-    Value float_value2((float)2.2);
-    Chunk chunk;
+    Value                   int_value1(1);
+    Value                   int_value2(2);
+    Value                   float_value1((float)1.1);
+    Value                   float_value2((float)2.2);
+    Chunk                   chunk;
     std::unique_ptr<Column> column_tmp = std::make_unique<Column>(AttrType::INTS, sizeof(int), 1);
-    char data[sizeof(int)];
+    char                    data[sizeof(int)];
     memcpy(data, &int_value1, sizeof(int));
     column_tmp->append_one(data);
     chunk.add_column(std::move(column_tmp), 0);
@@ -286,8 +286,8 @@ TEST(ComparisonExpr, comparison_expr_test)
     Value                   int_value(1);
     FieldMeta               field_meta("col1", AttrType::INTS, 0, int_len, true, 0);
     Field                   field(nullptr, &field_meta);
-    unique_ptr<Expression>  right_expr  = std::make_unique<FieldExpr>(field);
-    int                     count       = 1024;
+    unique_ptr<Expression>  right_expr   = std::make_unique<FieldExpr>(field);
+    int                     count        = 1024;
     std::unique_ptr<Column> column_right = std::make_unique<Column>(AttrType::INTS, int_len, count);
     for (int i = 0; i < count; ++i) {
       int right_value = i;

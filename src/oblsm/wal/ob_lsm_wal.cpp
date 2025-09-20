@@ -13,13 +13,7 @@
 #include "oblsm/util/ob_file_reader.h"
 
 namespace oceanbase {
-RC WAL::recover(const std::string &wal_file, std::vector<WalRecord> &wal_records)
-{
-  return RC::UNIMPLEMENTED;
-}
+RC WAL::recover(const std::string &wal_file, std::vector<WalRecord> &wal_records) { return RC::UNIMPLEMENTED; }
 
-RC WAL::put(uint64_t seq, string_view key, string_view val)
-{
-  return RC::UNIMPLEMENTED;
-}
+RC WAL::put(uint64_t seq, string_view key, string_view val) { return RC::UNIMPLEMENTED; }
 }  // namespace oceanbase

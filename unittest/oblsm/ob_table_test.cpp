@@ -19,27 +19,25 @@ using namespace oceanbase;
 
 TEST(table_test, DISABLED_table_test_basic)
 {
-  ObDefaultComparator comparator;
+  ObDefaultComparator    comparator;
   shared_ptr<ObMemTable> table = make_shared<ObMemTable>();
-  uint64_t seq = 0;
-  size_t count = 5;
+  uint64_t               seq   = 0;
+  size_t                 count = 5;
   for (size_t i = 0; i < count; i++) {
     string key(to_string(i));
     table->put(seq++, key, key);
   }
   ObSSTableBuilder tb(&comparator, nullptr);
   ASSERT_EQ(tb.build(table, "test.sst", 0), RC::SUCCESS);
-  shared_ptr<ObSSTable> sst = tb.get_built_table();
-  ObLsmIterator* sst_iter = sst->new_iterator();
+  shared_ptr<ObSSTable> sst      = tb.get_built_table();
+  ObLsmIterator        *sst_iter = sst->new_iterator();
   sst_iter->seek_to_first();
-  while(sst_iter->valid()) {
+  while (sst_iter->valid()) {
     cout << sst_iter->key() << " " << sst_iter->value() << endl;
     sst_iter->next();
   }
   delete sst_iter;
-
 }
-
 
 int main(int argc, char **argv)
 {

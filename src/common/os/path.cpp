@@ -27,7 +27,7 @@ namespace common {
 string getFileName(const string &fullPath)
 {
   string szRt;
-  size_t      pos;
+  size_t pos;
   try {
     pos = fullPath.rfind(FILE_PATH_SPLIT);
     if (pos != string::npos && pos < fullPath.size() - 1) {
@@ -63,7 +63,7 @@ void getFileName(const char *path, string &fileName)
 string getDirName(const string &fullPath)
 {
   string szRt;
-  size_t      pos;
+  size_t pos;
   try {
     pos = fullPath.rfind(FILE_PATH_SPLIT);
     if (pos != string::npos && pos > 0) {
@@ -99,7 +99,7 @@ void getDirName(const char *path, string &parent)
 string getFilePath(const string &fullPath)
 {
   string szRt;
-  size_t      pos;
+  size_t pos;
   try {
     pos = fullPath.rfind("/");
     if (pos != string::npos) {

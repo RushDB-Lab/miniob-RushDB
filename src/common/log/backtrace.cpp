@@ -23,14 +23,14 @@ namespace common {
 
 struct ProcMapSegment
 {
-  uint64_t  start_address;
-  uint64_t  end_address;
+  uint64_t start_address;
+  uint64_t end_address;
 };
 
 class ProcMap
 {
 public:
-  ProcMap() = default;
+  ProcMap()  = default;
   ~ProcMap() = default;
 
   int parse();
@@ -58,21 +58,29 @@ int ProcMap::parse_file(const char *file_name)
   }
 
   ProcMapSegment segment;
-  char line[1024] = {0};
-  uint64_t start, end, inode, offset, major, minor;
-  char perms[8];
-  char path[257];
+  char           line[1024] = {0};
+  uint64_t       start, end, inode, offset, major, minor;
+  char           perms[8];
+  char           path[257];
 
   while (fgets(line, sizeof(line), fp) != nullptr) {
-    
-    int ret = sscanf(line, "%" PRIx64 "-%" PRIx64 " %4s %" PRIx64 " %" PRIx64 ":%" PRIx64 "%" PRIu64 "%255s",
-                     &start, &end, perms, &offset, &major, &minor, &inode, path);
+
+    int ret = sscanf(line,
+        "%" PRIx64 "-%" PRIx64 " %4s %" PRIx64 " %" PRIx64 ":%" PRIx64 "%" PRIu64 "%255s",
+        &start,
+        &end,
+        perms,
+        &offset,
+        &major,
+        &minor,
+        &inode,
+        path);
     if (ret < 8 || perms[2] != 'x') {
       continue;
     }
 
     segment.start_address = start;
-    segment.end_address = end;
+    segment.end_address   = end;
 
     segments_.push_back(segment);
   }
@@ -104,10 +112,7 @@ uint64_t ProcMap::get_offset(const uint64_t address) const
 
 //////////////////////////////////////////////////////////////////////////
 static ProcMap g_proc_map;
-int backtrace_init()
-{
-  return g_proc_map.parse();
-}
+int            backtrace_init() { return g_proc_map.parse(); }
 
 const char *lbt()
 {
@@ -127,8 +132,8 @@ const char *lbt()
 
   int offset = 0;
   for (int i = 0; i < size && offset < bt_buffer_size - 1; i++) {
-    uint64_t address = reinterpret_cast<uint64_t>(buffer[i]);
-    address = g_proc_map.get_offset(address);
+    uint64_t address   = reinterpret_cast<uint64_t>(buffer[i]);
+    address            = g_proc_map.get_offset(address);
     const char *format = (0 == i) ? "0x%lx" : " 0x%lx";
     offset += snprintf(backtrace_buffer + offset, sizeof(backtrace_buffer) - offset, format, address);
 
@@ -143,4 +148,4 @@ const char *lbt()
   return backtrace_buffer;
 }
 
-} // namespace common
+}  // namespace common

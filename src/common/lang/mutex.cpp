@@ -17,11 +17,11 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 namespace common {
 
-map<pthread_mutex_t *, LockTrace::LockID>   LockTrace::mLocks;
-map<pthread_mutex_t *, int>                 LockTrace::mWaitTimes;
-map<long long, pthread_mutex_t *>           LockTrace::mWaitLocks;
-map<long long, set<pthread_mutex_t *>> LockTrace::mOwnLocks;
-set<pthread_mutex_t *>                      LockTrace::mEnableRecurisives;
+map<pthread_mutex_t *, LockTrace::LockID> LockTrace::mLocks;
+map<pthread_mutex_t *, int>               LockTrace::mWaitTimes;
+map<long long, pthread_mutex_t *>         LockTrace::mWaitLocks;
+map<long long, set<pthread_mutex_t *>>    LockTrace::mOwnLocks;
+set<pthread_mutex_t *>                    LockTrace::mEnableRecurisives;
 
 pthread_rwlock_t LockTrace::mMapMutex     = PTHREAD_RWLOCK_INITIALIZER;
 int              LockTrace::mMaxBlockTids = 8;

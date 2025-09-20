@@ -18,7 +18,7 @@ using namespace oceanbase;
 
 TEST(block_test, DISABLED_block_builder_test_basic)
 {
-  ObBlockBuilder builder;
+  ObBlockBuilder      builder;
   ObDefaultComparator comparator;
   builder.add("key1", "value1");
   builder.add("key2", "value2");
@@ -35,7 +35,7 @@ TEST(block_test, DISABLED_block_builder_test_basic)
 
 TEST(block_test, DISABLED_block_iterator_test_basic)
 {
-  ObBlockBuilder builder;
+  ObBlockBuilder      builder;
   ObDefaultComparator comparator;
   builder.add("key1", "value1");
   builder.add("key2", "value2");
@@ -53,7 +53,7 @@ TEST(block_test, DISABLED_block_iterator_test_basic)
   ASSERT_TRUE(iter.valid());
   ASSERT_EQ(iter.key(), "key1");
   ASSERT_EQ(iter.value(), "value1");
-  while(iter.valid()) {
+  while (iter.valid()) {
     cout << iter.key() << " " << iter.value() << endl;
     iter.next();
   }

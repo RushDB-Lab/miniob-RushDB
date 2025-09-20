@@ -111,7 +111,7 @@ public:
   BinaryIterator  operator++(int)
   {
     BinaryIterator tmp(*this);
-    this->         operator++();
+    this->operator++();
     return tmp;
   }
   BinaryIterator &operator--() { return this->operator+=(-1); }

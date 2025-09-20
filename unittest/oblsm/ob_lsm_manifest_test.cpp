@@ -187,7 +187,7 @@ TEST(oblsm_manifest_test, DISABLED_oblsm_recover_empty)
   delete lsm;
 
   lsm = nullptr;
-  rc = ObLsm::open(options, "oblsm_tmp", &lsm);
+  rc  = ObLsm::open(options, "oblsm_tmp", &lsm);
   EXPECT_EQ(rc, RC::SUCCESS);
   delete lsm;
 }
@@ -227,8 +227,6 @@ TEST(oblsm_manifest_test, DISABLED_oblsm_simple_recover)
   delete iter;
   delete lsm;
 }
-
-
 
 int main(int argc, char **argv)
 {

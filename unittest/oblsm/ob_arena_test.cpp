@@ -17,9 +17,9 @@ using namespace oceanbase;
 
 TEST(arena_test, DISABLED_arena_test_basic)
 {
-  ObArena arena;
-  const int count = 1000;
-  size_t bytes = 0;
+  ObArena                 arena;
+  const int               count = 1000;
+  size_t                  bytes = 0;
   common::RandomGenerator rnd;
   for (int i = 0; i < count; i++) {
     size_t s;
@@ -27,14 +27,14 @@ TEST(arena_test, DISABLED_arena_test_basic)
     if (s == 0) {
       s = 1;
     }
-    char* r;
+    char *r;
     r = arena.alloc(s);
 
     for (size_t b = 0; b < s; b++) {
       r[b] = i % 256;
     }
     bytes += s;
-    bytes += sizeof(char*);
+    bytes += sizeof(char *);
     ASSERT_EQ(arena.memory_usage(), bytes);
   }
 }

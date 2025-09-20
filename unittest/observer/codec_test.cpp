@@ -17,16 +17,15 @@ TEST(CodecTest, codec_test)
 {
   bytes b;
   OrderedCode::append(b, uint64_t(1025));
-  ASSERT_EQ( b[0], 0x02 );
-  ASSERT_EQ( b[1], 0x04 );
-  ASSERT_EQ( b[2], 0x01 );
+  ASSERT_EQ(b[0], 0x02);
+  ASSERT_EQ(b[1], 0x04);
+  ASSERT_EQ(b[2], 0x01);
   bytes c;
   OrderedCode::append(c, uint64_t(1));
   string_view bv((char *)b.data(), b.size());
   string_view cv((char *)c.data(), c.size());
 
   ASSERT_TRUE(bv > cv);
-
 }
 
 int main(int argc, char **argv)

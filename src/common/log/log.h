@@ -318,8 +318,8 @@ int Log::out(const LOG_LEVEL console_level, const LOG_LEVEL log_level, T &msg)
 #define ASSERT(expression, description, ...) \
   do {                                       \
     if (!(expression)) {                     \
-      LOG_PANIC(description, ##__VA_ARGS__); \
-      LOG_PANIC("%s", lbt());                \
+      LOG_PANIC(description, ##__VA_ARGS__);  \
+      LOG_PANIC("%s", lbt());                 \
       assert(expression);                    \
     }                                        \
   } while (0)

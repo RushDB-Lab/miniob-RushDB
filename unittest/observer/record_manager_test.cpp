@@ -143,9 +143,9 @@ TEST(RecordScanner, test_record_file_iterator)
   rc = file_handler.init(*bp, log_handler, nullptr, nullptr);
   ASSERT_EQ(rc, RC::SUCCESS);
 
-  VacuousTrx        trx;
-  int    count = 0;
-  Record record;
+  VacuousTrx       trx;
+  int              count = 0;
+  Record           record;
   const int        record_insert_num = 1000;
   char             record_data[20];
   std::vector<RID> rids;

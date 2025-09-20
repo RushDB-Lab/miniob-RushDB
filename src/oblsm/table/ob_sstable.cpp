@@ -72,7 +72,8 @@ void TableIterator::seek(const string_view &lookup_key)
   // TODO: use binary search
   for (; curr_block_idx_ < block_cnt_; curr_block_idx_++) {
     const auto &block_meta = sst_->block_meta(curr_block_idx_);
-    if (sst_->comparator()->compare(extract_user_key(block_meta.last_key_), extract_user_key_from_lookup_key(lookup_key)) >= 0) {
+    if (sst_->comparator()->compare(
+            extract_user_key(block_meta.last_key_), extract_user_key_from_lookup_key(lookup_key)) >= 0) {
       break;
     }
   }

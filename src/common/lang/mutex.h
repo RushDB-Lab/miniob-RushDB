@@ -126,7 +126,7 @@ protected:
 
 #define MUTEX_INIT(lock, attr)                      \
   ({                                                \
-    LOG_INFO("pthread_mutex_init %p", lock);        \
+    LOG_INFO("pthread_mutex_init %p", lock);         \
     if (attr != NULL) {                             \
       int type;                                     \
       pthread_mutexattr_gettype(attr, &type);       \
@@ -142,7 +142,7 @@ protected:
 
 #define MUTEX_INIT(lock, attr)                      \
   ({                                                \
-    LOG_INFO("pthread_mutex_init %p", lock);        \
+    LOG_INFO("pthread_mutex_init %p", lock);         \
     if (attr != NULL) {                             \
       int type;                                     \
       pthread_mutexattr_gettype(attr, &type);       \
@@ -155,23 +155,23 @@ protected:
   })
 #endif
 
-#define MUTEX_DESTROY(lock)                     \
-  ({                                            \
-    LockTrace::mEnableRecurisives.erase(lock);  \
-    int result = pthread_mutex_destroy(lock);   \
+#define MUTEX_DESTROY(lock)                    \
+  ({                                           \
+    LockTrace::mEnableRecurisives.erase(lock); \
+    int result = pthread_mutex_destroy(lock);  \
     LOG_INFO("pthread_mutex_destroy %p", lock); \
-    result;                                     \
+    result;                                    \
   })
 
-#define MUTEX_LOCK(mutex)                                                      \
-  ({                                                                           \
-    LockTrace::check(mutex, gettid(), __FILE__, __LINE__);                     \
-    int result = pthread_mutex_lock(mutex);                                    \
-    LockTrace::lock(mutex, gettid(), __FILE__, __LINE__);                      \
-    if (result) {                                                              \
+#define MUTEX_LOCK(mutex)                                                   \
+  ({                                                                        \
+    LockTrace::check(mutex, gettid(), __FILE__, __LINE__);                  \
+    int result = pthread_mutex_lock(mutex);                                 \
+    LockTrace::lock(mutex, gettid(), __FILE__, __LINE__);                   \
+    if (result) {                                                           \
       LOG_ERROR("Failed to lock %p, rc %d:%s", mutex, errno, strerror(errno)); \
-    }                                                                          \
-    result;                                                                    \
+    }                                                                       \
+    result;                                                                 \
   })
 
 #define MUTEX_TRYLOCK(mutex)                                \
@@ -184,15 +184,15 @@ protected:
     result;                                                 \
   })
 
-#define MUTEX_UNLOCK(lock)                                                      \
-  ({                                                                            \
-    int result = pthread_mutex_unlock(lock);                                    \
-    LockTrace::unlock(lock, gettid(), __FILE__, __LINE__);                      \
-    MUTEX_LOG("mutex:%p has been ulocked", lock);                               \
-    if (result) {                                                               \
+#define MUTEX_UNLOCK(lock)                                                   \
+  ({                                                                         \
+    int result = pthread_mutex_unlock(lock);                                 \
+    LockTrace::unlock(lock, gettid(), __FILE__, __LINE__);                   \
+    MUTEX_LOG("mutex:%p has been ulocked", lock);                            \
+    if (result) {                                                            \
       LOG_ERROR("Failed to unlock %p, rc %d:%s", lock, errno, strerror(errno)); \
-    }                                                                           \
-    result;                                                                     \
+    }                                                                        \
+    result;                                                                  \
   })
 
 #define COND_INIT(cond, attr)                   \

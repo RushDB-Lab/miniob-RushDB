@@ -98,7 +98,7 @@ OceanBase 社区热情欢迎每一位对数据库技术热爱的开发者，期�
 # Contributors
 感谢所有为 MiniOB 项目做出贡献的同学们！
 
-<a href="https://github.com/oceanbase/miniob/graphs/contributors"><img src="https://contributors-img.web.app/image?repo=oceanbase/miniob&width=890" /></a>
+<a href="https://github.com/RushDB-Lab/miniob-RushDB/graphs/contributors"><img src="https://contributors-img.web.app/image?repo=RushDB-Lab/miniob-RushDB&width=890" /></a>
 
 # License
 

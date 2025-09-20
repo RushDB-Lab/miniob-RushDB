@@ -139,7 +139,7 @@ int getFileNum(int64_t &fileNum, const string &path, const string &pattern, bool
       return -1;
     }
 
-    string    fullPath;
+    string         fullPath;
     struct dirent *entry = NULL;
     struct stat    fs;
     while ((entry = readdir(dirp)) != NULL) {
@@ -202,7 +202,7 @@ int getFileList(vector<string> &fileList, const string &path, const string &patt
       return -1;
     }
 
-    string    fullPath;
+    string         fullPath;
     struct dirent *entry = NULL;
     struct stat    fs;
     while ((entry = readdir(dirp)) != NULL) {
@@ -264,7 +264,7 @@ int getDirList(vector<string> &dirList, const string &path, const string &patter
       return -1;
     }
 
-    string    fullPath;
+    string         fullPath;
     struct dirent *entry = NULL;
     struct stat    fs;
     while ((entry = readdir(dirp)) != NULL) {

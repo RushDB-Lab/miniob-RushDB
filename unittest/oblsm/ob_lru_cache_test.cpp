@@ -18,26 +18,27 @@ See the Mulan PSL v2 for more details. */
 
 using namespace oceanbase;
 
-class ObLRUCacheTest : public ::testing::TestWithParam<size_t> {
+class ObLRUCacheTest : public ::testing::TestWithParam<size_t>
+{
 protected:
-  ObLRUCache<string, string>* cache;
-  size_t capacity;
+  ObLRUCache<string, string> *cache;
+  size_t                      capacity;
 
-  void SetUp() override {
+  void SetUp() override
+  {
     capacity = GetParam();
-    cache = new_lru_cache<string, string>(capacity);
+    cache    = new_lru_cache<string, string>(capacity);
   }
 
-  void TearDown() override {
-    delete cache;
-  }
+  void TearDown() override { delete cache; }
 };
 
-TEST_P(ObLRUCacheTest, DISABLED_lru_capacity) {
+TEST_P(ObLRUCacheTest, DISABLED_lru_capacity)
+{
   ASSERT_NE(cache, nullptr);
 
   for (size_t i = 0; i < capacity + 2; ++i) {
-    string key = "key" + to_string(i);
+    string key   = "key" + to_string(i);
     string value = "value" + to_string(i);
     cache->put(key, value);
   }
@@ -54,7 +55,8 @@ TEST_P(ObLRUCacheTest, DISABLED_lru_capacity) {
   }
 }
 
-TEST_P(ObLRUCacheTest, DISABLED_update_exist_key) {
+TEST_P(ObLRUCacheTest, DISABLED_update_exist_key)
+{
   ASSERT_NE(cache, nullptr);
 
   cache->put("key1", "value1");
@@ -70,26 +72,23 @@ TEST_P(ObLRUCacheTest, DISABLED_update_exist_key) {
   EXPECT_EQ(value, "value2");
 }
 
-TEST_P(ObLRUCacheTest, DISABLED_contains_key) {
-    ASSERT_NE(cache, nullptr);
+TEST_P(ObLRUCacheTest, DISABLED_contains_key)
+{
+  ASSERT_NE(cache, nullptr);
 
-    cache->put("key1", "value1");
-    cache->put("key2", "value2");
+  cache->put("key1", "value1");
+  cache->put("key2", "value2");
 
-    EXPECT_TRUE(cache->contains("key1"));
-    EXPECT_TRUE(cache->contains("key2"));
-    EXPECT_FALSE(cache->contains("key3"));
+  EXPECT_TRUE(cache->contains("key1"));
+  EXPECT_TRUE(cache->contains("key2"));
+  EXPECT_FALSE(cache->contains("key3"));
 
-    string value;
-    EXPECT_TRUE(cache->get("key1", value));
-    EXPECT_EQ(value, "value1");
+  string value;
+  EXPECT_TRUE(cache->get("key1", value));
+  EXPECT_EQ(value, "value1");
 }
 
-INSTANTIATE_TEST_SUITE_P(
-  CacheTests,
-  ObLRUCacheTest,
-  ::testing::Values(2, 5, 10, 100, 10000)
-);
+INSTANTIATE_TEST_SUITE_P(CacheTests, ObLRUCacheTest, ::testing::Values(2, 5, 10, 100, 10000));
 
 TEST(lru_test, zero_capacity)
 {

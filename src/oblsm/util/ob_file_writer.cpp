@@ -17,7 +17,7 @@ ObFileWriter::~ObFileWriter() { close_file(); }
 RC ObFileWriter::write(const string_view &data)
 {
   RC rc = RC::SUCCESS;
-  file_  << data;
+  file_ << data;
   if (!file_.good()) {
     rc = RC::IOERR_WRITE;
   }

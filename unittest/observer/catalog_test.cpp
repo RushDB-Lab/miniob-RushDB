@@ -14,9 +14,9 @@ See the Mulan PSL v2 for more details. */
 
 TEST(CatalogTest, catalog_test)
 {
-  Catalog& catalog = Catalog::get_instance();
-    
-  int table_id = 1;
+  Catalog &catalog = Catalog::get_instance();
+
+  int        table_id = 1;
   TableStats initial_stats(100);
   TableStats updated_stats(150);
 

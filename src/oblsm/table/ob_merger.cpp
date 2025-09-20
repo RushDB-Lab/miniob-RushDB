@@ -68,9 +68,9 @@ private:
   // We might want to use a heap in case there are lots of children.
   // For now we use a simple array since we expect a very small number
   // of children.
-  const ObComparator *              comparator_;
+  const ObComparator               *comparator_;
   vector<unique_ptr<ObLsmIterator>> children_;
-  ObLsmIterator *                   current_;
+  ObLsmIterator                    *current_;
 };
 
 void ObMergingIterator::find_smallest()

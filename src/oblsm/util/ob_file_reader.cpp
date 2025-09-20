@@ -28,14 +28,11 @@ string ObFileReader::read_pos(uint32_t pos, uint32_t size)
     LOG_WARN("Failed to read file %s, read_size=%ld, size=%ld", filename_.c_str(), read_size, size);
     return "";
   }
-  
+
   return buf;
 }
 
-uint32_t ObFileReader::file_size()
-{
-  return filesystem::file_size(filename_);
-}
+uint32_t ObFileReader::file_size() { return filesystem::file_size(filename_); }
 
 unique_ptr<ObFileReader> ObFileReader::create_file_reader(const string &filename)
 {
@@ -50,7 +47,7 @@ unique_ptr<ObFileReader> ObFileReader::create_file_reader(const string &filename
 RC ObFileReader::open_file()
 {
   RC rc = RC::SUCCESS;
-  fd_ = ::open(filename_.c_str(), O_RDONLY);
+  fd_   = ::open(filename_.c_str(), O_RDONLY);
   if (fd_ < 0) {
     LOG_WARN("Failed to open file %s", filename_.c_str());
     rc = RC::INTERNAL;
@@ -58,9 +55,6 @@ RC ObFileReader::open_file()
   return rc;
 }
 
-void ObFileReader::close_file()
-{
-  ::close(fd_);
-}
+void ObFileReader::close_file() { ::close(fd_); }
 
 }  // namespace oceanbase

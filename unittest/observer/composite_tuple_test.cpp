@@ -25,7 +25,7 @@ TEST(CompositeTuple, test_empty)
   CompositeTuple tuple1;
   ASSERT_EQ(0, tuple1.cell_num());
 
-  Value value;
+  Value         value;
   TupleCellSpec spec;
   ASSERT_NE(RC::SUCCESS, tuple1.cell_at(0, value));
   ASSERT_NE(RC::SUCCESS, tuple1.spec_at(0, spec));
@@ -38,7 +38,6 @@ TEST(CompositeTuple, test_empty)
   ValueListTuple value_list_tuple2;
   tuple1.add_tuple(make_unique<ValueListTuple>(value_list_tuple2));
   ASSERT_EQ(0, tuple1.cell_num());
-
 }
 
 TEST(CompositeTuple, test_1tuple)
@@ -46,11 +45,10 @@ TEST(CompositeTuple, test_1tuple)
   // 测试包含一个tuple
   CompositeTuple composite_tuple;
 
-  ValueListTuple value_list_tuple;
-  vector<Value> values;
+  ValueListTuple        value_list_tuple;
+  vector<Value>         values;
   vector<TupleCellSpec> specs;
-  for (int i = 0; i < 10; i++)
-  {
+  for (int i = 0; i < 10; i++) {
     values.emplace_back(i);
     specs.emplace_back(TupleCellSpec(to_string(i)));
   }
@@ -62,7 +60,7 @@ TEST(CompositeTuple, test_1tuple)
   ASSERT_EQ(10, composite_tuple.cell_num());
 
   for (int i = 0; i < 10; i++) {
-    Value value;
+    Value         value;
     TupleCellSpec spec;
     ASSERT_EQ(RC::SUCCESS, composite_tuple.cell_at(i, value));
     ASSERT_EQ(RC::SUCCESS, composite_tuple.spec_at(i, spec));
@@ -70,7 +68,7 @@ TEST(CompositeTuple, test_1tuple)
     ASSERT_EQ(to_string(i), spec.alias());
   }
 
-  Value value;
+  Value         value;
   TupleCellSpec spec;
   ASSERT_NE(RC::SUCCESS, composite_tuple.cell_at(10, value));
   ASSERT_NE(RC::SUCCESS, composite_tuple.spec_at(10, spec));
@@ -81,11 +79,10 @@ TEST(CompositeTuple, test_1tuple)
 TEST(CompositeTuple, test_2tuple)
 {
   // 测试包含两个tuple
-  CompositeTuple composite_tuple;
-  vector<Value> values;
+  CompositeTuple        composite_tuple;
+  vector<Value>         values;
   vector<TupleCellSpec> specs;
-  for (int i = 0; i < 10; i++)
-  {
+  for (int i = 0; i < 10; i++) {
     values.emplace_back(i);
     specs.emplace_back(TupleCellSpec(to_string(i)));
   }
@@ -101,7 +98,7 @@ TEST(CompositeTuple, test_2tuple)
   ASSERT_EQ(20, composite_tuple.cell_num());
 
   for (int i = 0; i < 10; i++) {
-    Value value;
+    Value         value;
     TupleCellSpec spec;
     ASSERT_EQ(RC::SUCCESS, composite_tuple.cell_at(i, value));
     ASSERT_EQ(RC::SUCCESS, composite_tuple.spec_at(i, spec));
@@ -110,7 +107,7 @@ TEST(CompositeTuple, test_2tuple)
   }
 
   for (int i = 0; i < 10; i++) {
-    Value value;
+    Value         value;
     TupleCellSpec spec;
     ASSERT_EQ(RC::SUCCESS, composite_tuple.cell_at(i + 10, value));
     ASSERT_EQ(RC::SUCCESS, composite_tuple.spec_at(i + 10, spec));
@@ -118,7 +115,7 @@ TEST(CompositeTuple, test_2tuple)
     ASSERT_EQ(to_string(i), spec.alias());
   }
 
-  Value value;
+  Value         value;
   TupleCellSpec spec;
   ASSERT_NE(RC::SUCCESS, composite_tuple.cell_at(20, value));
   ASSERT_NE(RC::SUCCESS, composite_tuple.spec_at(20, spec));
@@ -129,11 +126,10 @@ TEST(CompositeTuple, test_2tuple)
 TEST(CompositeTuple, test_including_composite_tuple)
 {
   // 测试包含一个 composite tuple
-  CompositeTuple composite_tuple;
-  vector<Value> values;
+  CompositeTuple        composite_tuple;
+  vector<Value>         values;
   vector<TupleCellSpec> specs;
-  for (int i = 0; i < 10; i++)
-  {
+  for (int i = 0; i < 10; i++) {
     values.emplace_back(i);
     specs.emplace_back(TupleCellSpec(to_string(i)));
   }

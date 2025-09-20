@@ -20,10 +20,10 @@ See the Mulan PSL v2 for more details. */
 
 using namespace oceanbase;
 
-class ObLsmTransactionTest : public ObLsmTestBase {
-};
+class ObLsmTransactionTest : public ObLsmTestBase
+{};
 
-bool check_lsm_scan_result_by_value(ObLsmIterator* iter, const std::vector<std::string> &values)
+bool check_lsm_scan_result_by_value(ObLsmIterator *iter, const std::vector<std::string> &values)
 {
   int i = 0;
   iter->seek_to_first();
@@ -38,7 +38,7 @@ bool check_lsm_scan_result_by_value(ObLsmIterator* iter, const std::vector<std::
 }
 
 TEST_F(ObLsmTransactionTest, DISABLED_oblsm_test_basic1)
-{ 
+{
   db->put("key1", "value1");
   db->put("key2", "value2");
   db->put("key3", "value3");
@@ -47,7 +47,7 @@ TEST_F(ObLsmTransactionTest, DISABLED_oblsm_test_basic1)
   ASSERT_TRUE(check_lsm_scan_result_by_value(iter, {"value1", "value2", "value3"}));
   delete iter;
 
-  auto txn1 = db->begin_transaction();
+  auto txn1      = db->begin_transaction();
   auto iter_txn1 = txn1->new_iterator(ObLsmReadOptions());
   ASSERT_TRUE(check_lsm_scan_result_by_value(iter_txn1, {"value1", "value2", "value3"}));
   delete iter_txn1;
@@ -58,7 +58,7 @@ TEST_F(ObLsmTransactionTest, DISABLED_oblsm_test_basic1)
   auto iter2_txn1 = txn1->new_iterator(ObLsmReadOptions());
   ASSERT_TRUE(check_lsm_scan_result_by_value(iter2_txn1, {"valuetxn1", "value2", "value3", "txnvaluex"}));
   delete iter2_txn1;
-  
+
   auto txn2 = db->begin_transaction();
   txn2->put("key1", "valuetxn2");
   auto iter_txn2 = txn2->new_iterator(ObLsmReadOptions());

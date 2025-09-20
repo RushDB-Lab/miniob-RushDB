@@ -14,10 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 namespace oceanbase {
 
-RC ObBlock::decode(const string &data)
-{
-  return RC::UNIMPLEMENTED;
-}
+RC ObBlock::decode(const string &data) { return RC::UNIMPLEMENTED; }
 
 string_view ObBlock::get_entry(uint32_t offset) const
 {
@@ -52,7 +49,7 @@ string BlockMeta::encode() const
 
 RC BlockMeta::decode(const string &data)
 {
-  RC rc = RC::SUCCESS;
+  RC          rc             = RC::SUCCESS;
   const char *data_ptr       = data.c_str();
   uint32_t    first_key_size = get_numeric<uint32_t>(data_ptr);
   data_ptr += sizeof(uint32_t);
@@ -70,13 +67,13 @@ RC BlockMeta::decode(const string &data)
 
 void BlockIterator::seek(const string_view &lookup_key)
 {
-   index_ = 0;
-   while(valid()) {
+  index_ = 0;
+  while (valid()) {
     parse_entry();
     if (comparator_->compare(extract_user_key(key_), extract_user_key_from_lookup_key(lookup_key)) >= 0) {
       break;
     }
     index_++;
-   }
+  }
 }
 }  // namespace oceanbase

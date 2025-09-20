@@ -50,7 +50,7 @@ int writePidFile(const char *progName)
 {
   assert(progName);
   ofstream ostr;
-  int           rv = 1;
+  int      rv = 1;
 
   setPidPath(progName);
   string path = getPidPath();
